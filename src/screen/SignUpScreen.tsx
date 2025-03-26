@@ -1,4 +1,3 @@
-// src/screen/SignUpScreen.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -8,20 +7,18 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ScrollView,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { showMessage } from "react-native-flash-message";
 import { RootStackParamList } from "../types";
 import { AuthService } from "../service/registerResident";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
-type SignUpScreenNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  "SignUp"
->;
+type SignUpScreenNavigationProp = StackNavigationProp<RootStackParamList, "SignUp">;
 
 const SignUpScreen = () => {
   const navigation = useNavigation<SignUpScreenNavigationProp>();
@@ -30,16 +27,30 @@ const SignUpScreen = () => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [gender, setGender] = useState<"Male" | "Female" | "Other">("Male");
-  const [dateOfBirth, setDateOfBirth] = useState("1990-01-01");
+  const [gender, setGender] = useState<"Male" | "Female">("Male");
+  const [dateOfBirth, setDateOfBirth] = useState(new Date(1990, 0, 1));
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleBack = () => {
     navigation.goBack();
   };
 
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setDateOfBirth(selectedDate);
+    }
+  };
+
   const handleSignUp = async () => {
-    if (!username || !email || !phone || !password || !dateOfBirth || !gender) {
-      Alert.alert("Lỗi", "Vui lòng điền đầy đủ thông tin");
+    if (!username || !email || !phone || !password || !gender || !dateOfBirth) {
+      showMessage({
+        message: "Missing Information",
+        description: "Please fill in all fields.",
+        type: "danger",
+        icon: "danger",
+        duration: 3000,
+      });
       return;
     }
 
@@ -49,7 +60,7 @@ const SignUpScreen = () => {
       password,
       phone,
       role: "Resident" as const,
-      dateOfBirth: new Date(dateOfBirth).toISOString(),
+      dateOfBirth: dateOfBirth.toISOString(),
       gender,
     };
 
@@ -57,34 +68,40 @@ const SignUpScreen = () => {
       const response = await AuthService.registerResident(signupPayload);
 
       if (response?.isSuccess) {
-        // Lưu userData vào AsyncStorage để sử dụng khi xác thực OTP
-        const userData = {
-          username,
-          email,
-          password,
-          phone,
-          role: "Resident" as const,
-          dateOfBirth: new Date(dateOfBirth).toISOString(),
-          gender,
-        };
-        
-        await AsyncStorage.setItem('tempUserData', JSON.stringify(userData));
-        
-        Alert.alert("Thông báo", response.message, [
-          {
-            text: "OK",
-            onPress: () =>
-              navigation.navigate("OTPScreen", {
-                userType: "resident",
-                identifier: email,
-              }),
-          },
-        ]);
+        await AsyncStorage.setItem('tempUserData', JSON.stringify(signupPayload));
+
+        showMessage({
+          message: "Registration Success",
+          description: response.message,
+          type: "success",
+          icon: "success",
+          duration: 3000,
+        });
+
+        setTimeout(() => {
+          navigation.navigate("OTPScreen", {
+            userType: "resident",
+            identifier: email,
+          });
+        }, 1500);
+
       } else {
-        Alert.alert("Lỗi", response?.message || "Đăng ký thất bại");
+        showMessage({
+          message: "Registration Failed",
+          description: response?.message || "Please try again later.",
+          type: "danger",
+          icon: "danger",
+          duration: 3000,
+        });
       }
     } catch (error) {
-      Alert.alert("Lỗi", "Có lỗi xảy ra trong quá trình đăng ký");
+      showMessage({
+        message: "Error",
+        description: "An unexpected error occurred.",
+        type: "danger",
+        icon: "danger",
+        duration: 3000,
+      });
     }
   };
 
@@ -136,47 +153,42 @@ const SignUpScreen = () => {
             onChangeText={setPassword}
           />
 
-          <Text style={styles.inputLabel}>Date of Birth (YYYY-MM-DD)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="1990-01-01"
-            value={dateOfBirth}
-            onChangeText={setDateOfBirth}
-          />
+          <Text style={styles.inputLabel}>Date of Birth</Text>
+          <TouchableOpacity
+            style={styles.datePicker}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Text style={styles.dateText}>
+              {dateOfBirth.toISOString().split('T')[0]}
+            </Text>
+            <Icon name="calendar-today" size={24} color="#666" />
+          </TouchableOpacity>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={dateOfBirth}
+              mode="date"
+              display="default"
+              onChange={handleDateChange}
+            />
+          )}
 
           <Text style={styles.inputLabel}>Gender</Text>
           <View style={styles.genderContainer}>
-            <TouchableOpacity
-              style={styles.genderOption}
-              onPress={() => setGender("Male")}
-            >
-              <Icon
-                name={
-                  gender === "Male"
-                    ? "radio-button-checked"
-                    : "radio-button-unchecked"
-                }
-                size={24}
-                color="#B77F2E"
-              />
-              <Text style={styles.genderLabel}>Male</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.genderOption}
-              onPress={() => setGender("Female")}
-            >
-              <Icon
-                name={
-                  gender === "Female"
-                    ? "radio-button-checked"
-                    : "radio-button-unchecked"
-                }
-                size={24}
-                color="#B77F2E"
-              />
-              <Text style={styles.genderLabel}>Female</Text>
-            </TouchableOpacity>
+            {["Male", "Female"].map((item) => (
+              <TouchableOpacity
+                key={item}
+                style={styles.genderOption}
+                onPress={() => setGender(item as "Male" | "Female")}
+              >
+                <Icon
+                  name={gender === item ? "radio-button-checked" : "radio-button-unchecked"}
+                  size={24}
+                  color="#B77F2E"
+                />
+                <Text style={styles.genderLabel}>{item}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
@@ -189,66 +201,24 @@ const SignUpScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    padding: 16,
+  container: { flex: 1, backgroundColor: "#FFFFFF", padding: 16 },
+  backButton: { marginTop: 20, padding: 8 },
+  headerTitle: { fontSize: 32, fontWeight: "bold", marginTop: 20, marginBottom: 30 },
+  inputSection: { marginBottom: 30 },
+  inputLabel: { fontSize: 18, fontWeight: "500", marginVertical: 12 },
+  input: { borderWidth: 1, borderColor: "#CCCCCC", borderRadius: 12, padding: 14, fontSize: 16 },
+  nextButton: { backgroundColor: "#B77F2E", borderRadius: 12, padding: 18, alignItems: "center", marginVertical: 20 },
+  nextButtonText: { color: "white", fontSize: 18, fontWeight: "500" },
+  genderContainer: { flexDirection: 'row', marginVertical: 12 },
+  genderOption: { flexDirection: 'row', alignItems: 'center', marginRight: 20 },
+  genderLabel: { fontSize: 16, marginLeft: 8 },
+  datePicker: {
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between',
+    borderWidth: 1, borderColor: "#CCCCCC", borderRadius: 12, padding: 14,
   },
-  backButton: {
-    marginTop: 20,
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 32,
-    fontWeight: "bold",
-    marginTop: 20,
-    marginBottom: 30,
-  },
-  inputSection: {
-    marginBottom: 30,
-  },
-  inputLabel: {
-    fontSize: 18,
-    fontWeight: "500",
-    marginTop: 12,
-    marginBottom: 12,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#CCCCCC",
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
-  },
-  nextButton: {
-    backgroundColor: "#B77F2E",
-    borderRadius: 12,
-    padding: 18,
-    alignItems: "center",
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  nextButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "500",
-  },
-  genderContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  genderOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 20,
-  },
-  genderLabel: {
-    fontSize: 16,
-    marginLeft: 8,
-  },
+  dateText: { fontSize: 16, color: '#000' },
 });
 
 export default SignUpScreen;

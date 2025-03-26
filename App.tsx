@@ -12,12 +12,14 @@ import RepairReviewScreen from './src/Resident/ui/RepairReviewScreen';
 import RepairSuccessScreen from './src/Resident/ui/RepairSuccessScreen';
 import MyReportScreen from './src/Resident/MyReportScreen';
 import SignUpScreen from './src/screen/SignUpScreen';
+import FlashMessage, { showMessage } from "react-native-flash-message";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 const App = () => {
   return (
     <NavigationContainer>
+      <FlashMessage position="top" />
       <Stack.Navigator screenOptions={{ headerShown: false }} >
         <Stack.Screen name="MainApp" component={BottomTabNavigator} />
         <Stack.Screen name="OTPScreen" component={OTPScreen} />
