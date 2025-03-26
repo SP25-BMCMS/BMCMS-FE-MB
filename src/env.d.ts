@@ -3,4 +3,5 @@ declare module '@env'{
     export const VITE_REGISTER_RESIDENT: string;
     export const VITE_OTP_RESIDENT: string;
     export const VITE_LOGIN_RESIDENT: string;
+    export const VITE_CURRENT_USER_API: string;
 }

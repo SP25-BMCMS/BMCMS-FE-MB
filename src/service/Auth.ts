@@ -1,7 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LoginPayload, LoginResponse } from '../types';
-import { VITE_API_SECRET, VITE_LOGIN_RESIDENT } from '@env';
+import { VITE_API_SECRET, VITE_LOGIN_RESIDENT, VITE_CURRENT_USER_API } from '@env';
 
 // Tạo instance axios với baseURL từ biến môi trường
 const instance = axios.create({
@@ -38,6 +38,14 @@ export const AuthService = {
       return response.data;
     } catch (error) {
       // Không xử lý lỗi ở đây, mà để component xử lý
+      throw error;
+    }
+  },
+  async getCurrentUser(): Promise<any> {
+    try {
+      const response = await instance.get(VITE_CURRENT_USER_API);
+      return response.data;
+    } catch (error) {
       throw error;
     }
   },

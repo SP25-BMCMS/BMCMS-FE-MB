@@ -38,7 +38,6 @@ const MoreScreen = () => {
     fetchUserData();
   }, []);
 
-
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       anim.setValue(0);
@@ -73,7 +72,12 @@ const MoreScreen = () => {
         {
           opacity: anim,
           transform: [
-            { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [-50, 0] }) },
+            {
+              translateY: anim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [-50, 0],
+              }),
+            },
           ],
         },
       ]}
@@ -91,10 +95,14 @@ const MoreScreen = () => {
           <View style={styles.userHeader}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>
-                {userData.name ? userData.name.charAt(0).toUpperCase() : "U"}
+                {userData.username
+                  ? userData.username.charAt(0).toUpperCase()
+                  : "U"}
               </Text>
             </View>
-            <Text style={styles.userName}>{userData.name || "Người dùng"}</Text>
+            <Text style={styles.userName}>
+              {userData.username || "Resident"}
+            </Text>
           </View>
         )}
 
@@ -107,40 +115,73 @@ const MoreScreen = () => {
             </View>
             <Text style={styles.menuText}>Language</Text>
             <Text style={styles.menuValue}>English</Text>
-            <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
+            <Icon
+              name="chevron-right"
+              size={24}
+              color="#666"
+              style={styles.chevron}
+            />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
-            <View style={[styles.iconContainer, { backgroundColor: "#EDE7F6" }]}>
+            <View
+              style={[styles.iconContainer, { backgroundColor: "#EDE7F6" }]}
+            >
               <Icon name="help-outline" size={24} color="#A084E8" />
             </View>
             <Text style={styles.menuText}>FAQ</Text>
-            <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
+            <Icon
+              name="chevron-right"
+              size={24}
+              color="#666"
+              style={styles.chevron}
+            />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
-            <View style={[styles.iconContainer, { backgroundColor: "#FFF3E0" }]}>
+            <View
+              style={[styles.iconContainer, { backgroundColor: "#FFF3E0" }]}
+            >
               <Icon2 name="book" size={24} color="#F4C27F" />
             </View>
             <Text style={styles.menuText}>How to Use</Text>
-            <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
+            <Icon
+              name="chevron-right"
+              size={24}
+              color="#666"
+              style={styles.chevron}
+            />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
-            <View style={[styles.iconContainer, { backgroundColor: "#EFEBE9" }]}>
+            <View
+              style={[styles.iconContainer, { backgroundColor: "#EFEBE9" }]}
+            >
               <Icon name="info-outline" size={24} color="#B77F2E" />
             </View>
             <Text style={styles.menuText}>About Us</Text>
-            <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
+            <Icon
+              name="chevron-right"
+              size={24}
+              color="#666"
+              style={styles.chevron}
+            />
           </TouchableOpacity>
 
           {userData && (
             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-              <View style={[styles.iconContainer, { backgroundColor: "#F5F5F5" }]}>
+              <View
+                style={[styles.iconContainer, { backgroundColor: "#F5F5F5" }]}
+              >
                 <Icon name="logout" size={24} color="#E8D6C1" />
               </View>
               <Text style={styles.menuText}>Log Out</Text>
-              <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
+              <Icon
+                name="chevron-right"
+                size={24}
+                color="#666"
+                style={styles.chevron}
+              />
             </TouchableOpacity>
           )}
         </View>
@@ -238,11 +279,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#999",
   },
-  menuValue:{
+  menuValue: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     marginRight: 8,
-  }
+  },
 });
 
 export default MoreScreen;

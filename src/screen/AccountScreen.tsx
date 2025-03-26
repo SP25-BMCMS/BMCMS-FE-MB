@@ -156,36 +156,34 @@ const AccountScreen = () => {
         <View style={styles.userInfoContainer}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
-              {userData?.name ? userData.name.charAt(0).toUpperCase() : "U"}
+              {userData?.username ? userData.username.charAt(0).toUpperCase() : "U"}
             </Text>
           </View>
           <View style={styles.userDetails}>
-            <Text style={styles.userName}>{userData?.name || "Resident"}</Text>
-            <Text style={styles.userContact}>
-              {userData?.phone || userData?.email || ""}
-            </Text>
+            <Text style={styles.userName}>{userData?.username || "Resident"}</Text>
+            <Text style={styles.userContact}>{userData?.phone || ""}</Text>
           </View>
         </View>
-
+  
         <View style={styles.cardsContainer}>
           <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("MyReport")}>
             <Icon name="description" size={24} color="#000" />
             <Text style={styles.cardText}>MyReport</Text>
           </TouchableOpacity>
-
+  
           <TouchableOpacity style={styles.card}>
             <Icon name="bookmarks" size={24} color="#000" />
             <Text style={styles.cardText}>My review</Text>
           </TouchableOpacity>
         </View>
-
+  
         <View style={styles.optionsList}>
           <TouchableOpacity style={styles.optionItem}>
             <Icon name="location-on" size={24} color="#666" />
             <Text style={styles.optionText}>Address</Text>
             <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
           </TouchableOpacity>
-
+  
           <TouchableOpacity style={styles.optionItem} onPress={handleChangePassword}>
             <Icon name="lock" size={24} color="#666" />
             <Text style={styles.optionText}>ChangePassword</Text>
