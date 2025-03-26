@@ -11,6 +11,7 @@ import RepairInsideScreen from './src/Resident/ui/RepairInsideScreen';
 import RepairReviewScreen from './src/Resident/ui/RepairReviewScreen';
 import RepairSuccessScreen from './src/Resident/ui/RepairSuccessScreen';
 import MyReportScreen from './src/Resident/MyReportScreen';
+import SignUpScreen from './src/screen/SignUpScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -21,6 +22,7 @@ const App = () => {
         <Stack.Screen name="MainApp" component={BottomTabNavigator} />
         <Stack.Screen name="OTPScreen" component={OTPScreen} />
         <Stack.Screen name="SignIn" component={SignInScreen} />
+        <Stack.Screen name='SignUp' component={SignUpScreen}/>
         <Stack.Screen name="More" component={MoreScreen} />
         <Stack.Screen name="PropertyDetail" component={PropertyDetailScreen} />
         <Stack.Screen name='RepairInside' component={RepairInsideScreen}/>
