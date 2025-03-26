@@ -2,14 +2,14 @@
 import React, { useState } from 'react';
 import { 
   View, Text, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingView, 
-  Platform, Alert 
+  Platform, Alert, ActivityIndicator 
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
-// import { mockData } from '../mock/mockData';
-import { AuthService } from '../service/api';
+import { AuthService } from '../service/Auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type SignInScreenNavigationProp = StackNavigationProp<RootStackParamList, 'SignIn'>;
 
@@ -18,40 +18,59 @@ const SignInScreen = () => {
   const [activeTab, setActiveTab] = useState<'resident' | 'staff'>('resident'); 
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleBack = () => {
     navigation.goBack();
   };
 
-  const handleNext = async () => {
-    try {
-      if (activeTab === 'resident') {
-        const resident = await AuthService.findResidentByPhone(Number(phone));
-        
-        if (resident) {
-          navigation.navigate('OTPScreen', { 
-            userType: 'resident', 
-            identifier: phone 
-          });
-        } else {
-          Alert.alert("Lỗi", "Số điện thoại không tồn tại");
-        }
-      } else {
-        const staff = await AuthService.findStaffByEmail(email);
-        
-        if (staff) {
-          navigation.navigate('OTPScreen', { 
-            userType: 'staff', 
-            identifier: email 
-          });
-        } else {
-          Alert.alert("Lỗi", "Email không tồn tại");
-        }
+  const handleLogin = async () => {
+    if (activeTab === 'resident') {
+      if (!phone || !password) {
+        Alert.alert("Lỗi", "please enter phone number and password");
+        return;
       }
-    } catch (error) {
-      Alert.alert("Lỗi", "Đã có lỗi xảy ra");
+  
+      setLoading(true);
+      try {
+        const response = await AuthService.loginResident({
+          phone,
+          password
+        });
+  
+        // Lưu thông tin người dùng đã đăng nhập
+        await AsyncStorage.setItem('userType', 'resident');
+        //@ts-ignore
+        await AsyncStorage.setItem('username', response.username);
+        Alert.alert("Notice", `Welcome ${response?.username}`);
+        navigation.navigate('MainApp');
+      } catch (error: any) {
+        // Kiểm tra lỗi 401 - Tài khoản chưa kích hoạt
+        if (error.response && error.response.status === 401) {
+          // Kiểm tra thông điệp lỗi cụ thể
+          if (error.response.data && error.response.data.message && 
+              error.response.data.message.includes("kích hoạt")) {
+            Alert.alert("Notice", "Your account is not activated. Please check your email for activation link.");
+          } else {
+            Alert.alert("Error", "Login failed. Please try again.");
+          }
+        }
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      if (!email || !password) {
+        Alert.alert("Error", "Please enter email and password");
+        return;
+      }
+      
+      // Xử lý đăng nhập cho nhân viên (có thể thêm sau)
+      Alert.alert("Notice", "Login for staff is not implemented yet.");
     }
   };
+  
 
   return (
     <KeyboardAvoidingView 
@@ -89,7 +108,7 @@ const SignInScreen = () => {
       {/* Input Section */}
       <View style={styles.inputSection}>
         <Text style={styles.inputLabel}>
-          {activeTab === 'resident' ? "What's your phone?" : "What's your email?"}
+          {activeTab === 'resident' ? "Phone Number" : "Email"}
         </Text>
 
         {activeTab === 'resident' ? (
@@ -111,14 +130,33 @@ const SignInScreen = () => {
             autoCapitalize="none"
           />
         )}
+
+        <Text style={[styles.inputLabel, { marginTop: 16 }]}>Password</Text>
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+          />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            <Icon name={showPassword ? "visibility" : "visibility-off"} size={24} color="#666" />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Next Button */}
+      {/* Login Button */}
       <TouchableOpacity 
-        style={styles.nextButton} 
-        onPress={handleNext}
+        style={styles.loginButton} 
+        onPress={handleLogin}
+        disabled={loading}
       >
-        <Text style={styles.nextButtonText}>Next</Text>
+        {loading ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.loginButtonText}>Sign In</Text>
+        )}
       </TouchableOpacity>
       
       {/* Don't have account link - Only show for resident tab */}
@@ -183,9 +221,9 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   inputLabel: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '500',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   input: {
     borderWidth: 1,
@@ -194,7 +232,20 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
   },
-  nextButton: {
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#CCCCCC',
+    borderRadius: 12,
+    paddingRight: 16,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 16,
+    fontSize: 16,
+  },
+  loginButton: {
     backgroundColor: '#B77F2E',
     borderRadius: 12,
     padding: 18,
@@ -202,7 +253,7 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
     marginBottom: 20,
   },
-  nextButtonText: {
+  loginButtonText: {
     color: 'white',
     fontSize: 18,
     fontWeight: '500',

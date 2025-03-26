@@ -27,6 +27,18 @@ export interface Resident {
   property: Property[];
   otp: string;
 }
+export interface LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  userId: string;
+  username: string;
+  statusCode: number;
+  message: string;
+}
+export interface LoginPayload {
+  phone: string;
+  password: string;
+}
 
 export interface SignupResponse {
   isSuccess: boolean;
