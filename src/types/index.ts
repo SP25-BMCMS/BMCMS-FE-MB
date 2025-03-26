@@ -47,15 +47,24 @@ export interface SignupPayload {
 }
 
 export interface VerifyOTPPayload {
-  phone: string;
+  email: string;
   otp: string;
+  userData: {
+    username: string;
+    email: string;
+    password: string;
+    phone: string;
+    role: 'Resident' | 'Staff';
+    dateOfBirth: string;
+    gender: 'Male' | 'Female' | 'Other';
+  };
 }
 
 export interface VerifyOTPResponse {
   isSuccess: boolean;
   message: string;
   data?: {
-    phone: string;
+    email: string; 
   };
 }
 export interface Staff {

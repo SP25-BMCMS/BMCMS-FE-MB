@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -27,10 +27,10 @@ const OTPScreen = () => {
   const route = useRoute();
   const params = route.params as {
     userType: "resident" | "staff";
-    identifier: string;
+    identifier: string; // Giờ đây identifier sẽ là email
   };
 
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]); // sửa 4 -> 6
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]); 
   const inputRefs = useRef<Array<TextInput | null>>([
     null,
     null,
@@ -38,7 +38,7 @@ const OTPScreen = () => {
     null,
     null,
     null,
-  ]); // thêm 2 ref nữa
+  ]);
   const [error, setError] = useState(false);
 
   // Animation state
@@ -58,7 +58,6 @@ const OTPScreen = () => {
     setError(false);
 
     if (text.length === 1 && index < 5) {
-      // sửa 3 thành 5
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -71,22 +70,38 @@ const OTPScreen = () => {
 
   const handleVerify = async () => {
     const enteredOtp = otp.join("");
-
+    
     try {
-      const response = await AuthService.verifyResidentOTP({
-        phone: params.identifier,
-        otp: enteredOtp,
-      });
-
+      // Lấy thông tin người dùng từ AsyncStorage
+      const tempUserDataString = await AsyncStorage.getItem('tempUserData');
+      if (!tempUserDataString) {
+        Alert.alert("Lỗi", "Không tìm thấy thông tin đăng ký");
+        return;
+      }
+      
+      const userData = JSON.parse(tempUserDataString);
+      
+      // Gọi API xác thực OTP với cấu trúc đúng
+      const response = await AuthService.verifyResidentOTP(
+        params.identifier, 
+        enteredOtp,
+        userData
+      );
+  
       if (response?.isSuccess) {
+        // Xóa dữ liệu tạm thời
+        await AsyncStorage.removeItem('tempUserData');
+        
+        // Lưu thông tin người dùng đã đăng ký thành công
         await AsyncStorage.setItem(
           "userData",
           JSON.stringify({
-            phone: params.identifier,
+            email: params.identifier,
             userType: params.userType,
           })
         );
-        Alert.alert("Success", response.message);
+        
+        Alert.alert("Thành công", response.message);
         navigation.navigate("MainApp");
       } else {
         setError(true);
@@ -157,11 +172,11 @@ const OTPScreen = () => {
         <Icon name="arrow-back" size={24} color="#000" />
       </TouchableOpacity>
 
-      <Text style={styles.headerTitle}>Enter OTP</Text>
+      <Text style={styles.headerTitle}>Nhập mã OTP</Text>
 
       <View style={styles.inputSection}>
         <Text style={styles.inputLabel}>
-          Enter verification code sent to {params.identifier}
+          Nhập mã xác thực đã được gửi đến {params.identifier}
         </Text>
 
         <Animated.View
@@ -190,7 +205,7 @@ const OTPScreen = () => {
         </Animated.View>
 
         {error && (
-          <Text style={styles.errorText}>Wrong OTP, Please re-enter</Text>
+          <Text style={styles.errorText}>Mã OTP không đúng, vui lòng nhập lại</Text>
         )}
       </View>
 
@@ -204,7 +219,7 @@ const OTPScreen = () => {
         onPress={handleVerify}
         disabled={otp.join("").length !== 6}
       >
-        <Text style={styles.verifyButtonText}>Verify</Text>
+        <Text style={styles.verifyButtonText}>Xác thực</Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>
   );

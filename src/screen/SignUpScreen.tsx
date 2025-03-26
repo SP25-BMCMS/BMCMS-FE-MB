@@ -16,6 +16,7 @@ import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types";
 import { AuthService } from "../service/registerResident";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type SignUpScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -56,13 +57,26 @@ const SignUpScreen = () => {
       const response = await AuthService.registerResident(signupPayload);
 
       if (response?.isSuccess) {
+        // Lưu userData vào AsyncStorage để sử dụng khi xác thực OTP
+        const userData = {
+          username,
+          email,
+          password,
+          phone,
+          role: "Resident" as const,
+          dateOfBirth: new Date(dateOfBirth).toISOString(),
+          gender,
+        };
+        
+        await AsyncStorage.setItem('tempUserData', JSON.stringify(userData));
+        
         Alert.alert("Thông báo", response.message, [
           {
             text: "OK",
             onPress: () =>
               navigation.navigate("OTPScreen", {
                 userType: "resident",
-                identifier: phone,
+                identifier: email,
               }),
           },
         ]);

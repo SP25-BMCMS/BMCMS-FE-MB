@@ -17,14 +17,20 @@ const instance = axios.create({
         return null;
       }
     }
-    static async verifyResidentOTP(payload: VerifyOTPPayload): Promise<VerifyOTPResponse | null> {
-        try {
-          const response = await instance.post<VerifyOTPResponse>(VITE_OTP_RESIDENT, payload);
-          return response.data;
-        } catch (error) {
-          console.error("OTP Verification Error:", error);
-          return null;
-        }
+    static async verifyResidentOTP(email: string, otp: string, userData: any): Promise<VerifyOTPResponse | null> {
+      try {
+        // Tạo payload theo cấu trúc API yêu cầu
+        const payload = {
+          email,
+          otp,
+          userData
+        };
+        
+        const response = await instance.post<VerifyOTPResponse>(VITE_OTP_RESIDENT, payload);
+        return response.data;
+      } catch (error) {
+        console.error("OTP Verification Error:", error);
+        return null;
       }
+    }
   }
-  
