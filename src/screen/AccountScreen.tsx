@@ -124,7 +124,7 @@ const AccountScreen = () => {
     return (
       <>
         <TouchableOpacity style={styles.signInButton} onPress={handleSignIn}>
-          <Text style={styles.signInText}>Sign Up</Text>
+          <Text style={styles.signInText}>Sign In</Text>
         </TouchableOpacity>
 
         <View style={styles.optionsList}>

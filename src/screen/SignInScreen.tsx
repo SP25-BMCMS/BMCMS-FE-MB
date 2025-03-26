@@ -120,6 +120,16 @@ const SignInScreen = () => {
       >
         <Text style={styles.nextButtonText}>Next</Text>
       </TouchableOpacity>
+      
+      {/* Don't have account link - Only show for resident tab */}
+      {activeTab === 'resident' && (
+        <View style={styles.signupContainer}>
+          <Text style={styles.signupText}>Don't have an account? </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+            <Text style={styles.signupLink}>Sign Up</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 };
@@ -196,6 +206,21 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: '500',
+  },
+  signupContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  signupText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  signupLink: {
+    fontSize: 16,
+    color: '#B77F2E',
+    fontWeight: '500',
+    textDecorationLine: 'underline',
   },
 });
 
