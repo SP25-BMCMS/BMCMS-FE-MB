@@ -21,9 +21,12 @@ const ResidentPropertyScreen = () => {
   const fetchProperties = async () => {
     try {
       const userProperties = await PropertyService.getCurrentUserProperties();
+      console.log('🏠 Fetched User Properties:', userProperties);
+      
       setProperties(userProperties);
     } catch (error) {
       console.error('Lỗi tải thuộc tính:', error);
+      setProperties([]);
     } finally {
       setLoading(false);
     }

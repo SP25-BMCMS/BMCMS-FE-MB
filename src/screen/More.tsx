@@ -14,6 +14,7 @@ import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AuthService } from '../service/Auth';
 
 type MoreScreenNavigationProp = StackNavigationProp<RootStackParamList, "More">;
 
@@ -58,7 +59,7 @@ const MoreScreen = () => {
 
   const handleLogout = async () => {
     try {
-      await AsyncStorage.removeItem("userData");
+      await AuthService.logout();
       navigation.navigate("MainApp");
     } catch (error) {
       console.error("Lỗi khi đăng xuất:", error);
