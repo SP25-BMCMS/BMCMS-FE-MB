@@ -2,16 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Icon2 from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Property } from '../types';
+import { Property, Apartment } from '../types';
 import { PropertyService } from '../service/propertyService';
+import { useNavigation } from '@react-navigation/native';
 
 // Mock data (giả sử đã được import từ file khác)
 // import { mockData } from '../mock/mockData';
-import { useNavigation } from '@react-navigation/native';
 
 const ResidentPropertyScreen = () => {
   const navigation = useNavigation();
-  const [properties, setProperties] = useState<Property[]>([]);
+  const [apartments, setApartments] = useState<Apartment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,24 +20,24 @@ const ResidentPropertyScreen = () => {
 
   const fetchProperties = async () => {
     try {
-      const userProperties = await PropertyService.getCurrentUserProperties();
-      console.log('🏠 Fetched User Properties:', userProperties);
+      const userApartments = await PropertyService.getCurrentUserProperties();
+      console.log('🏠 Fetched User Apartments:', userApartments);
       
-      setProperties(userProperties);
+      setApartments(userApartments);
     } catch (error) {
-      console.error('Lỗi tải thuộc tính:', error);
-      setProperties([]);
+      console.error('Lỗi tải apartments:', error);
+      setApartments([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCardPress = (property: Property) => {
+  const handleCardPress = (apartment: Apartment) => {
      //@ts-ignore
-    navigation.navigate('PropertyDetail', { property });
+    navigation.navigate('PropertyDetail', { apartment });
   };
 
-  const renderPropertyItem = ({ item }: { item: Property }) => {
+  const renderPropertyItem = ({ item }: { item: Apartment }) => {
     return (
       <TouchableOpacity 
         style={styles.propertyCard} 
@@ -50,15 +50,15 @@ const ResidentPropertyScreen = () => {
         </View>
         
         <Text style={styles.apartmentCode}>
-          {item.building}.{item.unit}
+          {item.apartmentName}
         </Text>
         
         <Text style={styles.buildingInfo}>
-          Tòa {item.building} | Căn hộ
+          Building {item.buildingId}
         </Text>
         
         <View style={styles.statusButton}>
-          <Text style={styles.statusText}>{item.status}</Text>
+          <Text style={styles.statusText}>Owned</Text>
         </View>
       </TouchableOpacity>
     );
@@ -74,9 +74,9 @@ const ResidentPropertyScreen = () => {
 
   return (
     <View style={styles.container}>
-      {properties.length > 0 ? (
+      {apartments.length > 0 ? (
         <FlatList
-          data={properties}
+          data={apartments}
           keyExtractor={(item, index) => index.toString()}
           renderItem={renderPropertyItem}
           contentContainerStyle={styles.listContainer}
@@ -89,9 +89,9 @@ const ResidentPropertyScreen = () => {
             resizeMode="contain"
           />
 
-          <Text style={styles.title}>Are you the owner or getting invitation by owner?</Text>
+          <Text style={styles.title}>You don't have any properties yet</Text>
           <Text style={styles.description}>
-          Track your home's payment, follow up the construction progress or simply manage your homes with our services
+            Contact us for more information about your properties
           </Text>
         </>
       )}

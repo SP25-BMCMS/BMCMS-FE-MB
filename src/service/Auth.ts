@@ -72,9 +72,18 @@ export const AuthService = {
   },
   async getCurrentUser(): Promise<any> {
     try {
+      // Log token để kiểm tra
+      const token = await AsyncStorage.getItem('accessToken');
+      console.log('🔐 Current User Token:', token ? 'EXISTS' : 'NOT FOUND');
+
       const response = await instance.get(VITE_CURRENT_USER_API);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ Get Current User Error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
       throw error;
     }
   },

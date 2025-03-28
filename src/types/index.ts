@@ -85,10 +85,17 @@ export interface Staff {
   name: string;
   otp: string;
 }
+
+//Apartment
 export interface Property {
   building: string;
   floor: number;
   unit: string;
   status: string;
+}
+
+export interface Apartment {
+  apartmentName: string;
+  buildingId: string;
 }
 
