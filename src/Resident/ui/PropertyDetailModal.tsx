@@ -1,4 +1,3 @@
-// src/screen/PropertyDetailScreen.tsx
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -7,6 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  useWindowDimensions,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { 
@@ -17,9 +17,6 @@ import {
 } from "@react-navigation/native";
 import { PropertyService } from "../../service/propertyService";
 import { PropertyDetail } from "../../types";
-
-
-
 
 // Define route params type
 type RootStackParamList = {
@@ -34,6 +31,8 @@ const PropertyDetailScreen = () => {
   
   const [property, setProperty] = useState<PropertyDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const { width } = useWindowDimensions();
+  const numColumns = width > 600 ? 4 : 2; // Ví dụ: 4 cột cho tablet, 2 cột cho điện thoại
 
   useEffect(() => {
     const fetchPropertyDetail = async () => {
@@ -70,11 +69,12 @@ const PropertyDetailScreen = () => {
     );
   }
 
+  // Giữ nguyên các dịch vụ nhưng thêm màu sắc
   const services = [
-    { id: "1", name: "Cư dân", icon: "people" },
-    { id: "2", name: "Sửa chữa trong nhà", icon: "build" },
-    { id: "3", name: "Sửa chữa ngoài nhà", icon: "apartment" },
-    { id: "4", name: "Dịch vụ khác", icon: "more-horiz" },
+    { id: "1", name: "Cư dân", icon: "people", color: "#4CAF50" },
+    { id: "2", name: "Sửa chữa trong nhà", icon: "build", color: "#FF5722" },
+    { id: "3", name: "Sửa chữa ngoài nhà", icon: "apartment", color: "#2196F3" },
+    { id: "4", name: "Dịch vụ khác", icon: "more-horiz", color: "#9C27B0" },
   ];
 
   const handleRepairInside = () => {
@@ -112,15 +112,21 @@ const PropertyDetailScreen = () => {
             <Text style={styles.detailLabel}>Mã căn hộ:</Text>
             <Text style={styles.detailValue}>{property.unit}</Text>
           </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Area:</Text>
+            <Text style={styles.detailValue}>{property.area}</Text>
+          </View>
         </View>
       </View>
 
       {/* Danh sách tiện ích */}
       <Text style={styles.sectionTitle}>Dịch vụ</Text>
       <FlatList
+        key={`flatlist-${numColumns}`}
         data={services}
         keyExtractor={(item) => item.id}
-        numColumns={2}
+        numColumns={4}
+        contentContainerStyle={styles.servicesContainer}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.serviceItem}
@@ -130,7 +136,9 @@ const PropertyDetailScreen = () => {
               }
             }}
           >
-            <Icon name={item.icon} size={40} color="#B77F2E" />
+            <View style={[styles.iconContainer, { backgroundColor: item.color }]}>
+              <Icon name={item.icon} size={24} color="#FFFFFF" />
+            </View>
             <Text style={styles.serviceText}>{item.name}</Text>
           </TouchableOpacity>
         )}
@@ -140,9 +148,20 @@ const PropertyDetailScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFF", padding: 16 },
-  header: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
-  backButton: { padding: 10, marginRight: 10 },
+  container: { 
+    flex: 1, 
+    backgroundColor: "#FFF", 
+    padding: 16 
+  },
+  header: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    marginBottom: 20 
+  },
+  backButton: { 
+    padding: 10, 
+    marginRight: 10 
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
@@ -189,16 +208,38 @@ const styles = StyleSheet.create({
     color: "#B77F2E",
     fontWeight: "bold",
   },
-  sectionTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
+  sectionTitle: { 
+    fontSize: 18, 
+    fontWeight: "bold", 
+    marginBottom: 15 
+  },
+  servicesContainer: {
+    paddingVertical: 10,
+  },
   serviceItem: {
     flex: 1,
     alignItems: "center",
-    padding: 20,
-    margin: 10,
-    backgroundColor: "#F2E8D9",
-    borderRadius: 12,
+    marginBottom: 20,
   },
-  serviceText: { fontSize: 16, fontWeight: "bold", marginTop: 5 },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  serviceText: { 
+    fontSize: 12, 
+    textAlign: "center",
+    color: "#333333",
+    maxWidth: 80,
+  },
   propertyDetails: {
     marginTop: 15,
     borderTopWidth: 1,

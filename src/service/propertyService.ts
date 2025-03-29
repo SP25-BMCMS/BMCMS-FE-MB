@@ -86,9 +86,9 @@ export const PropertyService = {
             description:data.building.description,
             unit: data.apartmentName,
             numberFloor: data.building.numberFloor, // You might want to add this to the API response
-            status: '', // You might want to add this to the API response
+            status: '', // You might want to add this to the API response   
             type: undefined,
-            area: undefined,
+            area: data.building.area?.name,
             owner: undefined,
             registrationDate: undefined,
           };

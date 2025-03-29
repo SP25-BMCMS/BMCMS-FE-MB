@@ -93,6 +93,7 @@ export interface Property {
   description:string;
   unit: string;
   status: string;
+  area:string;
 }
 
 export interface Apartment {
@@ -115,18 +116,25 @@ export interface PropertyDetailResponse {
       numberFloor:number;
       description:string;
       name: string;
-      areaId:string
+      areaId:string;
+      area:{
+        areaId:string;
+        name:string;
+      }
     }
   }
 }
 
-export interface PropertyDetail extends Property {
+export interface PropertyDetail {
+  building: string;
+  numberFloor: number;
+  description: string;
+  unit: string;
+  status: string;
+  area: string;
   apartmentId: string;
   buildingName: string;
-  description:string;
-  numberFloor: number;
   type?: string;
-  area?: string;
   owner?: string;
   registrationDate?: string;
 }

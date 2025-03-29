@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import Icon2 from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon2 from 'react-native-vector-icons/Entypo';
 import { Property, Apartment } from '../types';
 import { PropertyService } from '../service/propertyService';
 import { useNavigation } from '@react-navigation/native';
-
-// Mock data (giả sử đã được import từ file khác)
-// import { mockData } from '../mock/mockData';
 
 const ResidentPropertyScreen = () => {
   const navigation = useNavigation();

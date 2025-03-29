@@ -217,7 +217,7 @@ const RepairInsideScreen = () => {
           {property.building}
         </Text>
         <Text style={styles.subTitle}>
-          Tòa {property.description} | Căn hộ {property.unit}
+          Tòa {property.description} | Căn hộ {property.unit} | Area {property.area}
         </Text>
       </View>
 
