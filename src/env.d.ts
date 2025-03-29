@@ -5,4 +5,5 @@ declare module '@env'{
     export const VITE_LOGIN_RESIDENT: string;
     export const VITE_CURRENT_USER_API: string;
     export const VITE_GET_RESIDENT_PROPERTY: string;
+    export const VITE_GET_DETAIL_RESIDENT_PROPERTY:string;
 }

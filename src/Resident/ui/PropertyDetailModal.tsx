@@ -1,11 +1,12 @@
 // src/screen/PropertyDetailScreen.tsx
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { 
@@ -14,43 +15,60 @@ import {
   RouteProp, 
   NavigationProp 
 } from "@react-navigation/native";
+import { PropertyService } from "../../service/propertyService";
+import { PropertyDetail } from "../../types";
 
-// Define property type
-interface PropertyType {
-  building: string;
-  unit: string;
-  status: string;
-  floor: string;
-  type: string;
-  area: string;
-  owner: string;
-  registrationDate: string;
-}
+
+
 
 // Define route params type
 type RootStackParamList = {
-  PropertyDetail: { property?: PropertyType };
-  RepairInside: { property: PropertyType };
-};
-
-// Mock property data
-const MOCK_PROPERTY: PropertyType = {
-  building: "A",
-  unit: "1001",
-  status: "Đang ở",
-  floor: "10",
-  type: "2 phòng ngủ",
-  area: "75m²",
-  owner: "Nguyễn Văn A",
-  registrationDate: "01/01/2023"
+  PropertyDetail: { apartmentId?: string };
+  RepairInside: { property: PropertyDetail };
+  // ... other existing routes
 };
 
 const PropertyDetailScreen = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'PropertyDetail'>>();
   
-  // Use mock data if no property is passed
-  const property = route.params?.property || MOCK_PROPERTY;
+  const [property, setProperty] = useState<PropertyDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPropertyDetail = async () => {
+      try {
+        const apartmentId = route.params?.apartmentId;
+        
+        if (apartmentId) {
+          const propertyDetail = await PropertyService.getPropertyDetail(apartmentId);
+          setProperty(propertyDetail);
+        }
+      } catch (error) {
+        console.error('Error fetching property details:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPropertyDetail();
+  }, [route.params?.apartmentId]);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#B77F2E" />
+      </View>
+    );
+  }
+
+  if (!property) {
+    return (
+      <View style={styles.container}>
+        <Text>Không tìm thấy thông tin căn hộ</Text>
+      </View>
+    );
+  }
 
   const services = [
     { id: "1", name: "Cư dân", icon: "people" },
@@ -58,6 +76,12 @@ const PropertyDetailScreen = () => {
     { id: "3", name: "Sửa chữa ngoài nhà", icon: "apartment" },
     { id: "4", name: "Dịch vụ khác", icon: "more-horiz" },
   ];
+
+  const handleRepairInside = () => {
+    if (property) {
+      navigation.navigate("RepairInside", { property });
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -80,7 +104,7 @@ const PropertyDetailScreen = () => {
         <View style={styles.row}>
           <Text style={styles.projectName}>Lumière Boulevard</Text>
           <View style={styles.statusTag}>
-            <Text style={styles.statusText}>{property.status}</Text>
+            <Text style={styles.statusText}>{property.status || 'Chưa xác định'}</Text>
           </View>
         </View>
 
@@ -88,23 +112,11 @@ const PropertyDetailScreen = () => {
         <View style={styles.propertyDetails}>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Tầng:</Text>
-            <Text style={styles.detailValue}>{property.floor}</Text>
+            <Text style={styles.detailValue}>{property.floor || 'Chưa xác định'}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Loại:</Text>
-            <Text style={styles.detailValue}>{property.type}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Diện tích:</Text>
-            <Text style={styles.detailValue}>{property.area}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Chủ hộ:</Text>
-            <Text style={styles.detailValue}>{property.owner}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Ngày đăng ký:</Text>
-            <Text style={styles.detailValue}>{property.registrationDate}</Text>
+            <Text style={styles.detailLabel}>Mã căn hộ:</Text>
+            <Text style={styles.detailValue}>{property.unit}</Text>
           </View>
         </View>
       </View>
@@ -120,7 +132,7 @@ const PropertyDetailScreen = () => {
             style={styles.serviceItem}
             onPress={() => {
               if (item.name === "Sửa chữa trong nhà") {
-                navigation.navigate("RepairInside", { property });
+                handleRepairInside();
               }
             }}
           >
@@ -211,6 +223,11 @@ const styles = StyleSheet.create({
   detailValue: {
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

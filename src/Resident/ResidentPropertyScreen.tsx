@@ -34,7 +34,7 @@ const ResidentPropertyScreen = () => {
 
   const handleCardPress = (apartment: Apartment) => {
      //@ts-ignore
-    navigation.navigate('PropertyDetail', { apartment });
+    navigation.navigate('PropertyDetail', { apartmentId: apartment.apartmentId });
   };
 
   const renderPropertyItem = ({ item }: { item: Apartment }) => {
@@ -54,7 +54,7 @@ const ResidentPropertyScreen = () => {
         </Text>
         
         <Text style={styles.buildingInfo}>
-          Building {item.buildingId}
+          Building: {item.building?.name || item.buildingId}
         </Text>
         
         <View style={styles.statusButton}>

@@ -97,5 +97,31 @@ export interface Property {
 export interface Apartment {
   apartmentName: string;
   buildingId: string;
+  building?:{
+    name:string;
+  }
+}
+
+export interface PropertyDetailResponse {
+  isSuccess: boolean;
+  message: string;
+  data: {
+    apartmentName: string;
+    apartmentId: string;
+    building: {
+      buildingId: string;
+      name: string;
+      areaId:string
+    }
+  }
+}
+
+export interface PropertyDetail extends Property {
+  apartmentId: string;
+  buildingName: string;
+  type?: string;
+  area?: string;
+  owner?: string;
+  registrationDate?: string;
 }
 
