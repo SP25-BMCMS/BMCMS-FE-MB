@@ -89,7 +89,8 @@ export interface Staff {
 //Apartment
 export interface Property {
   building: string;
-  floor: number;
+  numberFloor: number;
+  description:string;
   unit: string;
   status: string;
 }
@@ -99,6 +100,7 @@ export interface Apartment {
   buildingId: string;
   building?:{
     name:string;
+    description:string;
   }
 }
 
@@ -110,6 +112,8 @@ export interface PropertyDetailResponse {
     apartmentId: string;
     building: {
       buildingId: string;
+      numberFloor:number;
+      description:string;
       name: string;
       areaId:string
     }
@@ -119,6 +123,8 @@ export interface PropertyDetailResponse {
 export interface PropertyDetail extends Property {
   apartmentId: string;
   buildingName: string;
+  description:string;
+  numberFloor: number;
   type?: string;
   area?: string;
   owner?: string;

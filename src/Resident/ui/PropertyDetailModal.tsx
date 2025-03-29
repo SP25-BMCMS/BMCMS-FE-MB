@@ -98,21 +98,15 @@ const PropertyDetailScreen = () => {
       {/* Card căn hộ */}
       <View style={styles.propertyInfo}>
         <Text style={styles.unitCode}>
-          {property.building}.{property.unit}
+          {property.building}
         </Text>
-        <Text style={styles.subTitle}>Tòa {property.building} | Căn hộ</Text>
-        <View style={styles.row}>
-          <Text style={styles.projectName}>Lumière Boulevard</Text>
-          <View style={styles.statusTag}>
-            <Text style={styles.statusText}>{property.status || 'Chưa xác định'}</Text>
-          </View>
-        </View>
-
+        <Text style={styles.subTitle}>Tòa {property.description} | Căn hộ {property.unit}</Text>
+      
         {/* Additional Property Details */}
         <View style={styles.propertyDetails}>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Tầng:</Text>
-            <Text style={styles.detailValue}>{property.floor || 'Chưa xác định'}</Text>
+            <Text style={styles.detailLabel}>Số Tầng:</Text>
+            <Text style={styles.detailValue}>{property.numberFloor || 'Chưa xác định'}</Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Mã căn hộ:</Text>

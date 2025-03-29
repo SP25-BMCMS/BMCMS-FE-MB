@@ -11,17 +11,21 @@ import {
 } from "react-native";
 import Modal from "react-native-modal";
 import Icon from "react-native-vector-icons/MaterialIcons";
-import { useNavigation, useRoute, NavigationProp } from "@react-navigation/native";
+import {
+  useNavigation,
+  useRoute,
+  NavigationProp,
+} from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { Property } from "../../types";
 
 // Define route params type
 type RootStackParamList = {
   RepairInside: { property: Property };
-  RepairReview: { 
-    property: Property; 
-    description: string; 
-    images: string[] 
+  RepairReview: {
+    property: Property;
+    description: string;
+    images: string[];
   };
 };
 
@@ -33,7 +37,8 @@ const RepairInsideScreen = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [description, setDescription] = useState("");
   const [images, setImages] = useState<string[]>([]);
-  const [isImageSourceModalVisible, setImageSourceModalVisible] = useState(false);
+  const [isImageSourceModalVisible, setImageSourceModalVisible] =
+    useState(false);
 
   const openImageSourceModal = () => {
     setImageSourceModalVisible(true);
@@ -74,7 +79,7 @@ const RepairInsideScreen = () => {
   const isImagesValid = images.length > 0;
 
   const renderStep = () => {
-    switch(currentStep) {
+    switch (currentStep) {
       case 1:
         return (
           <>
@@ -104,14 +109,14 @@ const RepairInsideScreen = () => {
             </TouchableOpacity>
           </>
         );
-      
+
       case 2:
         return (
           <>
             {/* Thêm hình ảnh */}
             <Text style={styles.label}>Thêm hình ảnh</Text>
-            <TouchableOpacity 
-              style={styles.imagePicker} 
+            <TouchableOpacity
+              style={styles.imagePicker}
               onPress={openImageSourceModal}
             >
               <Icon name="add-a-photo" size={30} color="#B77F2E" />
@@ -126,15 +131,15 @@ const RepairInsideScreen = () => {
             >
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Chọn nguồn ảnh</Text>
-                <TouchableOpacity 
-                  style={styles.modalOption} 
+                <TouchableOpacity
+                  style={styles.modalOption}
                   onPress={takePhoto}
                 >
                   <Icon name="camera-alt" size={24} color="#B77F2E" />
                   <Text style={styles.modalOptionText}>Chụp ảnh</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.modalOption} 
+                <TouchableOpacity
+                  style={styles.modalOption}
                   onPress={pickImageFromLibrary}
                 >
                   <Icon name="photo-library" size={24} color="#B77F2E" />
@@ -148,8 +153,8 @@ const RepairInsideScreen = () => {
               {images.map((image, index) => (
                 <View key={index} style={styles.imageWrapper}>
                   <Image source={{ uri: image }} style={styles.image} />
-                  <TouchableOpacity 
-                    style={styles.removeImageButton} 
+                  <TouchableOpacity
+                    style={styles.removeImageButton}
                     onPress={() => removeImage(index)}
                   >
                     <Icon name="close" size={20} color="#fff" />
@@ -158,7 +163,9 @@ const RepairInsideScreen = () => {
               ))}
             </View>
             {images.length === 0 && (
-              <Text style={styles.warningText}>Vui lòng thêm ít nhất 1 ảnh</Text>
+              <Text style={styles.warningText}>
+                Vui lòng thêm ít nhất 1 ảnh
+              </Text>
             )}
 
             {/* Nút điều hướng */}
@@ -180,7 +187,7 @@ const RepairInsideScreen = () => {
             </TouchableOpacity>
           </>
         );
-      
+
       default:
         return null;
     }
@@ -198,25 +205,20 @@ const RepairInsideScreen = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Yêu cầu sửa chữa</Text>
         <Text style={styles.stepIndicator}>
-          <Text style={{ color: '#000' }}>Bước </Text>
-          <Text style={{ color: '#B77F2E' }}>{currentStep}</Text>
-          <Text style={{ color: '#000' }}>/2</Text>
-          </Text>
+          <Text style={{ color: "#000" }}>Bước </Text>
+          <Text style={{ color: "#B77F2E" }}>{currentStep}</Text>
+          <Text style={{ color: "#000" }}>/2</Text>
+        </Text>
       </View>
 
       {/* Thông tin căn hộ */}
-      <View style={styles.propertyCard}>
-        <Text style={styles.propertyName}>LUMIÈRE</Text>
-        <Text style={styles.propertySubname}>Boulevard</Text>
-        <Text style={styles.apartmentCode}>
-          {property.building} {property.unit}
+      <View style={styles.propertyInfo}>
+        <Text style={styles.unitCode}>
+          {property.building}
         </Text>
-        <Text style={styles.buildingInfo}>
-          Tòa {property.building} | Tầng {property.floor}
+        <Text style={styles.subTitle}>
+          Tòa {property.description} | Căn hộ {property.unit}
         </Text>
-        <View style={styles.statusButton}>
-          <Text style={styles.statusText}>{property.status}</Text>
-        </View>
       </View>
 
       {/* Dynamic Step Rendering */}
@@ -227,15 +229,15 @@ const RepairInsideScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFF", padding: 16 },
-  header: { 
-    flexDirection: "row", 
-    alignItems: "center", 
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 20,
-    position: 'relative',
+    position: "relative",
   },
-  backButton: { 
-    padding: 10, 
-    marginRight: 10 
+  backButton: {
+    padding: 10,
+    marginRight: 10,
   },
   headerTitle: {
     flex: 1,
@@ -245,11 +247,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   stepIndicator: {
-    position: 'absolute', 
-    fontWeight:'bold',
+    position: "absolute",
+    fontWeight: "bold",
     right: 0,
-    fontSize: 14, 
-    backgroundColor:'#F8EDDC',
+    fontSize: 14,
+    backgroundColor: "#F8EDDC",
     padding: 10,
     borderRadius: 15,
   },
@@ -264,6 +266,42 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  propertyInfo: {
+    padding: 16,
+    backgroundColor: "#FDF7F0",
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  unitCode: {
+    fontSize: 24,
+    color: "#B77F2E",
+    textAlign: "center",
+    fontWeight: "bold",
+    marginBottom: 6,
+  },
+  subTitle: {
+    fontSize: 14,
+    textAlign: "center",
+    color: "#666",
+    marginBottom: 8,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  statusTag: {
+    backgroundColor: "#FFFF",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  statusText: {
+    fontSize: 12,
+    color: "#B77F2E",
+    fontWeight: "bold",
   },
   propertyName: {
     fontSize: 22,
@@ -292,10 +330,6 @@ const styles = StyleSheet.create({
     borderColor: "#B77F2E",
     borderRadius: 20,
   },
-  statusText: {
-    color: "#B77F2E",
-    fontWeight: "bold",
-  },
   label: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
   input: {
     borderWidth: 1,
@@ -316,13 +350,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: "center",
   },
-  imageContainer: { 
-    flexDirection: "row", 
-    marginTop: 10, 
-    flexWrap: "wrap" 
+  imageContainer: {
+    flexDirection: "row",
+    marginTop: 10,
+    flexWrap: "wrap",
   },
   imageWrapper: {
-    position: 'relative',
+    position: "relative",
     marginRight: 10,
     marginBottom: 10,
   },
@@ -332,10 +366,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   removeImageButton: {
-    position: 'absolute',
+    position: "absolute",
     top: -5,
     right: -5,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: "rgba(0,0,0,0.5)",
     borderRadius: 10,
     padding: 2,
   },
@@ -345,33 +379,33 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
   },
-  continueButtonText: { 
-    color: "#FFF", 
-    fontSize: 18, 
-    fontWeight: "bold" 
+  continueButtonText: {
+    color: "#FFF",
+    fontSize: 18,
+    fontWeight: "bold",
   },
   modal: {
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
     margin: 0,
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     padding: 22,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: "bold",
+    textAlign: "center",
     marginBottom: 15,
   },
   modalOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   modalOptionText: {
     marginLeft: 10,

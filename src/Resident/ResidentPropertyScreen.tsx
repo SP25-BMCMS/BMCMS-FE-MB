@@ -39,28 +39,41 @@ const ResidentPropertyScreen = () => {
 
   const renderPropertyItem = ({ item }: { item: Apartment }) => {
     return (
+      <>
       <TouchableOpacity 
         style={styles.propertyCard} 
         onPress={() => handleCardPress(item)}
         activeOpacity={0.8}
       >
-        <View style={styles.propertyHeader}>
-          <Text style={styles.propertyName}>LUMIÈRE</Text>
-          <Text style={styles.propertySubname}>Boulevard</Text>
+        <View style={styles.cardHeader}>
+          <View style={styles.projectBadge}>
+            <Text style={styles.projectBadgeText}>{item.building?.name}</Text>
+          </View>
+          <Text style={styles.apartmentCode}>{item.apartmentName}</Text>
         </View>
         
-        <Text style={styles.apartmentCode}>
-          {item.apartmentName}
-        </Text>
+        <View style={styles.cardBody}>
+          <View style={styles.cardBodyRow}>
+            <Icon name="apartment" size={20} color="#B77F2E" style={styles.icon} />
+            <Text style={styles.cardBodyText}>
+              Tòa: {item.building?.description || item.buildingId}
+            </Text>
+          </View>
+          <View style={styles.cardBodyRow}>
+            <Icon name="location-city" size={20} color="#B77F2E" style={styles.icon} />
+            <Text style={styles.cardBodyText}>
+              Dự án: {item.building?.name}
+            </Text>
+          </View>
+        </View>
         
-        <Text style={styles.buildingInfo}>
-          Building: {item.building?.name || item.buildingId}
-        </Text>
-        
-        <View style={styles.statusButton}>
-          <Text style={styles.statusText}>Owned</Text>
+        <View style={styles.cardFooter}>
+          <View style={styles.statusBadge}>
+            <Text style={styles.statusBadgeText}>Đang sở hữu</Text>
+          </View>
         </View>
       </TouchableOpacity>
+      </>
     );
   };
 
@@ -74,6 +87,9 @@ const ResidentPropertyScreen = () => {
 
   return (
     <View style={styles.container}>
+       <View style={styles.header}>
+        <Text style={styles.headerTitle}>PROPERTYS</Text>
+      </View>
       {apartments.length > 0 ? (
         <FlatList
           data={apartments}
@@ -96,14 +112,14 @@ const ResidentPropertyScreen = () => {
         </>
       )}
     </View>
+    
   );
 };
 
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    alignItems: 'center', 
-    backgroundColor: '#FFF', 
+    backgroundColor: '#F5F5F5', 
     padding: 16 
   },
   listContainer: {
@@ -111,51 +127,85 @@ const styles = StyleSheet.create({
     paddingVertical: 10
   },
   propertyCard: {
-    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 15,
     padding: 20,
-    marginBottom: 20,
-    backgroundColor: "#fff",
-    borderRadius: 12,
+    marginTop:10,
+    marginBottom: 15,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { 
+      width: 0, 
+      height: 4 
+    },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 6,
+    elevation: 5,
   },
-  propertyHeader: {
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 15,
   },
-  propertyName: {
-    fontSize: 28,
+  projectBadge: {
+    backgroundColor: '#B77F2E',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  projectBadgeText: {
+    color: '#FFFFFF',
     fontWeight: 'bold',
-    color: '#0d5c3f',
-    letterSpacing: 1,
-  },
-  propertySubname: {
-    fontSize: 18,
-    color: '#0d5c3f',
+    fontSize: 14,
   },
   apartmentCode: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  buildingInfo: {
-    fontSize: 18,
     color: '#333',
-    marginBottom: 20,
   },
-  statusButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 24,
-    borderWidth: 1,
-    borderColor: '#B77F2E',
+  cardBody: {
+    marginBottom: 15,
+  },
+  cardBodyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  icon: {
+    marginRight: 10,
+  },
+  cardBodyText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  cardFooter: {
+    alignItems: 'flex-end',
+  },
+  statusBadge: {
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 20,
   },
-  statusText: {
-    color: '#B77F2E',
-    fontWeight: 'bold',
+  statusBadgeText: {
+    color: '#2E7D32',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 60,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    textTransform: "uppercase",
   },
   //property
   image: { width: 300, height: 300, marginVertical: 20 },
