@@ -255,18 +255,6 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 15,
   },
-  propertyCard: {
-    alignItems: "center",
-    padding: 20,
-    marginBottom: 20,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
   propertyInfo: {
     padding: 16,
     backgroundColor: "#FDF7F0",
@@ -302,33 +290,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#B77F2E",
     fontWeight: "bold",
-  },
-  propertyName: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#0d5c3f",
-    letterSpacing: 1,
-  },
-  propertySubname: {
-    fontSize: 16,
-    color: "#0d5c3f",
-  },
-  apartmentCode: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginTop: 10,
-  },
-  buildingInfo: {
-    fontSize: 16,
-    color: "#333",
-    marginBottom: 10,
-  },
-  statusButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: "#B77F2E",
-    borderRadius: 20,
   },
   label: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
   input: {

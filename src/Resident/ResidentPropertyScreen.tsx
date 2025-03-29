@@ -207,7 +207,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textTransform: "uppercase",
   },
-  //property
   image: { width: 300, height: 300, marginVertical: 20 },
   title: { fontSize: 18, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
   description: { fontSize: 14, textAlign: 'center', color: '#666', paddingHorizontal: 20, marginBottom: 20 },

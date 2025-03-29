@@ -142,7 +142,7 @@ const PropertyDetailScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFF", padding: 16 },
   header: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
-  backButton: { padding: 10, marginRight: 10 }, // Nút Back có padding để dễ bấm hơn
+  backButton: { padding: 10, marginRight: 10 },
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
