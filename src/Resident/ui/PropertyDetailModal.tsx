@@ -8,17 +8,55 @@ import {
   FlatList,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { 
+  useNavigation, 
+  useRoute, 
+  RouteProp, 
+  NavigationProp 
+} from "@react-navigation/native";
+
+// Define property type
+interface PropertyType {
+  building: string;
+  unit: string;
+  status: string;
+  floor: string;
+  type: string;
+  area: string;
+  owner: string;
+  registrationDate: string;
+}
+
+// Define route params type
+type RootStackParamList = {
+  PropertyDetail: { property?: PropertyType };
+  RepairInside: { property: PropertyType };
+};
+
+// Mock property data
+const MOCK_PROPERTY: PropertyType = {
+  building: "A",
+  unit: "1001",
+  status: "Đang ở",
+  floor: "10",
+  type: "2 phòng ngủ",
+  area: "75m²",
+  owner: "Nguyễn Văn A",
+  registrationDate: "01/01/2023"
+};
 
 const PropertyDetailScreen = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
-  const { property } = route.params as { property: any };
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'PropertyDetail'>>();
+  
+  // Use mock data if no property is passed
+  const property = route.params?.property || MOCK_PROPERTY;
 
   const services = [
     { id: "1", name: "Cư dân", icon: "people" },
     { id: "2", name: "Sửa chữa trong nhà", icon: "build" },
-    { id: "3", name: "Sữa Chừa ngoài Nhà", icon: "apartment" },
+    { id: "3", name: "Sửa chữa ngoài nhà", icon: "apartment" },
+    { id: "4", name: "Dịch vụ khác", icon: "more-horiz" },
   ];
 
   return (
@@ -45,6 +83,30 @@ const PropertyDetailScreen = () => {
             <Text style={styles.statusText}>{property.status}</Text>
           </View>
         </View>
+
+        {/* Additional Property Details */}
+        <View style={styles.propertyDetails}>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Tầng:</Text>
+            <Text style={styles.detailValue}>{property.floor}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Loại:</Text>
+            <Text style={styles.detailValue}>{property.type}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Diện tích:</Text>
+            <Text style={styles.detailValue}>{property.area}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Chủ hộ:</Text>
+            <Text style={styles.detailValue}>{property.owner}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Ngày đăng ký:</Text>
+            <Text style={styles.detailValue}>{property.registrationDate}</Text>
+          </View>
+        </View>
       </View>
 
       {/* Danh sách tiện ích */}
@@ -58,7 +120,6 @@ const PropertyDetailScreen = () => {
             style={styles.serviceItem}
             onPress={() => {
               if (item.name === "Sửa chữa trong nhà") {
-                //@ts-ignore
                 navigation.navigate("RepairInside", { property });
               }
             }}
@@ -132,6 +193,25 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   serviceText: { fontSize: 16, fontWeight: "bold", marginTop: 5 },
+  propertyDetails: {
+    marginTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    paddingTop: 10,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
 });
 
 export default PropertyDetailScreen;
