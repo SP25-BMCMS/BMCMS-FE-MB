@@ -85,10 +85,57 @@ export interface Staff {
   name: string;
   otp: string;
 }
+
+//Apartment
 export interface Property {
   building: string;
-  floor: number;
+  numberFloor: number;
+  description:string;
   unit: string;
   status: string;
+  area:string;
+}
+
+export interface Apartment {
+  apartmentName: string;
+  buildingId: string;
+  building?:{
+    name:string;
+    description:string;
+  }
+}
+
+export interface PropertyDetailResponse {
+  isSuccess: boolean;
+  message: string;
+  data: {
+    apartmentName: string;
+    apartmentId: string;
+    building: {
+      buildingId: string;
+      numberFloor:number;
+      description:string;
+      name: string;
+      areaId:string;
+      area:{
+        areaId:string;
+        name:string;
+      }
+    }
+  }
+}
+
+export interface PropertyDetail {
+  building: string;
+  numberFloor: number;
+  description: string;
+  unit: string;
+  status: string;
+  area: string;
+  apartmentId: string;
+  buildingName: string;
+  type?: string;
+  owner?: string;
+  registrationDate?: string;
 }
 

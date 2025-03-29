@@ -14,13 +14,42 @@ instance.interceptors.request.use(
   async (config) => {
     const token = await AsyncStorage.getItem('accessToken');
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers['Authorization'] = `Bearer ${token}`;
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
+// Thêm interceptor response để xử lý token hết hạn
+instance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Nếu lỗi do token hết hạn
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        // Xóa toàn bộ thông tin đăng nhập
+        await AsyncStorage.multiRemove([
+          'accessToken', 
+          'refreshToken', 
+          'userId', 
+          'username', 
+          'userData'
+        ]);
+
+        // Có thể thêm logic refresh token ở đây nếu cần
+      } catch (storageError) {
+        console.error('Lỗi xóa token:', storageError);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export const AuthService = {
   async loginResident(payload: LoginPayload): Promise<LoginResponse | null> {
@@ -43,9 +72,18 @@ export const AuthService = {
   },
   async getCurrentUser(): Promise<any> {
     try {
+      // Log token để kiểm tra
+      const token = await AsyncStorage.getItem('accessToken');
+      console.log('🔐 Current User Token:', token ? 'EXISTS' : 'NOT FOUND');
+
       const response = await instance.get(VITE_CURRENT_USER_API);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ Get Current User Error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
       throw error;
     }
   },
@@ -53,12 +91,34 @@ export const AuthService = {
 
   async logout(): Promise<void> {
     try {
-      await AsyncStorage.removeItem('accessToken');
-      await AsyncStorage.removeItem('refreshToken');
-      await AsyncStorage.removeItem('userId');
-      await AsyncStorage.removeItem('username');
+      console.log('🚪 Logging out...');
+      
+      // Log các key trước khi xóa
+      const allKeys = await AsyncStorage.getAllKeys();
+      console.log('🔑 All Storage Keys before logout:', allKeys);
+
+      // Xóa tất cả thông tin liên quan đến người dùng
+      await AsyncStorage.multiRemove([
+        'accessToken', 
+        'refreshToken', 
+        'userId', 
+        'username', 
+        'userData'
+      ]);
+
+      // Log các key sau khi xóa
+      const remainingKeys = await AsyncStorage.getAllKeys();
+      console.log('🔑 Remaining Storage Keys after logout:', remainingKeys);
+
+      // Nếu sử dụng axios instance, hãy clear headers
+      if (instance.defaults.headers) {
+        delete instance.defaults.headers.common['Authorization'];
+        console.log('🔒 Authorization header cleared');
+      }
+
+      console.log('✅ Logout successful');
     } catch (error) {
-      console.error("Lỗi đăng xuất:", error);
+      console.error("❌ Lỗi đăng xuất:", error);
     }
   }
 };
