@@ -15,7 +15,14 @@ export type RootStackParamList = {
   More: undefined;
   PropertyDetail: undefined;
   RepairInside: { property?: Property };
-  RepairReview: { property: Property; description: string; images: string[] };
+  RepairReview: { 
+    property: Property; 
+    description: string; 
+    images: string[]; 
+    buildingDetailId?: string;
+    selectedRoom?: keyof typeof CRACK_POSITIONS;
+    selectedPosition?: string;
+  };
   RepairSuccess: undefined;
   MyReport: undefined;
 };
@@ -134,8 +141,74 @@ export interface PropertyDetail {
   area: string;
   apartmentId: string;
   buildingName: string;
+  buildingId?: string;
   type?: string;
   owner?: string;
   registrationDate?: string;
 }
+
+// Crack Reporting Types
+export interface CrackReportPayload {
+  buildingDetailId: string;
+  description: string;
+  isPrivatesAsset?: boolean;
+  position: string;
+  files: string[]; // Image URIs
+}
+
+export interface CrackDetails {
+  crackDetailsId: string;
+  crackReportId: string;
+  photoUrl: string;
+  severity: 'Low' | 'Medium' | 'High';
+  aiDetectionUrl: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CrackReport {
+  crackReportId: string;
+  buildingDetailId: string;
+  description: string;
+  isPrivatesAsset: boolean;
+  position: string;
+  status: string;
+  reportedBy: string;
+  verifiedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CrackReportResponse {
+  isSuccess: boolean;
+  message: string;
+  data: Array<{
+    crackReport: CrackReport;
+    crackDetails: CrackDetails[];
+  }>;
+}
+
+// Positions for crack reporting
+export const CRACK_POSITIONS = {
+  KITCHEN: {
+    WALL: 'kitchen/wall',
+    FLOOR: 'kitchen/floor',
+    CEILING: 'kitchen/ceiling',
+  },
+  LIVING_ROOM: {
+    WALL: 'living-room/wall',
+    FLOOR: 'living-room/floor',
+    CEILING: 'living-room/ceiling',
+  },
+  BEDROOM: {
+    WALL: 'bedroom/wall',
+    FLOOR: 'bedroom/floor',
+    CEILING: 'bedroom/ceiling',
+  },
+  BATHROOM: {
+    WALL: 'bathroom/wall',
+    FLOOR: 'bathroom/floor',
+    CEILING: 'bathroom/ceiling',
+  }
+};
 

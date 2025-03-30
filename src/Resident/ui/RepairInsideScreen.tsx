@@ -8,6 +8,8 @@ import {
   Image,
   Keyboard,
   ScrollView,
+  Platform,
+  Alert,
 } from "react-native";
 import Modal from "react-native-modal";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -18,6 +20,9 @@ import {
 } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { Property } from "../../types";
+import { CRACK_POSITIONS } from "../../types";
+import { Picker } from "@react-native-picker/picker";
+import { PropertyService } from "../../service/propertyService";
 
 // Define route params type
 type RootStackParamList = {
@@ -26,6 +31,9 @@ type RootStackParamList = {
     property: Property;
     description: string;
     images: string[];
+    buildingDetailId?: string;
+    selectedRoom?: keyof typeof CRACK_POSITIONS;
+    selectedPosition?: string;
   };
 };
 
@@ -37,8 +45,30 @@ const RepairInsideScreen = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [description, setDescription] = useState("");
   const [images, setImages] = useState<string[]>([]);
-  const [isImageSourceModalVisible, setImageSourceModalVisible] =
-    useState(false);
+  const [isImageSourceModalVisible, setImageSourceModalVisible] = useState(false);
+  
+  // New state for crack reporting
+  const [selectedRoom, setSelectedRoom] = useState<keyof typeof CRACK_POSITIONS | ''>('');
+  const [selectedPosition, setSelectedPosition] = useState('');
+  const [buildingDetailId, setBuildingDetailId] = useState<string | undefined>(undefined);
+
+  // Fetch building detail ID when screen loads
+  React.useEffect(() => {
+    const fetchBuildingDetailId = async () => {
+      try {
+        // Assuming property has an apartmentId
+        const propertyDetail = await PropertyService.getPropertyDetail(property.unit);
+        if (propertyDetail) {
+          setBuildingDetailId(propertyDetail.apartmentId);
+        }
+      } catch (error) {
+        console.error("Error fetching building detail:", error);
+        Alert.alert("Lỗi", "Không thể tải thông tin chi tiết tòa nhà");
+      }
+    };
+
+    fetchBuildingDetailId();
+  }, [property]);
 
   const openImageSourceModal = () => {
     setImageSourceModalVisible(true);
@@ -77,6 +107,30 @@ const RepairInsideScreen = () => {
 
   const isDescriptionValid = description.trim().length >= 5;
   const isImagesValid = images.length > 0;
+  const isPositionValid = selectedRoom && selectedPosition;
+
+  const handleContinueToReview = () => {
+    // Validate all required fields
+    if (!isDescriptionValid) {
+      Alert.alert("Lỗi", "Vui lòng nhập mô tả chi tiết (ít nhất 5 ký tự)");
+      return;
+    }
+
+    if (!isPositionValid) {
+      Alert.alert("Lỗi", "Vui lòng chọn phòng và vị trí vết nứt");
+      return;
+    }
+
+    // Navigate to review screen with all necessary data
+    navigation.navigate("RepairReview", {
+      property,
+      description,
+      images,
+      buildingDetailId,
+      selectedRoom,
+      selectedPosition
+    });
+  };
 
   const renderStep = () => {
     switch (currentStep) {
@@ -96,13 +150,62 @@ const RepairInsideScreen = () => {
               <Text style={styles.warningText}>Nhập ít nhất 5 ký tự mô tả</Text>
             )}
 
+            {/* Chọn phòng */}
+            <Text style={styles.label}>Chọn phòng</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={selectedRoom}
+                onValueChange={(itemValue: string) => {
+                  const room = itemValue as keyof typeof CRACK_POSITIONS;
+                  setSelectedRoom(room || '');
+                  setSelectedPosition(''); // Reset position when room changes
+                }}
+              >
+                <Picker.Item label="Chọn phòng" value="" />
+                {Object.keys(CRACK_POSITIONS).map((room) => (
+                  <Picker.Item 
+                    key={room} 
+                    label={room.replace(/_/g, ' ')} 
+                    value={room} 
+                  />
+                ))}
+              </Picker>
+            </View>
+
+            {/* Chọn vị trí */}
+            {selectedRoom && (
+              <>
+                <Text style={styles.label}>Chọn vị trí</Text>
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={selectedPosition}
+                    onValueChange={(itemValue: string) => setSelectedPosition(itemValue)}
+                  >
+                    <Picker.Item label="Chọn vị trí" value="" />
+                    {Object.entries(CRACK_POSITIONS[selectedRoom as keyof typeof CRACK_POSITIONS]).map(([key, value]) => (
+                      <Picker.Item 
+                        key={key} 
+                        label={key.replace(/_/g, ' ')} 
+                        value={value} 
+                      />
+                    ))}
+                  </Picker>
+                </View>
+              </>
+            )}
+
             {/* Nút Tiếp tục */}
             <TouchableOpacity
               style={[
                 styles.continueButton,
-                { backgroundColor: isDescriptionValid ? "#B77F2E" : "#ccc" },
+                { 
+                  backgroundColor: 
+                    isDescriptionValid && isPositionValid 
+                      ? "#B77F2E" 
+                      : "#ccc" 
+                },
               ]}
-              disabled={!isDescriptionValid}
+              disabled={!(isDescriptionValid && isPositionValid)}
               onPress={() => setCurrentStep(2)}
             >
               <Text style={styles.continueButtonText}>Tiếp tục</Text>
@@ -175,13 +278,7 @@ const RepairInsideScreen = () => {
                 { backgroundColor: isImagesValid ? "#B77F2E" : "#ccc" },
               ]}
               disabled={!isImagesValid}
-              onPress={() => {
-                navigation.navigate("RepairReview", {
-                  property,
-                  description,
-                  images,
-                });
-              }}
+              onPress={handleContinueToReview}
             >
               <Text style={styles.continueButtonText}>Tiếp tục</Text>
             </TouchableOpacity>
@@ -217,7 +314,7 @@ const RepairInsideScreen = () => {
           {property.building}
         </Text>
         <Text style={styles.subTitle}>
-          Tòa {property.description} | Căn hộ {property.unit} | Area {property.area}
+          Tòa {property.description} | Căn hộ {property.unit} 
         </Text>
       </View>
 
@@ -371,6 +468,12 @@ const styles = StyleSheet.create({
   modalOptionText: {
     marginLeft: 10,
     fontSize: 16,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    marginBottom: 10,
   },
 });
 

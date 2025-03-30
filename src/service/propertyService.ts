@@ -81,12 +81,13 @@ export const PropertyService = {
           const { data } = response.data;
           return {
             apartmentId: data.apartmentId,
+            buildingId: data.building.buildingId,
             building: data.building.name,
             buildingName: data.building.name,
-            description:data.building.description,
+            description: data.building.description,
             unit: data.apartmentName,
-            numberFloor: data.building.numberFloor, // You might want to add this to the API response
-            status: '', // You might want to add this to the API response   
+            numberFloor: data.building.numberFloor,
+            status: '',
             type: undefined,
             area: data.building.area?.name,
             owner: undefined,
