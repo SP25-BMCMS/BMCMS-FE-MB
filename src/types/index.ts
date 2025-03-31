@@ -97,14 +97,20 @@ export interface Staff {
 export interface Property {
   building: string;
   numberFloor: number;
-  description:string;
+  description: string;
   unit: string;
   status: string;
-  area:string;
+  area: string;
+  buildingDetailId?: string;
+  buildingDetails?: Array<{
+    buildingDetailId: string;
+    name: string;
+  }>;
 }
 
 export interface Apartment {
   apartmentName: string;
+  apartmentId?: string;
   buildingId: string;
   building?:{
     name:string;
@@ -118,15 +124,24 @@ export interface PropertyDetailResponse {
   data: {
     apartmentName: string;
     apartmentId: string;
-    building: {
-      buildingId: string;
-      numberFloor:number;
-      description:string;
+    buildingDetails: {
+      buildingDetailId: string;
       name: string;
-      areaId:string;
-      area:{
-        areaId:string;
-        name:string;
+      building: {
+        buildingId: string;
+        name: string;
+        description: string;
+        numberFloor: number;
+        imageCover: string;
+        areaId: string;
+        Status: string;
+        area: {
+          areaId: string;
+          name: string;
+          description: string;
+          createdAt: string;
+          updatedAt: string;
+        };
       }
     }
   }
@@ -145,6 +160,11 @@ export interface PropertyDetail {
   type?: string;
   owner?: string;
   registrationDate?: string;
+  buildingDetailId?: string;
+  buildingDetails?: Array<{
+    buildingDetailId: string;
+    name: string;
+  }>;
 }
 
 // Crack Reporting Types

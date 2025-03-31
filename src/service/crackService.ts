@@ -47,18 +47,18 @@ export const CrackService = {
       const requestBody = {
         buildingDetailId: payload.buildingDetailId,
         description: payload.description.trim(),
-        isPrivatesAsset: payload.isPrivatesAsset ?? true,
-        position: payload.position,
+        isPrivatesAsset: payload.isPrivatesAsset !== undefined ? payload.isPrivatesAsset : true,
+        position: payload.position || '',
       };
 
       // Log chi tiết request body
       console.log('🔍 Request Body Details:', {
         buildingDetailId: payload.buildingDetailId,
         description: payload.description.trim(),
-        isPrivatesAsset: payload.isPrivatesAsset ?? true,
-        position: payload.position,
+        isPrivatesAsset: payload.isPrivatesAsset !== undefined ? payload.isPrivatesAsset : true,
+        position: payload.position || '',
         positionType: typeof payload.position,
-        positionIsEmpty: payload.position === ''
+        positionIsEmpty: !payload.position
       });
 
       // Prepare files for upload

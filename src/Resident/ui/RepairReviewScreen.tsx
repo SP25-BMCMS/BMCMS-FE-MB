@@ -115,8 +115,12 @@ const RepairReviewScreen = () => {
 
         <Text style={styles.label}>Vị trí vết nứt</Text>
         <Text style={styles.position}>
-          {selectedRoom && selectedPosition 
-            ? `${selectedRoom.replace(/_/g, ' ')} - ${selectedPosition.replace('/', ' ')}` 
+          {selectedPosition 
+            ? selectedPosition
+                .split('/')
+                .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                .join(' > ')
+                .replace(/-/g, ' ')
             : 'Chưa xác định'}
         </Text>
 

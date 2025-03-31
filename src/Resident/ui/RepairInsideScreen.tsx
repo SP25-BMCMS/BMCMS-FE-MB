@@ -55,8 +55,19 @@ const RepairInsideScreen = () => {
 
   // Fetch building detail ID when screen loads
   React.useEffect(() => {
-    // Hardcoded buildingDetailId for testing
-    setBuildingDetailId('bf9b7211-13e4-4e95-9932-3b7acb010d95');
+    // Lấy buildingDetailId từ property
+    if (property && property.buildingDetailId) {
+      setBuildingDetailId(property.buildingDetailId);
+      console.log('🔍 BuildingDetailId từ Property:', property.buildingDetailId);
+    } else {
+      console.log('❌ Không tìm thấy buildingDetailId trong property');
+      // Lấy buildingDetailId từ buildingDetails array nếu có
+      if (property && property.buildingDetails && property.buildingDetails.length > 0) {
+        const firstBuildingDetail = property.buildingDetails[0];
+        setBuildingDetailId(firstBuildingDetail.buildingDetailId);
+        console.log('🔍 Sử dụng buildingDetailId đầu tiên:', firstBuildingDetail.buildingDetailId);
+      }
+    }
   }, [property]);
 
   const openImageSourceModal = () => {
@@ -109,6 +120,9 @@ const RepairInsideScreen = () => {
       Alert.alert("Lỗi", "Vui lòng chọn phòng và vị trí vết nứt");
       return;
     }
+    
+    // Sử dụng position từ CRACK_POSITIONS mà không thêm thông tin
+    console.log('🔍 Position to send:', selectedPosition);
 
     // Navigate to review screen with all necessary data
     navigation.navigate("RepairReview", {
