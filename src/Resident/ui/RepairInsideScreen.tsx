@@ -23,6 +23,7 @@ import { Property } from "../../types";
 import { CRACK_POSITIONS } from "../../types";
 import { Picker } from "@react-native-picker/picker";
 import { PropertyService } from "../../service/propertyService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Define route params type
 type RootStackParamList = {
@@ -54,20 +55,8 @@ const RepairInsideScreen = () => {
 
   // Fetch building detail ID when screen loads
   React.useEffect(() => {
-    const fetchBuildingDetailId = async () => {
-      try {
-        // Assuming property has an apartmentId
-        const propertyDetail = await PropertyService.getPropertyDetail(property.unit);
-        if (propertyDetail) {
-          setBuildingDetailId(propertyDetail.apartmentId);
-        }
-      } catch (error) {
-        console.error("Error fetching building detail:", error);
-        Alert.alert("Lỗi", "Không thể tải thông tin chi tiết tòa nhà");
-      }
-    };
-
-    fetchBuildingDetailId();
+    // Hardcoded buildingDetailId for testing
+    setBuildingDetailId('bf9b7211-13e4-4e95-9932-3b7acb010d95');
   }, [property]);
 
   const openImageSourceModal = () => {
@@ -179,16 +168,25 @@ const RepairInsideScreen = () => {
                 <View style={styles.pickerContainer}>
                   <Picker
                     selectedValue={selectedPosition}
-                    onValueChange={(itemValue: string) => setSelectedPosition(itemValue)}
+                    onValueChange={(itemValue: string) => {
+                      console.log('🔍 Selected Position:', {
+                        room: selectedRoom,
+                        position: itemValue
+                      });
+                      setSelectedPosition(itemValue);
+                    }}
                   >
                     <Picker.Item label="Chọn vị trí" value="" />
-                    {Object.entries(CRACK_POSITIONS[selectedRoom as keyof typeof CRACK_POSITIONS]).map(([key, value]) => (
-                      <Picker.Item 
-                        key={key} 
-                        label={key.replace(/_/g, ' ')} 
-                        value={value} 
-                      />
-                    ))}
+                    {Object.entries(CRACK_POSITIONS[selectedRoom as keyof typeof CRACK_POSITIONS]).map(([key, value]) => {
+                      console.log('🔍 Position Option:', { key, value });
+                      return (
+                        <Picker.Item 
+                          key={key} 
+                          label={key.replace(/_/g, ' ')} 
+                          value={value} 
+                        />
+                      );
+                    })}
                   </Picker>
                 </View>
               </>

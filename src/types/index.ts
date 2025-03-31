@@ -151,9 +151,9 @@ export interface PropertyDetail {
 export interface CrackReportPayload {
   buildingDetailId: string;
   description: string;
+  position?: string;
+  files: string[];
   isPrivatesAsset?: boolean;
-  position: string;
-  files: string[]; // Image URIs
 }
 
 export interface CrackDetails {

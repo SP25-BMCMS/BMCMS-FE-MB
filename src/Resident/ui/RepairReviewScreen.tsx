@@ -40,7 +40,7 @@ const RepairReviewScreen = () => {
     images,
     buildingDetailId,
     selectedRoom,
-    selectedPosition
+    selectedPosition,
   } = route.params;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,6 +52,15 @@ const RepairReviewScreen = () => {
       return;
     }
 
+    // Log chi tiết về báo cáo
+    console.log('🔍 Crack Report Details:', {
+      buildingDetailId,
+      description,
+      selectedRoom,
+      selectedPosition,
+      position: selectedPosition || ''
+    });
+
     setIsSubmitting(true);
 
     try {
@@ -60,7 +69,7 @@ const RepairReviewScreen = () => {
         description,
         position: selectedPosition || '',
         files: images,
-        isPrivatesAsset: true
+        isPrivatesAsset: true,
       });
 
       if (response) {

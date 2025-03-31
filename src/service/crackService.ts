@@ -40,23 +40,35 @@ export const CrackService = {
         return null;
       }
 
+      // Log buildingDetailId for debugging
+      console.log('🔍 BuildingDetailId:', payload.buildingDetailId);
+
       // Prepare the request body
       const requestBody = {
         buildingDetailId: payload.buildingDetailId,
         description: payload.description.trim(),
         isPrivatesAsset: payload.isPrivatesAsset ?? true,
         position: payload.position,
-        reportedBy: userId
       };
 
-      console.log('Request Body:', requestBody);
+      // Log chi tiết request body
+      console.log('🔍 Request Body Details:', {
+        buildingDetailId: payload.buildingDetailId,
+        description: payload.description.trim(),
+        isPrivatesAsset: payload.isPrivatesAsset ?? true,
+        position: payload.position,
+        positionType: typeof payload.position,
+        positionIsEmpty: payload.position === ''
+      });
 
       // Prepare files for upload
       const formData = new FormData();
       
       // Add text fields to formData
       Object.entries(requestBody).forEach(([key, value]) => {
-        formData.append(key, value.toString());
+        if (value !== undefined) {
+          formData.append(key, value.toString());
+        }
       });
 
       // Add files with error handling
@@ -87,13 +99,19 @@ export const CrackService = {
 
       // Send the request
       try {
+        // Kiểm tra token trước khi gửi request
+        const accessToken = await AsyncStorage.getItem('accessToken');
+        console.log('🔐 Access Token:', accessToken ? 'EXISTS' : 'NOT FOUND');
+
         const response = await instance.post<CrackReportResponse>(
           VITE_SEND_DESPCRIPTION_CRACK, 
           formData,
           {
             baseURL: VITE_API_SECRET,
             headers: {
-              'Content-Type': 'multipart/form-data'
+              'Content-Type': 'multipart/form-data',
+              // Thêm Authorization header một cách rõ ràng
+              ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {})
             },
             timeout: 30000 // 30 seconds timeout
           }
@@ -110,8 +128,18 @@ export const CrackService = {
         console.error('Status:', apiError.response?.status);
         console.error('Data:', apiError.response?.data);
         console.error('Message:', apiError.message);
-        console.error('Config:', apiError.config);
+        console.error('Config:', JSON.stringify(apiError.config, null, 2));
+        console.error('Full Error Object:', JSON.stringify(apiError, null, 2));
         console.groupEnd();
+
+        // Log chi tiết về hệ thống
+        console.error('🚨 System Error Details:', {
+          systemMessage: 'Unexpected system error occurred',
+          timestamp: new Date().toISOString(),
+          errorType: apiError.name,
+          errorCode: apiError.code,
+          networkError: apiError.isAxiosError ? 'Yes' : 'No'
+        });
 
         // Throw a more specific error for better error handling
         throw new Error(
