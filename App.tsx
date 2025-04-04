@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import BottomTabNavigator from './src/components/Navigation/BottomTabNavigator';
+import AppNavigator from './src/components/Navigation/AppNavigator';
 import SignInScreen from './src/screen/SignInScreen';
 import OTPScreen from './src/screen/OTPScreen';
 import MoreScreen from './src/screen/More';
@@ -12,7 +12,7 @@ import RepairReviewScreen from './src/Resident/ui/RepairReviewScreen';
 import RepairSuccessScreen from './src/Resident/ui/RepairSuccessScreen';
 import MyReportScreen from './src/Resident/MyReportScreen';
 import SignUpScreen from './src/screen/SignUpScreen';
-import FlashMessage, { showMessage } from "react-native-flash-message";
+import FlashMessage from "react-native-flash-message";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -21,7 +21,7 @@ const App = () => {
     <NavigationContainer>
       <FlashMessage position="top" />
       <Stack.Navigator screenOptions={{ headerShown: false }} >
-        <Stack.Screen name="MainApp" component={BottomTabNavigator} />
+        <Stack.Screen name="MainApp" component={AppNavigator} />
         <Stack.Screen name="OTPScreen" component={OTPScreen} />
         <Stack.Screen name="SignIn" component={SignInScreen} />
         <Stack.Screen name='SignUp' component={SignUpScreen}/>

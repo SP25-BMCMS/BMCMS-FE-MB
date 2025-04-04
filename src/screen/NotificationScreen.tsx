@@ -15,18 +15,24 @@ const NotificationScreen = ({onReadAll }: {onReadAll: () => void }) => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userType, setUserType] = useState<string | null>(null);
 
   const fetchUserStatus = async () => {
     const user = await AsyncStorage.getItem("userData");
+    const type = await AsyncStorage.getItem("userType");
     setIsLoggedIn(!!user);
+    setUserType(type);
   };
 
   const fetchNotifications = async () => {
     const userString = await AsyncStorage.getItem("userData");
+    const userType = await AsyncStorage.getItem("userType");
+    
     if (!userString) return;
 
     const user = JSON.parse(userString);
-    const userKey = user.phone.toString();
+    // Xác định key khác nhau cho staff và resident
+    const userKey = userType === 'staff' ? user.username : user.phone.toString();
 
     setLoading(true);
     const data = await AsyncStorage.getItem(`notifications_${userKey}`);
@@ -48,10 +54,14 @@ const NotificationScreen = ({onReadAll }: {onReadAll: () => void }) => {
 
   const deleteNotification = async (id: string) => {
     const userString = await AsyncStorage.getItem("userData");
+    const userType = await AsyncStorage.getItem("userType");
+    
     if (!userString) return;
   
     const user = JSON.parse(userString);
-    const userKey = user.phone.toString();
+    // Xác định key khác nhau cho staff và resident
+    const userKey = userType === 'staff' ? user.username : user.phone.toString();
+    
     const data = await AsyncStorage.getItem(`notifications_${userKey}`);
     const parsed = data ? JSON.parse(data) : [];
   
@@ -114,7 +124,9 @@ const NotificationScreen = ({onReadAll }: {onReadAll: () => void }) => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>NOTIFICATION</Text>
+        <Text style={styles.headerTitle}>
+          {userType === 'staff' ? 'STAFF NOTIFICATIONS' : 'NOTIFICATIONS'}
+        </Text>
       </View>
 
       {notifications.length === 0 ? (
@@ -126,7 +138,12 @@ const NotificationScreen = ({onReadAll }: {onReadAll: () => void }) => {
             resizeMode="contain"
           />
           <Text style={styles.noNotificationText}>No notification</Text>
-          <Text style={styles.subText}>You don't have any notification yet</Text>
+          <Text style={styles.subText}>
+            {userType === 'staff' 
+              ? "You don't have any staff notifications yet" 
+              : "You don't have any notifications yet"
+            }
+          </Text>
 
           <TouchableOpacity
             style={styles.retryButton}

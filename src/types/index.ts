@@ -1,9 +1,18 @@
-export type BottomTabParamList = {
+export type ResidentBottomTabParamList = {
   Home: undefined;
   Property: undefined;
   Notification: undefined;
   Account: undefined;
 };
+
+export type StaffBottomTabParamList = {
+  Task: undefined;
+  Notification: undefined;
+  Account: undefined;
+};
+
+export type BottomTabParamList = ResidentBottomTabParamList & StaffBottomTabParamList;
+
 export type RootStackParamList = {
   MainApp: undefined;
   SignIn: undefined;
