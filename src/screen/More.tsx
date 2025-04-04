@@ -15,6 +15,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthService } from '../service/Auth';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type MoreScreenNavigationProp = StackNavigationProp<RootStackParamList, "More">;
 
@@ -23,6 +24,43 @@ const MoreScreen = () => {
   const [userData, setUserData] = React.useState<any>(null);
 
   const [anim] = useState(new Animated.Value(0));
+
+  // Hàm lấy màu sắc dựa trên vị trí của staff
+  const getPositionColor = () => {
+    // Nếu không có thông tin người dùng hoặc không phải staff
+    if (!userData || !userData.role) return "#B77F2E";
+    
+    // Kiểm tra vị trí từ role
+    const position = userData.role.toLowerCase();
+    
+    if (position.includes('leader') || position.includes('1')) {
+      return '#4CAF50'; // Xanh lá cho Leader
+    } else if (position.includes('maintenance') || position.includes('2')) {
+      return '#1976D2'; // Xanh dương cho Maintenance
+    } else {
+      return '#FF9800'; // Cam cho các vị trí khác
+    }
+  };
+
+  const getGradientColors = () => {
+    const baseColor = getPositionColor();
+    
+    if (baseColor === '#4CAF50') { // Leader - Green
+      return ['#43A047', '#2E7D32', '#1B5E20'] as const;
+    } else if (baseColor === '#1976D2') { // Maintenance - Blue
+      return ['#1E88E5', '#1565C0', '#0D47A1'] as const;
+    } else { // Orange - Default or other
+      return ['#FFA726', '#F57C00', '#E65100'] as const;
+    }
+  };
+
+  // Tạo avatar chữ từ tên người dùng
+  const getInitials = (name: string) => {
+    if (!name) return 'U';
+    const parts = name.split(' ');
+    if (parts.length === 1) return name.charAt(0).toUpperCase();
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+  };
 
   React.useEffect(() => {
     const fetchUserData = async () => {
@@ -94,13 +132,16 @@ const MoreScreen = () => {
       <ScrollView style={styles.content}>
         {userData && (
           <View style={styles.userHeader}>
-            <View style={styles.avatar}>
+            <LinearGradient
+              colors={getGradientColors()}
+              style={styles.avatarGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
               <Text style={styles.avatarText}>
-                {userData.username
-                  ? userData.username.charAt(0).toUpperCase()
-                  : "U"}
+                {getInitials(userData.username || "U")}
               </Text>
-            </View>
+            </LinearGradient>
             <Text style={styles.userName}>
               {userData.username || "Resident"}
             </Text>
@@ -232,6 +273,14 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     backgroundColor: "#B77F2E",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  avatarGradient: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16,

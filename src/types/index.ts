@@ -34,6 +34,7 @@ export type RootStackParamList = {
   };
   RepairSuccess: undefined;
   MyReport: undefined;
+  StaffProfile: undefined;
 };
 //residents
 export interface Resident {
@@ -105,6 +106,52 @@ export interface Staff {
   email: string;
   name: string;
   otp: string;
+}
+
+export interface WorkingPosition {
+  positionId: string;
+  positionName: string | number;
+  description: string;
+}
+
+export interface Department {
+  departmentId: string;
+  departmentName: string;
+  description: string;
+  area: string;
+}
+
+export interface StaffDetails {
+  userId: string;
+  username: string;
+  email: string;
+  phone: string;
+  role: 'Staff';
+  dateOfBirth: string;
+  gender: string;
+  userDetails: {
+    positionId: string;
+    departmentId: string;
+    position: WorkingPosition;
+    department: Department;
+  };
+  accountStatus: string;
+}
+
+export interface WorkingPositionResponse {
+  workingPositions: WorkingPosition[];
+}
+
+export interface DepartmentResponse {
+  isSuccess: boolean;
+  message: string;
+  data: Department[];
+}
+
+export interface StaffDetailsResponse {
+  isSuccess: boolean;
+  message: string;
+  data: StaffDetails;
 }
 
 //Apartment

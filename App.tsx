@@ -13,6 +13,7 @@ import RepairSuccessScreen from './src/Resident/ui/RepairSuccessScreen';
 import MyReportScreen from './src/Resident/MyReportScreen';
 import SignUpScreen from './src/screen/SignUpScreen';
 import FlashMessage from "react-native-flash-message";
+import StaffProfileScreen from './src/screen/StaffProfileScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -31,6 +32,7 @@ const App = () => {
         <Stack.Screen name="RepairReview" component={RepairReviewScreen} />
         <Stack.Screen name="RepairSuccess" component={RepairSuccessScreen} />
         <Stack.Screen name='MyReport' component={MyReportScreen}/>
+        <Stack.Screen name='StaffProfile' component={StaffProfileScreen}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

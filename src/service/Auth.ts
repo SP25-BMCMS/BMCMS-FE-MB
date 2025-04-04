@@ -1,7 +1,22 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LoginPayload, LoginResponse, StaffLoginPayload } from '../types';
-import { VITE_API_SECRET, VITE_LOGIN_RESIDENT, VITE_LOGIN_STAFF, VITE_CURRENT_USER_API } from '@env';
+import { 
+  LoginPayload, 
+  LoginResponse, 
+  StaffLoginPayload, 
+  WorkingPositionResponse, 
+  DepartmentResponse,
+  StaffDetailsResponse
+} from '../types';
+import { 
+  VITE_API_SECRET, 
+  VITE_LOGIN_RESIDENT, 
+  VITE_LOGIN_STAFF, 
+  VITE_CURRENT_USER_API,
+  VITE_POSITION_STAFF,
+  VITE_DEPARTMENT_STAFF,
+  VITE_GET_STAFF_INFORMATION
+} from '@env';
 
 // Tạo instance axios với baseURL từ biến môi trường
 const instance = axios.create({
@@ -140,6 +155,40 @@ export const AuthService = {
       console.log('✅ Logout successful');
     } catch (error) {
       console.error("❌ Lỗi đăng xuất:", error);
+    }
+  },
+
+  // Phương thức lấy danh sách vị trí làm việc
+  async getWorkingPositions(): Promise<WorkingPositionResponse> {
+    try {
+      const response = await instance.get<WorkingPositionResponse>(VITE_POSITION_STAFF);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching working positions:', error);
+      throw error;
+    }
+  },
+
+  // Phương thức lấy danh sách phòng ban
+  async getDepartments(): Promise<DepartmentResponse> {
+    try {
+      const response = await instance.get<DepartmentResponse>(VITE_DEPARTMENT_STAFF);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+      throw error;
+    }
+  },
+
+  // Phương thức lấy thông tin chi tiết nhân viên
+  async getStaffDetails(staffId: string): Promise<StaffDetailsResponse> {
+    try {
+      const url = VITE_GET_STAFF_INFORMATION.replace('{staffId}', staffId);
+      const response = await instance.get<StaffDetailsResponse>(url);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching staff details:', error);
+      throw error;
     }
   }
 };
