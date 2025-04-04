@@ -1,7 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LoginPayload, LoginResponse } from '../types';
-import { VITE_API_SECRET, VITE_LOGIN_RESIDENT, VITE_CURRENT_USER_API } from '@env';
+import { LoginPayload, LoginResponse, StaffLoginPayload } from '../types';
+import { VITE_API_SECRET, VITE_LOGIN_RESIDENT, VITE_LOGIN_STAFF, VITE_CURRENT_USER_API } from '@env';
 
 // Tạo instance axios với baseURL từ biến môi trường
 const instance = axios.create({
@@ -62,6 +62,7 @@ export const AuthService = {
         await AsyncStorage.setItem('refreshToken', response.data.refreshToken);
         await AsyncStorage.setItem('userId', response.data.userId);
         await AsyncStorage.setItem('username', response.data.username);
+        await AsyncStorage.setItem('userType', 'resident');
       }
       
       return response.data;
@@ -70,6 +71,27 @@ export const AuthService = {
       throw error;
     }
   },
+  
+  async loginStaff(payload: StaffLoginPayload): Promise<LoginResponse | null> {
+    try {
+      const response = await instance.post<LoginResponse>(VITE_LOGIN_STAFF, payload);
+      
+      // Lưu token vào AsyncStorage
+      if (response.data.accessToken) {
+        await AsyncStorage.setItem('accessToken', response.data.accessToken);
+        await AsyncStorage.setItem('refreshToken', response.data.refreshToken);
+        await AsyncStorage.setItem('userId', response.data.userId);
+        await AsyncStorage.setItem('username', response.data.username);
+        await AsyncStorage.setItem('userType', 'staff');
+      }
+      
+      return response.data;
+    } catch (error) {
+      // Không xử lý lỗi ở đây, mà để component xử lý
+      throw error;
+    }
+  },
+  
   async getCurrentUser(): Promise<any> {
     try {
       // Log token để kiểm tra
@@ -88,7 +110,6 @@ export const AuthService = {
     }
   },
   
-
   async logout(): Promise<void> {
     try {
       console.log('🚪 Logging out...');

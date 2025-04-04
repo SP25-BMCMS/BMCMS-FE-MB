@@ -47,6 +47,11 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface StaffLoginPayload {
+  username: string;
+  password: string;
+}
+
 export interface SignupResponse {
   isSuccess: boolean;
   message: string;
