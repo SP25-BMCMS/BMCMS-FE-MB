@@ -293,3 +293,61 @@ export const CRACK_POSITIONS = {
   }
 };
 
+// Task Types
+export interface Task {
+  task_id: string;
+  description: string;
+  status: 'Pending' | 'Assigned' | 'InProgress' | 'Completed' | 'Canceled';
+  created_at: string;
+  updated_at: string;
+  crack_id: string;
+  schedule_job_id: string;
+}
+
+export interface TaskListResponse {
+  statusCode: number;
+  message: string;
+  data: Task[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export interface TaskDetailResponse {
+  statusCode: number;
+  message: string;
+  data: Task;
+}
+
+export interface TaskAssignment {
+  assignment_id: string;
+  task_id: string;
+  employee_id: string;
+  description: string;
+  status: 'Pending' | 'InProgress' | 'Completed' | 'Canceled';
+  created_at: string;
+  updated_at: string;
+  task?: Task;
+}
+
+export interface TaskAssignmentResponse {
+  statusCode: number;
+  message: string;
+  data: TaskAssignment[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export interface TaskAssignmentByUserResponse {
+  statusCode: number;
+  message: string;
+  data: TaskAssignment[];
+}
+

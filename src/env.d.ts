@@ -11,4 +11,11 @@ declare module '@env'{
     export const VITE_POSITION_STAFF: string;
     export const VITE_DEPARTMENT_STAFF: string;
     export const VITE_GET_STAFF_INFORMATION: string;
+    export const VITE_GET_TASK_LIST: string;
+    export const VITE_GET_TASK_BY_ID: string;
+    export const VITE_GET_TASK_ASSIGNMENT: string;
+    export const VITE_GET_TASK_ASSIGNMENT_BY_USERID: string;
+    export const VITE_GET_LOCATION_LIST: string;
+    export const VITE_CREATE_INSPECTION: string;
+    
 }
