@@ -35,6 +35,9 @@ export type RootStackParamList = {
   RepairSuccess: undefined;
   MyReport: undefined;
   StaffProfile: undefined;
+  TaskDetail: {
+    assignmentId: string;
+  };
 };
 //residents
 export interface Resident {
@@ -349,5 +352,64 @@ export interface TaskAssignmentByUserResponse {
   statusCode: number;
   message: string;
   data: TaskAssignment[];
+}
+
+// Task Assignment Detail Types
+export interface ReportedBy {
+  userId: string;
+  username: string;
+}
+
+export interface VerifiedBy {
+  userId: string;
+  username: string;
+}
+
+export interface CrackDetailInfo {
+  crackDetailsId: string;
+  crackReportId: string;
+  photoUrl: string;
+  severity: 'Low' | 'Medium' | 'High';
+  aiDetectionUrl: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CrackReportInfo {
+  crackReportId: string;
+  buildingDetailId: string;
+  description: string;
+  isPrivatesAsset: boolean;
+  position: string;
+  status: string;
+  reportedBy: ReportedBy;
+  verifiedBy?: VerifiedBy;
+  createdAt: string;
+  updatedAt: string;
+  crackDetails: CrackDetailInfo[];
+}
+
+export interface CrackInfoResponse {
+  isSuccess: boolean;
+  message: string;
+  data: CrackReportInfo[];
+}
+
+export interface TaskAssignmentDetail {
+  assignment_id: string;
+  task_id: string;
+  employee_id: string;
+  description: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  task: Task;
+  crackInfo: CrackInfoResponse;
+}
+
+export interface TaskAssignmentDetailResponse {
+  success: boolean;
+  message: string;
+  data: TaskAssignmentDetail;
 }
 

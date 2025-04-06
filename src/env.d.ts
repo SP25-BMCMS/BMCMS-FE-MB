@@ -17,5 +17,6 @@ declare module '@env'{
     export const VITE_GET_TASK_ASSIGNMENT_BY_USERID: string;
     export const VITE_GET_LOCATION_LIST: string;
     export const VITE_CREATE_INSPECTION: string;
+    export const VITE_GET_DETAIL_TASK_ASSIGNMENT: string;
     
 }

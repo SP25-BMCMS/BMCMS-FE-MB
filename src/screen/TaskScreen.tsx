@@ -3,9 +3,15 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Act
 import { TaskService } from '../service/Task';
 import { TaskAssignment } from '../types';
 import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../types';
+
+type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 const TaskScreen = () => {
+  const navigation = useNavigation<NavigationProp>();
   const [taskAssignments, setTaskAssignments] = useState<TaskAssignment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -18,8 +24,8 @@ const TaskScreen = () => {
       const response = await TaskService.getTaskAssignmentsByUserId();
       setTaskAssignments(response.data);
     } catch (error) {
-      console.error('Lỗi khi lấy danh sách công việc:', error);
-      setError('Không thể tải danh sách công việc. Vui lòng thử lại sau.');
+      console.error('Error loading task list:', error);
+      setError('Unable to load tasks. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -38,7 +44,7 @@ const TaskScreen = () => {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return format(date, 'dd/MM/yyyy HH:mm', { locale: vi });
+      return format(date, 'MM/dd/yyyy HH:mm', { locale: enUS });
     } catch (error) {
       return dateString;
     }
@@ -47,36 +53,40 @@ const TaskScreen = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Pending':
-        return '#FFA500'; // Màu cam
+        return '#FFA500'; // Orange
       case 'InProgress':
-        return '#007AFF'; // Màu xanh dương
+        return '#007AFF'; // Blue
       case 'Completed':
-        return '#4CD964'; // Màu xanh lá
+        return '#4CD964'; // Green
       case 'Canceled':
-        return '#FF3B30'; // Màu đỏ
+        return '#FF3B30'; // Red
       default:
-        return '#8E8E93'; // Màu xám
+        return '#8E8E93'; // Gray
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
       case 'Pending':
-        return 'Chờ xử lý';
+        return 'Pending';
       case 'InProgress':
-        return 'Đang xử lý';
+        return 'In Progress';
       case 'Completed':
-        return 'Hoàn thành';
+        return 'Completed';
       case 'Canceled':
-        return 'Đã hủy';
+        return 'Canceled';
       default:
         return status;
     }
   };
 
+  const handleTaskPress = (assignmentId: string) => {
+    navigation.navigate('TaskDetail', { assignmentId });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.headerTitle}>Công việc</Text>
+      <Text style={styles.headerTitle}>Tasks</Text>
       
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
@@ -86,7 +96,7 @@ const TaskScreen = () => {
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchTaskAssignments}>
-            <Text style={styles.retryButtonText}>Thử lại</Text>
+            <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -98,13 +108,14 @@ const TaskScreen = () => {
         >
           {taskAssignments.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Bạn chưa được phân công công việc nào.</Text>
+              <Text style={styles.emptyText}>You haven't been assigned any tasks yet.</Text>
             </View>
           ) : (
             taskAssignments.map((assignment) => (
               <TouchableOpacity 
                 key={assignment.assignment_id} 
                 style={styles.taskCard}
+                onPress={() => handleTaskPress(assignment.assignment_id)}
               >
                 <View style={styles.taskHeader}>
                   <Text style={styles.taskTitle} numberOfLines={2}>
@@ -117,11 +128,11 @@ const TaskScreen = () => {
                 
                 <View style={styles.taskInfo}>
                   <Text style={styles.taskInfoText}>
-                    <Text style={styles.taskInfoLabel}>Mã nhiệm vụ: </Text>
+                    <Text style={styles.taskInfoLabel}>Task ID: </Text>
                     {assignment.task_id.substring(0, 8)}...
                   </Text>
                   <Text style={styles.taskInfoText}>
-                    <Text style={styles.taskInfoLabel}>Ngày tạo: </Text>
+                    <Text style={styles.taskInfoLabel}>Created: </Text>
                     {formatDate(assignment.created_at)}
                   </Text>
                 </View>

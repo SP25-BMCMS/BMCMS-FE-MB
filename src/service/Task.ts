@@ -4,13 +4,15 @@ import {
   TaskListResponse, 
   TaskDetailResponse,
   TaskAssignmentResponse,
-  TaskAssignmentByUserResponse
+  TaskAssignmentByUserResponse,
+  TaskAssignmentDetailResponse
 } from '../types';
 import {
   VITE_GET_TASK_LIST,
   VITE_GET_TASK_BY_ID,
   VITE_GET_TASK_ASSIGNMENT,
-  VITE_GET_TASK_ASSIGNMENT_BY_USERID
+  VITE_GET_TASK_ASSIGNMENT_BY_USERID,
+  VITE_GET_DETAIL_TASK_ASSIGNMENT
 } from '@env';
 
 export const TaskService = {
@@ -61,6 +63,18 @@ export const TaskService = {
       return response.data;
     } catch (error) {
       console.error('Error fetching task assignments by user ID:', error);
+      throw error;
+    }
+  },
+
+  // Lấy chi tiết của một task assignment
+  async getTaskAssignmentDetail(assignmentId: string): Promise<TaskAssignmentDetailResponse> {
+    try {
+      const url = VITE_GET_DETAIL_TASK_ASSIGNMENT.replace('{id}', assignmentId);
+      const response = await instance.get<TaskAssignmentDetailResponse>(url);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching task assignment detail with ID ${assignmentId}:`, error);
       throw error;
     }
   }
