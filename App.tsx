@@ -13,8 +13,8 @@ import RepairSuccessScreen from './src/Resident/ui/RepairSuccessScreen';
 import MyReportScreen from './src/Resident/MyReportScreen';
 import SignUpScreen from './src/screen/SignUpScreen';
 import FlashMessage from "react-native-flash-message";
-import StaffProfileScreen from './src/screen/StaffProfileScreen';
-import TaskDetailScreen from './src/screen/TaskDetailScreen';
+import StaffProfileScreen from './src/staff/StaffProfileScreen';
+import TaskDetailScreen from './src/staff/TaskDetailScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
