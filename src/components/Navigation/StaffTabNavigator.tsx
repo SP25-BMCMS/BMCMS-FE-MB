@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import TaskScreen from '../../screen/TaskScreen';
 import NotificationScreen from '../../screen/NotificationScreen';
 import AccountScreen from '../../screen/AccountScreen';
+import StaffAssignScreen from '../../screen/StaffAssignScreen';
 import { StaffBottomTabParamList } from '../../types';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -46,8 +47,11 @@ const StaffTabNavigator = () => {
         tabBarIcon: ({ color, size }) => {
           let iconName: string;
           switch (route.name) {
-            case 'Task':
+            case 'TaskAssignment':
               iconName = 'tasks';
+              break;
+            case 'StaffAssign':
+              iconName = 'users';
               break;
             case 'Notification':
               iconName = 'bell';
@@ -65,7 +69,20 @@ const StaffTabNavigator = () => {
         headerShown: false,
       })}
     >
-      <Tab.Screen name="Task" component={TaskScreen} />
+      <Tab.Screen 
+        name="TaskAssignment" 
+        component={TaskScreen}
+        options={{
+          title: 'TaskAssignment'
+        }}
+      />
+      <Tab.Screen 
+        name="StaffAssign" 
+        component={StaffAssignScreen}
+        options={{
+          title: 'Staff Assign'
+        }}
+      />
       <Tab.Screen
         name="Notification"
         options={{

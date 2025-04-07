@@ -6,7 +6,8 @@ export type ResidentBottomTabParamList = {
 };
 
 export type StaffBottomTabParamList = {
-  Task: undefined;
+  TaskAssignment: undefined;
+  StaffAssign: undefined;
   Notification: undefined;
   Account: undefined;
 };

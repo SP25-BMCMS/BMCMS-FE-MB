@@ -7,37 +7,38 @@ import { enUS } from 'date-fns/locale';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
-const TaskScreen = () => {
+const TaskAssignForStaffScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const [taskAssignments, setTaskAssignments] = useState<TaskAssignment[]>([]);
+  const [allTaskAssignments, setAllTaskAssignments] = useState<TaskAssignment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
 
-  const fetchTaskAssignments = async () => {
+  const fetchAllTaskAssignments = async () => {
     try {
       setLoading(true);
       setError('');
-      const response = await TaskService.getTaskAssignmentsByUserId();
-      setTaskAssignments(response.data);
+      const response = await TaskService.getAllTaskAssignments();
+      setAllTaskAssignments(response.data);
     } catch (error) {
-      console.error('Error loading task list:', error);
-      setError('Unable to load tasks. Please try again later.');
+      console.error('Error loading all task assignments:', error);
+      setError('Unable to load task assignments. Please try again later.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTaskAssignments();
+    fetchAllTaskAssignments();
   }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchTaskAssignments();
+    await fetchAllTaskAssignments();
     setRefreshing(false);
   };
 
@@ -92,9 +93,24 @@ const TaskScreen = () => {
     navigation.navigate('TaskDetail', { assignmentId });
   };
 
+  // Function to handle assigning a new task (to be implemented)
+  const handleAssignNewTask = () => {
+    // Navigate to a screen to create a new task assignment
+    // This would be implemented in future tickets
+    console.log('Assign new task');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.headerTitle}>TaskAssignment</Text>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Assign Tasks</Text>
+        <TouchableOpacity 
+          style={styles.addButton}
+          onPress={handleAssignNewTask}
+        >
+          <Icon name="add" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
       
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
@@ -103,7 +119,7 @@ const TaskScreen = () => {
       ) : error ? (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchTaskAssignments}>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchAllTaskAssignments}>
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -114,12 +130,12 @@ const TaskScreen = () => {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
-          {taskAssignments.length === 0 ? (
+          {allTaskAssignments.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>You haven't been assigned any tasks yet.</Text>
+              <Text style={styles.emptyText}>No task assignments available.</Text>
             </View>
           ) : (
-            taskAssignments.map((assignment) => (
+            allTaskAssignments.map((assignment) => (
               <TouchableOpacity 
                 key={assignment.assignment_id} 
                 style={styles.taskCard}
@@ -138,6 +154,10 @@ const TaskScreen = () => {
                   <Text style={styles.taskInfoText}>
                     <Text style={styles.taskInfoLabel}>Task ID: </Text>
                     {assignment.task_id.substring(0, 8)}...
+                  </Text>
+                  <Text style={styles.taskInfoText}>
+                    <Text style={styles.taskInfoLabel}>Assigned to: </Text>
+                    {assignment.employee_id}
                   </Text>
                   <Text style={styles.taskInfoText}>
                     <Text style={styles.taskInfoLabel}>Created: </Text>
@@ -159,11 +179,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     padding: 16,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 20,
+  },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 20,
+  },
+  addButton: {
+    backgroundColor: '#B77F2E',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
   },
   scrollView: {
     flex: 1,
@@ -252,4 +290,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TaskScreen; 
+export default TaskAssignForStaffScreen; 
