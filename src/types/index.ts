@@ -438,6 +438,8 @@ export interface Inspection {
   updated_at: string;
   total_cost: string;
   taskAssignment?: TaskAssignment;
+  repairMaterials?: RepairMaterial[];
+  locationDetails?: LocationDetail[];
 }
 
 export interface InspectionListResponse {
@@ -451,5 +453,51 @@ export interface InspectionsByTaskResponse {
   statusCode: number;
   message: string;
   data: Inspection[];
+}
+
+// Material Types
+export interface Material {
+  material_id: string;
+  name: string;
+  description: string;
+  unit_price: string;
+  stock_quantity: number;
+  created_at: string;
+  updated_at: string;
+  status: 'ACTIVE' | 'INACTIVE';
+}
+
+export interface MaterialListResponse {
+  isSuccess: boolean;
+  message: string;
+  data: {
+    data: Material[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    }
+  };
+}
+
+export interface RepairMaterial {
+  repair_material_id?: string;
+  material_id: string;
+  quantity: number;
+  unit_cost?: string;
+  total_cost?: string;
+  created_at?: string;
+  updated_at?: string;
+  inspection_id?: string;
+}
+
+export interface LocationDetail {
+  inspection_id?: string;
+  buildingDetailId?: string;
+  roomNumber: string;
+  floorNumber: number;
+  areaType: string;
+  description: string;
 }
 

@@ -7,7 +7,8 @@ import {
   TaskAssignmentByUserResponse,
   TaskAssignmentDetailResponse,
   InspectionListResponse,
-  InspectionsByTaskResponse
+  InspectionsByTaskResponse,
+  MaterialListResponse
 } from '../types';
 import {
   VITE_GET_TASK_LIST,
@@ -18,7 +19,8 @@ import {
   VITE_CHANGE_STATUS_TASK_ASSIGMENT,
   VITE_CREATE_INSPECTION,
   VITE_GET_INSPECTION_LIST,
-  VITE_GET_INSPECTION_BY_TASK_ASSIGNMENT_ID
+  VITE_GET_INSPECTION_BY_TASK_ASSIGNMENT_ID,
+  VITE_GET_METERIAL_LIST
 } from '@env';
 
 export const TaskService = {
@@ -97,7 +99,7 @@ export const TaskService = {
     }
   },
 
-  // Tạo inspection mới
+  // Tạo inspection mới - File URI bao gồm trong request
   async createInspection(data: {
     task_assignment_id: string;
     description: string;
@@ -107,10 +109,47 @@ export const TaskService = {
       floorNumber: number;
       areaType: string;
       description: string;
-    }
+    },
+    repairMaterials?: Array<{
+      materialId: string;
+      quantity: number;
+    }>
   }): Promise<any> {
     try {
-      const response = await instance.post(VITE_CREATE_INSPECTION, data);
+      // Tạo FormData để gửi cả file và dữ liệu JSON
+      const formData = new FormData();
+      
+      // Thêm các file vào formData
+      data.files.forEach((fileUri, index) => {
+        const fileName = fileUri.split('/').pop() || `image_${index}.jpg`;
+        const mimeType = fileUri.endsWith('.png') ? 'image/png' : 'image/jpeg';
+        
+        formData.append('files', {
+          uri: fileUri,
+          name: fileName,
+          type: mimeType
+        } as any);
+      });
+      
+      // Thêm các trường dữ liệu khác
+      formData.append('task_assignment_id', data.task_assignment_id);
+      formData.append('description', data.description);
+      
+      // Thêm additionalLocationDetails
+      formData.append('additionalLocationDetails', JSON.stringify(data.additionalLocationDetails));
+      
+      // Thêm repairMaterials nếu có
+      if (data.repairMaterials && data.repairMaterials.length > 0) {
+        formData.append('repairMaterials', JSON.stringify(data.repairMaterials));
+      }
+      
+      // Gửi request
+      const response = await instance.post(VITE_CREATE_INSPECTION, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
       return response.data;
     } catch (error) {
       console.error('Error creating inspection:', error);
@@ -137,6 +176,17 @@ export const TaskService = {
       return response.data;
     } catch (error) {
       console.error(`Error fetching inspections for task assignment ID ${taskAssignmentId}:`, error);
+      throw error;
+    }
+  },
+
+  // Lấy danh sách tất cả các vật liệu
+  async getAllMaterials(): Promise<MaterialListResponse> {
+    try {
+      const response = await instance.get<MaterialListResponse>(VITE_GET_METERIAL_LIST);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching materials:', error);
       throw error;
     }
   }
