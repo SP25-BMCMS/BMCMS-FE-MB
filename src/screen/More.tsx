@@ -98,6 +98,8 @@ const MoreScreen = () => {
   const handleLogout = async () => {
     try {
       await AuthService.logout();
+      // Clear userType and ensure we navigate to resident interface
+      await AsyncStorage.removeItem('userType');
       navigation.navigate("MainApp");
     } catch (error) {
       console.error("Lỗi khi đăng xuất:", error);

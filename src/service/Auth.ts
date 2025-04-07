@@ -139,7 +139,8 @@ export const AuthService = {
         'refreshToken', 
         'userId', 
         'username', 
-        'userData'
+        'userData',
+        'userType'  // Add userType to the list of keys to remove
       ]);
 
       // Log các key sau khi xóa
