@@ -45,6 +45,13 @@ export type RootStackParamList = {
     onGoBack?: () => void;
     editIndex?: number;
   };
+  InspectionList: {
+    taskAssignmentId: string;
+    taskDescription: string;
+  };
+  InspectionDetail: {
+    inspection: Inspection;
+  };
 };
 //residents
 export interface Resident {
@@ -418,5 +425,31 @@ export interface TaskAssignmentDetailResponse {
   success: boolean;
   message: string;
   data: TaskAssignmentDetail;
+}
+
+// Inspection Types
+export interface Inspection {
+  inspection_id: string;
+  task_assignment_id: string;
+  inspected_by: string;
+  image_urls: string[];
+  description: string;
+  created_at: string;
+  updated_at: string;
+  total_cost: string;
+  taskAssignment?: TaskAssignment;
+}
+
+export interface InspectionListResponse {
+  statusCode: number;
+  message: string;
+  data: Inspection[];
+  total: number;
+}
+
+export interface InspectionsByTaskResponse {
+  statusCode: number;
+  message: string;
+  data: Inspection[];
 }
 

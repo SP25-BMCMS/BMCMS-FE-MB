@@ -5,7 +5,9 @@ import {
   TaskDetailResponse,
   TaskAssignmentResponse,
   TaskAssignmentByUserResponse,
-  TaskAssignmentDetailResponse
+  TaskAssignmentDetailResponse,
+  InspectionListResponse,
+  InspectionsByTaskResponse
 } from '../types';
 import {
   VITE_GET_TASK_LIST,
@@ -14,7 +16,9 @@ import {
   VITE_GET_TASK_ASSIGNMENT_BY_USERID,
   VITE_GET_DETAIL_TASK_ASSIGNMENT,
   VITE_CHANGE_STATUS_TASK_ASSIGMENT,
-  VITE_CREATE_INSPECTION
+  VITE_CREATE_INSPECTION,
+  VITE_GET_INSPECTION_LIST,
+  VITE_GET_INSPECTION_BY_TASK_ASSIGNMENT_ID
 } from '@env';
 
 export const TaskService = {
@@ -110,6 +114,29 @@ export const TaskService = {
       return response.data;
     } catch (error) {
       console.error('Error creating inspection:', error);
+      throw error;
+    }
+  },
+
+  // Lấy danh sách tất cả các inspection
+  async getAllInspections(): Promise<InspectionListResponse> {
+    try {
+      const response = await instance.get<InspectionListResponse>(VITE_GET_INSPECTION_LIST);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching inspections:', error);
+      throw error;
+    }
+  },
+
+  // Lấy danh sách inspection theo task assignment ID
+  async getInspectionsByTaskAssignmentId(taskAssignmentId: string): Promise<InspectionsByTaskResponse> {
+    try {
+      const url = VITE_GET_INSPECTION_BY_TASK_ASSIGNMENT_ID.replace('{task_assignment_id}', taskAssignmentId);
+      const response = await instance.get<InspectionsByTaskResponse>(url);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching inspections for task assignment ID ${taskAssignmentId}:`, error);
       throw error;
     }
   }

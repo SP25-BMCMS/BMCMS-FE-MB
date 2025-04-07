@@ -346,8 +346,24 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
               <Text style={styles.buttonText}>
                 {taskDetail.status === 'Pending' ? 'Start Task' : 
                  taskDetail.status === 'InProgress' ? 'Complete Task' : 
-                 taskDetail.status === 'Verified' ? 'View Details' :
+                 taskDetail.status === 'Verified' ? 'Create More Inspection' :
                  taskDetail.status === 'Unverified' ? 'Review Task' : 'View Details'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.viewInspectionsButton]}
+              onPress={() => {
+                if (taskDetail) {
+                  navigation.navigate('InspectionList', { 
+                    taskAssignmentId: taskDetail.assignment_id,
+                    taskDescription: taskDetail.description
+                  });
+                }
+              }}
+            >
+              <Text style={styles.buttonText}>
+                View Inspections
               </Text>
             </TouchableOpacity>
           </View>
@@ -564,6 +580,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginVertical: 24,
+    gap: 12,
   },
   actionButton: {
     paddingVertical: 12,
@@ -573,6 +590,9 @@ const styles = StyleSheet.create({
   },
   completeButton: {
     backgroundColor: '#B77F2E',
+  },
+  viewInspectionsButton: {
+    backgroundColor: '#007AFF',
   },
   buttonText: {
     color: '#FFFFFF',
