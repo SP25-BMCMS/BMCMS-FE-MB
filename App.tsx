@@ -15,6 +15,8 @@ import SignUpScreen from './src/screen/SignUpScreen';
 import FlashMessage from "react-native-flash-message";
 import StaffProfileScreen from './src/staff/StaffProfileScreen';
 import TaskDetailScreen from './src/staff/TaskDetailScreen';
+import CreateInspectionScreen from './src/staff/ui/CreateInspectionScreen';
+import CreateLocationScreen from './src/staff/ui/CreateLocationScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -35,6 +37,8 @@ const App = () => {
         <Stack.Screen name='MyReport' component={MyReportScreen}/>
         <Stack.Screen name='StaffProfile' component={StaffProfileScreen}/>
         <Stack.Screen name='TaskDetail' component={TaskDetailScreen}/>
+        <Stack.Screen name='CreateInspection' component={CreateInspectionScreen}/>
+        <Stack.Screen name='CreateLocation' component={CreateLocationScreen}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

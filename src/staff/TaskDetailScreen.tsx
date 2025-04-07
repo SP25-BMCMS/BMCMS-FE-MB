@@ -9,7 +9,7 @@ import {
   TouchableOpacity, 
   ActivityIndicator 
 } from 'react-native';
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, TaskAssignmentDetail } from '../types';
 import { TaskService } from '../service/Task';
@@ -25,7 +25,8 @@ type Props = {
   navigation: TaskDetailScreenNavigationProp;
 };
 
-const TaskDetailScreen: React.FC<Props> = ({ route, navigation }) => {
+const TaskDetailScreen: React.FC<Props> = ({ route }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { assignmentId } = route.params;
   const [taskDetail, setTaskDetail] = useState<TaskAssignmentDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -328,7 +329,7 @@ const TaskDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
               style={[styles.actionButton, styles.completeButton]}
-              // onPress={onStartTask}
+              onPress={() => navigation.navigate('CreateInspection', { taskDetail: taskDetail })}
             >
               <Text style={styles.buttonText}>
                 {taskDetail.status === 'Pending' ? 'Start Task' : 

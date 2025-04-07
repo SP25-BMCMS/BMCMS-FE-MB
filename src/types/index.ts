@@ -38,6 +38,13 @@ export type RootStackParamList = {
   TaskDetail: {
     assignmentId: string;
   };
+  CreateInspection: { 
+    taskDetail: TaskAssignmentDetail;
+  };
+  CreateLocation: { 
+    onGoBack?: () => void;
+    editIndex?: number;
+  };
 };
 //residents
 export interface Resident {
