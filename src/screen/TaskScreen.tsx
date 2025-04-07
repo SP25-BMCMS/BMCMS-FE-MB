@@ -7,6 +7,8 @@ import { enUS } from 'date-fns/locale';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -16,6 +18,26 @@ const TaskScreen = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [isLeader, setIsLeader] = useState<boolean>(false);
+
+  useEffect(() => {
+    const checkUserPosition = async () => {
+      try {
+        const userString = await AsyncStorage.getItem('userData');
+        if (!userString) return;
+        
+        const userData = JSON.parse(userString);
+        const positionName = userData?.userDetails?.position?.positionName || '';
+        const isUserLeader = positionName.toLowerCase().includes('leader');
+        
+        setIsLeader(isUserLeader);
+      } catch (error) {
+        console.error('Error checking user position:', error);
+      }
+    };
+    
+    checkUserPosition();
+  }, []);
 
   const fetchTaskAssignments = async () => {
     try {
@@ -92,6 +114,10 @@ const TaskScreen = () => {
     navigation.navigate('TaskDetail', { assignmentId });
   };
 
+  const handleCreateTaskAssignment = () => {
+    navigation.navigate('CreateTaskAssignment');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.headerTitle}>TaskAssignment</Text>
@@ -148,6 +174,15 @@ const TaskScreen = () => {
             ))
           )}
         </ScrollView>
+      )}
+
+      {isLeader && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={handleCreateTaskAssignment}
+        >
+          <Icon name="add" size={24} color="#FFF" />
+        </TouchableOpacity>
       )}
     </SafeAreaView>
   );
@@ -249,6 +284,22 @@ const styles = StyleSheet.create({
   },
   taskInfoLabel: {
     fontWeight: '600',
+  },
+  fab: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    right: 20,
+    bottom: 20,
+    backgroundColor: '#B77F2E',
+    borderRadius: 28,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
   },
 });
 

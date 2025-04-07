@@ -14,6 +14,8 @@ import {
   VITE_GET_TASK_LIST,
   VITE_GET_TASK_BY_ID,
   VITE_GET_TASK_ASSIGNMENT,
+  VITE_CREATE_TASK_ASSIGNMENT,
+  VITE_GET_STAFF_BY_LEADER,
   VITE_GET_TASK_ASSIGNMENT_BY_USERID,
   VITE_GET_DETAIL_TASK_ASSIGNMENT,
   VITE_CHANGE_STATUS_TASK_ASSIGMENT,
@@ -71,6 +73,51 @@ export const TaskService = {
       return response.data;
     } catch (error) {
       console.error('Error fetching task assignments by user ID:', error);
+      throw error;
+    }
+  },
+
+  // Lấy task assignment theo user ID (truyền userId cụ thể)
+  async getTaskAssignmentsBySpecificUserId(userId: string): Promise<TaskAssignmentByUserResponse> {
+    try {
+      const url = VITE_GET_TASK_ASSIGNMENT_BY_USERID.replace('{userId}', userId);
+      const response = await instance.get<TaskAssignmentByUserResponse>(url);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching task assignments for user ID ${userId}:`, error);
+      throw error;
+    }
+  },
+
+  // Lấy danh sách nhân viên dưới quyền leader
+  async getStaffByLeader(): Promise<any> {
+    try {
+      const staffId = await AsyncStorage.getItem('userId');
+      if (!staffId) {
+        throw new Error('Leader ID not found');
+      }
+      
+      const url = VITE_GET_STAFF_BY_LEADER.replace('{staffId}', staffId);
+      const response = await instance.get(url);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching staff by leader:', error);
+      throw error;
+    }
+  },
+
+  // Tạo task assignment mới
+  async createTaskAssignment(data: {
+    task_id: string;
+    employee_id: string;
+    description: string;
+    status: string;
+  }): Promise<any> {
+    try {
+      const response = await instance.post(VITE_CREATE_TASK_ASSIGNMENT, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating task assignment:', error);
       throw error;
     }
   },

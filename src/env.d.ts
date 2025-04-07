@@ -22,4 +22,6 @@ declare module '@env'{
     export const VITE_GET_INSPECTION_BY_TASK_ASSIGNMENT_ID: string;
     export const VITE_GET_INSPECTION_LIST: string;
     export const VITE_GET_METERIAL_LIST: string;
+    export const VITE_GET_STAFF_BY_LEADER: string;
+    export const VITE_CREATE_TASK_ASSIGNMENT: string;
 }
