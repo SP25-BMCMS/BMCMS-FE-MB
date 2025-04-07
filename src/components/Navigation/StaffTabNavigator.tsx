@@ -12,6 +12,34 @@ const Tab = createBottomTabNavigator<StaffBottomTabParamList>();
 
 const StaffTabNavigator = () => {
   const [notificationCount, setNotificationCount] = useState(0);
+  const [isLeader, setIsLeader] = useState(true); // Default to true to ensure the tab is shown initially
+
+  useEffect(() => {
+    const checkUserPosition = async () => {
+      try {
+        const userString = await AsyncStorage.getItem('userData');
+        if (!userString) return;
+        
+        const userData = JSON.parse(userString);
+        console.log('User data position:', userData?.userDetails?.position);
+        
+        // Check if position name includes "Leader", case insensitive
+        const positionName = userData?.userDetails?.position?.positionName || '';
+        const isUserLeader = positionName.toLowerCase().includes('leader');
+        
+        console.log('Position name:', positionName);
+        console.log('Is leader?', isUserLeader);
+        
+        setIsLeader(isUserLeader);
+      } catch (error) {
+        console.error('Error checking user position:', error);
+        // If error, default to showing the tab
+        setIsLeader(true);
+      }
+    };
+    
+    checkUserPosition();
+  }, []);
 
   const fetchNotificationCount = async () => {
     const userString = await AsyncStorage.getItem('userData');
@@ -69,13 +97,15 @@ const StaffTabNavigator = () => {
         headerShown: false,
       })}
     >
-      <Tab.Screen 
-        name="TaskAssignment" 
-        component={TaskScreen}
-        options={{
-          title: 'TaskAssignment'
-        }}
-      />
+      {isLeader && (
+        <Tab.Screen 
+          name="TaskAssignment" 
+          component={TaskScreen}
+          options={{
+            title: 'TaskAssignment'
+          }}
+        />
+      )}
       <Tab.Screen 
         name="StaffAssign" 
         component={StaffAssignScreen}

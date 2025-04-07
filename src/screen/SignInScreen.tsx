@@ -95,10 +95,11 @@ const SignInScreen = () => {
         });
         
         const userData = await AuthService.getCurrentUser();
-        await AsyncStorage.setItem('userData', JSON.stringify({
-          username: userData.username,
-          role: 'staff',
-        }));
+        console.log('Staff user data from API:', userData);
+        
+        // Store the complete user data including position information
+        await AsyncStorage.setItem('userData', JSON.stringify(userData));
+        await AsyncStorage.setItem('userType', 'staff');
         
         navigation.navigate('MainApp');
       } catch (error: any) {
