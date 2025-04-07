@@ -18,6 +18,7 @@ import { RootStackParamList, TaskAssignmentDetail } from '../../types';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { TaskService } from '../../service/Task';
 
 type CreateInspectionScreenRouteProp = RouteProp<RootStackParamList, 'CreateInspection'>;
 type CreateInspectionScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CreateInspection'>;
@@ -26,6 +27,13 @@ type Props = {
   route: CreateInspectionScreenRouteProp;
   navigation: CreateInspectionScreenNavigationProp;
 };
+
+interface LocationData {
+  roomNumber: string;
+  floorNumber: number;
+  areaType: string;
+  description: string;
+}
 
 const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
   const { taskDetail } = route.params;
@@ -36,8 +44,8 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
   const [notes, setNotes] = useState<string>('');
   const [isVerified, setIsVerified] = useState<boolean>(false);
   const [isImageSourceModalVisible, setImageSourceModalVisible] = useState<boolean>(false);
-  const [repairMaterials, setRepairMaterials] = useState<string[]>([]);
-  const [locationDetails, setLocationDetails] = useState<string[]>([]);
+  const [locationDetails, setLocationDetails] = useState<LocationData[]>([]);
+  const [showReviewScreen, setShowReviewScreen] = useState<boolean>(false);
 
   // Load location data when component mounts
   useEffect(() => {
@@ -186,30 +194,24 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
     setIsVerified(!isVerified);
   };
 
-  // Add repair material (placeholder function)
-  const addRepairMaterial = () => {
-    Alert.alert(
-      'Add Material',
-      'This would open a modal to select materials from inventory',
-      [
-        {
-          text: 'OK',
-          onPress: () => {
-            // Mock adding a material
-            setRepairMaterials([...repairMaterials, `Material ${repairMaterials.length + 1}`]);
-          }
-        }
-      ]
-    );
+  // Change task assignment status based on verification
+  const changeTaskStatus = async () => {
+    try {
+      setLoading(true);
+      const status = isVerified ? 'Verified' : 'Unverified';
+      await TaskService.changeTaskAssignmentStatus(taskDetail.assignment_id, status);
+      return true;
+    } catch (error) {
+      console.error('Error changing task status:', error);
+      Alert.alert('Error', 'Failed to update task status');
+      return false;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Remove repair material
-  const removeRepairMaterial = (indexToRemove: number) => {
-    setRepairMaterials(repairMaterials.filter((_, index) => index !== indexToRemove));
-  };
-
-  // Submit inspection
-  const handleSubmitInspection = () => {
+  // Prepare for submission and show review screen
+  const handleReviewInspection = () => {
     if (images.length === 0) {
       Alert.alert('Missing Images', 'Please add at least one image to continue');
       return;
@@ -220,14 +222,53 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
       return;
     }
 
-    if (isVerified && repairMaterials.length === 0) {
-      Alert.alert('Missing Materials', 'Please add at least one repair material for verified inspections');
+    if (locationDetails.length === 0) {
+      Alert.alert('Missing Location', 'Please add at least one location detail');
       return;
     }
 
-    // Mock successful submission
-    setLoading(true);
-    setTimeout(() => {
+    setShowReviewScreen(true);
+  };
+
+  // Back from review screen
+  const handleBackFromReview = () => {
+    setShowReviewScreen(false);
+  };
+
+  // Submit inspection
+  const handleSubmitInspection = async () => {
+    try {
+      setLoading(true);
+      
+      // First change task assignment status
+      const statusChanged = await changeTaskStatus();
+      if (!statusChanged) {
+        return;
+      }
+      
+      // Then create inspection
+      // In a real app, we would upload the images to a server and get URLs back
+      // For now, we'll just mock this
+      const mockImageUrls = images.map((_, index) => `https://example.com/image-${index}.jpg`);
+      
+      // Get the first location detail (you might want to handle multiple differently)
+      const locationDetail = locationDetails.length > 0 ? locationDetails[0] : null;
+      
+      if (!locationDetail) {
+        Alert.alert('Error', 'No location details found');
+        setLoading(false);
+        return;
+      }
+      
+      const inspectionData = {
+        task_assignment_id: taskDetail.assignment_id,
+        description: notes,
+        files: mockImageUrls,
+        additionalLocationDetails: locationDetail
+      };
+      
+      await TaskService.createInspection(inspectionData);
+      
       setLoading(false);
       Alert.alert('Success', 'Inspection created successfully', [
         {
@@ -235,9 +276,105 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
           onPress: () => navigation.goBack()
         }
       ]);
-    }, 1500);
+    } catch (error) {
+      console.error('Error submitting inspection:', error);
+      setLoading(false);
+      Alert.alert('Error', 'Failed to create inspection. Please try again.');
+    }
   };
 
+  // Render review screen
+  if (showReviewScreen) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={handleBackFromReview}
+          >
+            <Ionicons name="arrow-back" size={24} color="#000" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Review Inspection</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        
+        <ScrollView style={styles.content}>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Summary</Text>
+            <View style={styles.divider} />
+            
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Task ID:</Text>
+              <Text style={styles.infoValue}>{taskDetail.task_id.substring(0, 8)}...</Text>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Status:</Text>
+              <View style={[styles.statusBadge, { backgroundColor: isVerified ? '#4CD964' : '#FF9500' }]}>
+                <Text style={styles.statusText}>{isVerified ? 'Verified' : 'Unverified'}</Text>
+              </View>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Images:</Text>
+              <Text style={styles.infoValue}>{images.length} added</Text>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Locations:</Text>
+              <Text style={styles.infoValue}>{locationDetails.length} specified</Text>
+            </View>
+          </View>
+          
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Notes</Text>
+            <View style={styles.divider} />
+            <Text style={styles.notesPreview}>{notes}</Text>
+          </View>
+          
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Images</Text>
+            <View style={styles.divider} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {images.map((image, index) => (
+                <Image key={index} source={{ uri: image }} style={styles.reviewImage} />
+              ))}
+            </ScrollView>
+          </View>
+          
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Location Details</Text>
+            <View style={styles.divider} />
+            {locationDetails.map((location, index) => (
+              <View key={index} style={styles.locationReviewItem}>
+                <Text style={styles.locationReviewTitle}>Location {index + 1}</Text>
+                <View style={styles.locationReviewDetails}>
+                  <Text>Room: {location.roomNumber}</Text>
+                  <Text>Floor: {location.floorNumber}</Text>
+                  <Text>Area Type: {location.areaType || 'Not specified'}</Text>
+                  <Text>Description: {location.description || 'None'}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+          
+          <TouchableOpacity
+            style={[styles.submitButton, styles.confirmButton]}
+            onPress={handleSubmitInspection}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.submitButtonText}>Confirm & Submit</Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // Render creation screen
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -375,45 +512,10 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
           
           <Text style={styles.infoText}>
             {isVerified 
-              ? 'This crack has been verified and requires repair materials.' 
-              : 'Mark as verified if this crack requires repair materials.'}
+              ? 'This crack has been verified and requires repair. Status will be set to Verified.' 
+              : 'Status will be set to Unverified if this crack doesn\'t need immediate repair.'}
           </Text>
         </View>
-
-        {/* Repair Materials Section (only shown when verified) */}
-        {isVerified && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Repair Materials</Text>
-            <View style={styles.divider} />
-            
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={addRepairMaterial}
-            >
-              <Ionicons name="add-circle" size={24} color="#B77F2E" />
-              <Text style={styles.addButtonText}>Add Material</Text>
-            </TouchableOpacity>
-            
-            {repairMaterials.length > 0 ? (
-              <View style={styles.materialList}>
-                {repairMaterials.map((material, index) => (
-                  <View key={index} style={styles.materialItem}>
-                    <Text style={styles.materialText}>{material}</Text>
-                    <TouchableOpacity
-                      onPress={() => removeRepairMaterial(index)}
-                    >
-                      <Ionicons name="close-circle" size={20} color="#FF3B30" />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <Text style={styles.warningText}>
-                Please add at least one repair material
-              </Text>
-            )}
-          </View>
-        )}
 
         {/* Location Details - Updated to show multiple locations */}
         <View style={styles.card}>
@@ -426,7 +528,8 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
                 <View key={index} style={styles.locationItem}>
                   <View style={styles.locationContent}>
                     <Text style={styles.locationText} numberOfLines={2}>
-                      {typeof location === 'string' ? location : JSON.stringify(location)}
+                      Room {location.roomNumber}, Floor {location.floorNumber}, {location.areaType || 'Floor'}
+                      {location.description ? ` (${location.description})` : ''}
                     </Text>
                     <View style={styles.locationActions}>
                       <TouchableOpacity 
@@ -478,8 +581,9 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
             styles.submitButton,
             {
               backgroundColor: 
-                images.length > 0 && notes.trim() !== '' && 
-                (!isVerified || (isVerified && repairMaterials.length > 0))
+                images.length > 0 && 
+                notes.trim() !== '' && 
+                locationDetails.length > 0
                   ? '#B77F2E'
                   : '#CCC'
             }
@@ -487,15 +591,15 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
           disabled={
             images.length === 0 || 
             notes.trim() === '' || 
-            (isVerified && repairMaterials.length === 0) ||
+            locationDetails.length === 0 ||
             loading
           }
-          onPress={handleSubmitInspection}
+          onPress={handleReviewInspection}
         >
           {loading ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.submitButtonText}>Create Inspection</Text>
+            <Text style={styles.submitButtonText}>Review Inspection</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -686,21 +790,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontWeight: '600',
   },
-  materialList: {
-    marginTop: 16,
-  },
-  materialItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
-    backgroundColor: '#F8F8F8',
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  materialText: {
-    fontSize: 14,
-  },
   locationList: {
     marginBottom: 16,
   },
@@ -756,6 +845,36 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  // Review screen specific styles
+  notesPreview: {
+    fontSize: 14,
+    color: '#333333',
+    lineHeight: 20,
+  },
+  reviewImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  locationReviewItem: {
+    marginBottom: 12,
+    padding: 8,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 8,
+  },
+  locationReviewTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  locationReviewDetails: {
+    paddingLeft: 8,
+  },
+  confirmButton: {
+    backgroundColor: '#4CD964',  // Green color for confirmation
+    marginTop: 16,
   },
 });
 

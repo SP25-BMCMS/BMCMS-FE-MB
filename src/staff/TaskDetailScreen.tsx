@@ -70,6 +70,10 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
         return '#4CD964'; // Green
       case 'Canceled':
         return '#FF3B30'; // Red
+      case 'Verified':
+        return '#4CD964'; // Green (same as Completed)
+      case 'Unverified':
+        return '#FF9500'; // Orange
       default:
         return '#8E8E93'; // Gray
     }
@@ -85,6 +89,10 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
         return 'Completed';
       case 'Canceled':
         return 'Canceled';
+      case 'Verified':
+        return 'Verified';
+      case 'Unverified':
+        return 'Unverified';
       default:
         return status;
     }
@@ -329,11 +337,17 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
               style={[styles.actionButton, styles.completeButton]}
-              onPress={() => navigation.navigate('CreateInspection', { taskDetail: taskDetail })}
+              onPress={() => {
+                if (taskDetail) {
+                  navigation.navigate('CreateInspection', { taskDetail: taskDetail });
+                }
+              }}
             >
               <Text style={styles.buttonText}>
                 {taskDetail.status === 'Pending' ? 'Start Task' : 
-                 taskDetail.status === 'InProgress' ? 'Complete Task' : 'View Details'}
+                 taskDetail.status === 'InProgress' ? 'Complete Task' : 
+                 taskDetail.status === 'Verified' ? 'View Details' :
+                 taskDetail.status === 'Unverified' ? 'Review Task' : 'View Details'}
               </Text>
             </TouchableOpacity>
           </View>

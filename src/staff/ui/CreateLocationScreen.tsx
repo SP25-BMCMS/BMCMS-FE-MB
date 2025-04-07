@@ -23,22 +23,20 @@ type Props = {
 };
 
 interface LocationData {
-  building: string;
-  floor: string;
-  room: string;
-  position: string;
-  additionalDetails: string;
+  roomNumber: string;
+  floorNumber: number;
+  areaType: string;
+  description: string;
 }
 
 const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
   const editIndex = route.params?.editIndex ?? -1;
   const isEditing = editIndex >= 0;
 
-  const [building, setBuilding] = useState<string>('');
-  const [floor, setFloor] = useState<string>('');
-  const [room, setRoom] = useState<string>('');
-  const [position, setPosition] = useState<string>('');
-  const [additionalDetails, setAdditionalDetails] = useState<string>('');
+  const [roomNumber, setRoomNumber] = useState<string>('');
+  const [floorNumber, setFloorNumber] = useState<string>('');
+  const [areaType, setAreaType] = useState<string>('');
+  const [description, setDescription] = useState<string>('');
 
   // Load existing location data if editing
   useEffect(() => {
@@ -52,17 +50,10 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
             if (isEditing && Array.isArray(parsedLocations) && parsedLocations.length > editIndex) {
               const locationToEdit = parsedLocations[editIndex];
               
-              if (typeof locationToEdit === 'string') {
-                // Try to parse the formatted string (unlikely but handle it)
-                setAdditionalDetails(locationToEdit);
-              } else {
-                // It's an object
-                setBuilding(locationToEdit.building || '');
-                setFloor(locationToEdit.floor || '');
-                setRoom(locationToEdit.room || '');
-                setPosition(locationToEdit.position || '');
-                setAdditionalDetails(locationToEdit.additionalDetails || '');
-              }
+              setRoomNumber(locationToEdit.roomNumber || '');
+              setFloorNumber(locationToEdit.floorNumber?.toString() || '');
+              setAreaType(locationToEdit.areaType || '');
+              setDescription(locationToEdit.description || '');
             }
           } catch (parseError) {
             console.error('Error parsing location JSON:', parseError);
@@ -79,27 +70,23 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
   }, [editIndex, isEditing]);
 
   const handleSaveLocation = async () => {
-    if (!building.trim() || !floor.trim() || !room.trim()) {
-      Alert.alert('Missing Information', 'Please fill in the required fields (Building, Floor, and Room)');
+    if (!roomNumber.trim() || !floorNumber.trim()) {
+      Alert.alert('Missing Information', 'Please fill in the required fields (Room and Floor)');
       return;
     }
 
     try {
       // Create location object for the current location
       const locationData: LocationData = {
-        building: building.trim(),
-        floor: floor.trim(),
-        room: room.trim(),
-        position: position.trim(),
-        additionalDetails: additionalDetails.trim(),
+        roomNumber: roomNumber.trim(),
+        floorNumber: parseInt(floorNumber.trim(), 10),
+        areaType: areaType || 'Floor', // Default to Floor if not selected
+        description: description.trim(),
       };
-
-      // Create formatted string for display
-      const formattedLocation = `${building}, Floor ${floor}, ${room}${position ? `, ${position}` : ''}${additionalDetails ? ` (${additionalDetails})` : ''}`;
 
       // Get existing locations or initialize empty array
       const savedLocations = await AsyncStorage.getItem('tempLocationDetails');
-      let locations: string[] = [];
+      let locations: LocationData[] = [];
       
       if (savedLocations) {
         try {
@@ -114,7 +101,7 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
 
       if (isEditing) {
         // Replace the edited location
-        locations[editIndex] = formattedLocation;
+        locations[editIndex] = locationData;
       } else {
         // Check for max locations
         if (locations.length >= 5) {
@@ -123,7 +110,7 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
         }
         
         // Add new location
-        locations.push(formattedLocation);
+        locations.push(locationData);
       }
 
       // Save updated locations array
@@ -155,59 +142,51 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
 
       <ScrollView style={styles.content}>
         <View style={styles.card}>
-          <Text style={styles.label}>Building <Text style={styles.required}>*</Text></Text>
+          <Text style={styles.label}>Room Number <Text style={styles.required}>*</Text></Text>
           <TextInput
             style={styles.input}
-            placeholder="Enter building name"
-            value={building}
-            onChangeText={setBuilding}
+            placeholder="Enter room number/name"
+            value={roomNumber}
+            onChangeText={setRoomNumber}
           />
 
-          <Text style={styles.label}>Floor <Text style={styles.required}>*</Text></Text>
+          <Text style={styles.label}>Floor Number <Text style={styles.required}>*</Text></Text>
           <TextInput
             style={styles.input}
             placeholder="Enter floor number"
-            value={floor}
-            onChangeText={setFloor}
+            value={floorNumber}
+            onChangeText={setFloorNumber}
             keyboardType="number-pad"
           />
 
-          <Text style={styles.label}>Room <Text style={styles.required}>*</Text></Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter room name/number"
-            value={room}
-            onChangeText={setRoom}
-          />
-
-          <Text style={styles.label}>Position</Text>
+          <Text style={styles.label}>Area Type</Text>
           <View style={styles.positionContainer}>
             <TouchableOpacity 
-              style={[styles.positionButton, position === 'Wall' && styles.selectedPosition]}
-              onPress={() => setPosition('Wall')}
+              style={[styles.positionButton, areaType === 'Wall' && styles.selectedPosition]}
+              onPress={() => setAreaType('Wall')}
             >
-              <Text style={[styles.positionText, position === 'Wall' && styles.selectedPositionText]}>Wall</Text>
+              <Text style={[styles.positionText, areaType === 'Wall' && styles.selectedPositionText]}>Wall</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.positionButton, position === 'Floor' && styles.selectedPosition]}
-              onPress={() => setPosition('Floor')}
+              style={[styles.positionButton, areaType === 'Floor' && styles.selectedPosition]}
+              onPress={() => setAreaType('Floor')}
             >
-              <Text style={[styles.positionText, position === 'Floor' && styles.selectedPositionText]}>Floor</Text>
+              <Text style={[styles.positionText, areaType === 'Floor' && styles.selectedPositionText]}>Floor</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.positionButton, position === 'Ceiling' && styles.selectedPosition]}
-              onPress={() => setPosition('Ceiling')}
+              style={[styles.positionButton, areaType === 'Ceiling' && styles.selectedPosition]}
+              onPress={() => setAreaType('Ceiling')}
             >
-              <Text style={[styles.positionText, position === 'Ceiling' && styles.selectedPositionText]}>Ceiling</Text>
+              <Text style={[styles.positionText, areaType === 'Ceiling' && styles.selectedPositionText]}>Ceiling</Text>
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.label}>Additional Details</Text>
+          <Text style={styles.label}>Description</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
             placeholder="Add any additional details about the location"
-            value={additionalDetails}
-            onChangeText={setAdditionalDetails}
+            value={description}
+            onChangeText={setDescription}
             multiline
             numberOfLines={4}
           />
@@ -216,10 +195,10 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
         <TouchableOpacity 
           style={[
             styles.saveButton,
-            (!building.trim() || !floor.trim() || !room.trim()) && styles.disabledButton
+            (!roomNumber.trim() || !floorNumber.trim()) && styles.disabledButton
           ]}
           onPress={handleSaveLocation}
-          disabled={!building.trim() || !floor.trim() || !room.trim()}
+          disabled={!roomNumber.trim() || !floorNumber.trim()}
         >
           <Text style={styles.saveButtonText}>{isEditing ? 'Update Location' : 'Save Location'}</Text>
         </TouchableOpacity>

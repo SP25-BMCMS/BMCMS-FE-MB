@@ -60,6 +60,10 @@ const TaskScreen = () => {
         return '#4CD964'; // Green
       case 'Canceled':
         return '#FF3B30'; // Red
+      case 'Verified':
+        return '#4CD964'; // Green (same as Completed)
+      case 'Unverified':
+        return '#FF9500'; // Orange
       default:
         return '#8E8E93'; // Gray
     }
@@ -75,6 +79,10 @@ const TaskScreen = () => {
         return 'Completed';
       case 'Canceled':
         return 'Canceled';
+      case 'Verified':
+        return 'Verified';
+      case 'Unverified':
+        return 'Unverified';
       default:
         return status;
     }
