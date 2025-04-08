@@ -165,7 +165,7 @@ export const TaskService = {
     task_assignment_id: string;
     description: string;
     files: string[];
-    additionalLocationDetails: {
+    additionalLocationDetails?: {
       roomNumber: string;
       floorNumber: number;
       areaType: string;
@@ -196,8 +196,10 @@ export const TaskService = {
       formData.append('task_assignment_id', data.task_assignment_id);
       formData.append('description', data.description);
       
-      // Thêm additionalLocationDetails
-      formData.append('additionalLocationDetails', JSON.stringify(data.additionalLocationDetails));
+      // Thêm additionalLocationDetails nếu có
+      if (data.additionalLocationDetails) {
+        formData.append('additionalLocationDetails', JSON.stringify(data.additionalLocationDetails));
+      }
       
       // Thêm repairMaterials nếu có
       if (data.repairMaterials && data.repairMaterials.length > 0) {

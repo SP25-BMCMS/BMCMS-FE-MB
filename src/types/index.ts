@@ -39,8 +39,14 @@ export type RootStackParamList = {
   TaskDetail: {
     assignmentId: string;
   };
+  StaffTaskDetail: {
+    assignmentId: string;
+  };
   CreateTaskAssignment: undefined;
   CreateInspection: { 
+    taskDetail: TaskAssignmentDetail;
+  };
+  CreateStaffInspection: { 
     taskDetail: TaskAssignmentDetail;
   };
   CreateLocation: { 

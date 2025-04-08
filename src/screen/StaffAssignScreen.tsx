@@ -222,7 +222,7 @@ const StaffAssignScreen = () => {
   };
 
   const handleTaskPress = (assignmentId: string) => {
-    navigation.navigate('TaskDetail', { assignmentId });
+    navigation.navigate('StaffTaskDetail', { assignmentId });
   };
 
   const handleCreateTaskAssignment = () => {
