@@ -23,7 +23,8 @@ import {
   VITE_GET_INSPECTION_LIST,
   VITE_GET_INSPECTION_BY_TASK_ASSIGNMENT_ID,
   VITE_GET_METERIAL_LIST,
-  VITE_GET_TASK_ASSIGNMENT_BY_TASK_ID
+  VITE_GET_TASK_ASSIGNMENT_BY_TASK_ID,
+  VITE_GET_TASK_ASSIGNMENT_BY_EMPLOYEE_ID
 } from '@env';
 
 export const TaskService = {
@@ -247,6 +248,17 @@ export const TaskService = {
       return response.data;
     } catch (error) {
       console.error('Error fetching materials:', error);
+      throw error;
+    }
+  },
+
+  async getTaskAssignmentsByEmployeeId(employeeId: string): Promise<any> {
+    try {
+      const url = VITE_GET_TASK_ASSIGNMENT_BY_EMPLOYEE_ID.replace('{employeeId}', employeeId);
+      const response = await instance.get(url);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching task assignments for employee ID ${employeeId}:`, error);
       throw error;
     }
   }

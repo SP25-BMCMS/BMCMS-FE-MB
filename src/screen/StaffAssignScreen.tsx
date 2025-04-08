@@ -23,9 +23,21 @@ interface TaskWithAssignments {
   taskAssignments: TaskAssignment[];
 }
 
+interface EmployeeTaskAssignment {
+  assignment_id: string;
+  task_id: string;
+  employee_id: string;
+  description: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  task: Task;
+}
+
 const StaffAssignScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const [tasks, setTasks] = useState<TaskWithAssignments[]>([]);
+  const [employeeTasks, setEmployeeTasks] = useState<EmployeeTaskAssignment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
@@ -54,6 +66,27 @@ const StaffAssignScreen = () => {
     
     checkUserPosition();
   }, []);
+
+  const fetchEmployeeTaskAssignments = async () => {
+    if (!userId) return;
+    
+    try {
+      setLoading(true);
+      setError('');
+      
+      // Thêm timeout nhỏ để đảm bảo API đã cập nhật dữ liệu
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const response = await TaskService.getTaskAssignmentsByEmployeeId(userId);
+      console.log('StaffAssignScreen - Fetched employee tasks:', response.data?.length || 0);
+      setEmployeeTasks(response.data);
+    } catch (error) {
+      console.error('Error loading employee task assignments:', error);
+      setError('Unable to load task assignments. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchLeaderTaskAssignments = async () => {
     if (!userId || !isLeader) return;
@@ -103,12 +136,20 @@ const StaffAssignScreen = () => {
   };
 
   useEffect(() => {
-    if (userId && isLeader) {
-      fetchLeaderTaskAssignments();
+    if (userId) {
+      if (isLeader) {
+        fetchLeaderTaskAssignments();
+      } else {
+        fetchEmployeeTaskAssignments();
+      }
       
       // Add listener for when screen comes into focus
       const unsubscribe = navigation.addListener('focus', () => {
-        fetchLeaderTaskAssignments();
+        if (isLeader) {
+          fetchLeaderTaskAssignments();
+        } else {
+          fetchEmployeeTaskAssignments();
+        }
       });
 
       return unsubscribe;
@@ -117,7 +158,11 @@ const StaffAssignScreen = () => {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchLeaderTaskAssignments();
+    if (isLeader) {
+      await fetchLeaderTaskAssignments();
+    } else {
+      await fetchEmployeeTaskAssignments();
+    }
     setRefreshing(false);
   };
 
@@ -182,6 +227,36 @@ const StaffAssignScreen = () => {
 
   const handleCreateTaskAssignment = () => {
     navigation.navigate('CreateTaskAssignment');
+  };
+
+  const renderEmployeeTaskItem = (assignment: EmployeeTaskAssignment) => {
+    return (
+      <TouchableOpacity 
+        key={assignment.assignment_id} 
+        style={styles.taskCard}
+        onPress={() => handleTaskPress(assignment.assignment_id)}
+      >
+        <View style={styles.taskHeader}>
+          <Text style={styles.taskTitle} numberOfLines={2}>
+            {assignment.description}
+          </Text>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(assignment.status) }]}>
+            <Text style={styles.statusText}>{getStatusText(assignment.status)}</Text>
+          </View>
+        </View>
+        
+        <View style={styles.taskInfo}>
+          <Text style={styles.taskInfoText}>
+            <Text style={styles.taskInfoLabel}>Task: </Text>
+            {assignment.task.description}
+          </Text>
+          <Text style={styles.taskInfoText}>
+            <Text style={styles.taskInfoLabel}>Created: </Text>
+            {formatDate(assignment.created_at)}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
   };
 
   const renderTaskAssignmentItem = (assignment: TaskAssignment) => {
@@ -255,7 +330,10 @@ const StaffAssignScreen = () => {
       ) : error ? (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchLeaderTaskAssignments}>
+          <TouchableOpacity 
+            style={styles.retryButton} 
+            onPress={isLeader ? fetchLeaderTaskAssignments : fetchEmployeeTaskAssignments}
+          >
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -267,9 +345,13 @@ const StaffAssignScreen = () => {
           }
         >
           {!isLeader ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>You don't have permission to view team assignments.</Text>
-            </View>
+            employeeTasks.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No tasks assigned to you yet.</Text>
+              </View>
+            ) : (
+              employeeTasks.map(renderEmployeeTaskItem)
+            )
           ) : tasks.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>No team assignments available.</Text>
