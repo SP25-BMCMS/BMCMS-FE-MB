@@ -16,6 +16,7 @@ import { TaskService } from '../../service/Task';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type StaffInspectionListScreenRouteProp = RouteProp<RootStackParamList, 'StaffInspectionList'>;
 type StaffInspectionListScreenNavigationProp = StackNavigationProp<RootStackParamList, 'StaffInspectionList'>;
@@ -31,6 +32,26 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLeader, setIsLeader] = useState(false);
+
+  useEffect(() => {
+    const checkUserPosition = async () => {
+      try {
+        const userString = await AsyncStorage.getItem('userData');
+        if (!userString) return;
+        
+        const userData = JSON.parse(userString);
+        const positionName = userData?.userDetails?.position?.positionName || '';
+        const isUserLeader = positionName.toLowerCase().includes('leader');
+        
+        setIsLeader(isUserLeader);
+      } catch (error) {
+        console.error('Error checking user position:', error);
+      }
+    };
+    
+    checkUserPosition();
+  }, []);
 
   const fetchInspections = async () => {
     try {
@@ -69,6 +90,15 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
     navigation.navigate('StaffInspectionDetail', { inspection });
   };
 
+  const handleChangeStatus = (inspection: Inspection) => {
+    // TODO: Implement change status functionality
+    Alert.alert(
+      'Change Status',
+      'This feature is coming soon!',
+      [{ text: 'OK' }]
+    );
+  };
+
   const renderInspectionItem = ({ item }: { item: Inspection }) => (
     <TouchableOpacity 
       style={styles.inspectionCard}
@@ -104,6 +134,15 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
           )}
         </View>
       </View>
+
+      {isLeader && (
+        <TouchableOpacity 
+          style={styles.changeStatusButton}
+          onPress={() => handleChangeStatus(item)}
+        >
+          <Text style={styles.changeStatusButtonText}>Change Status</Text>
+        </TouchableOpacity>
+      )}
     </TouchableOpacity>
   );
 
@@ -336,6 +375,19 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  changeStatusButton: {
+    backgroundColor: '#B77F2E',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 8,
+    alignSelf: 'flex-end',
+  },
+  changeStatusButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 });
 
