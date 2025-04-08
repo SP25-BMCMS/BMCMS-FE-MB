@@ -349,18 +349,20 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
           )}
           
           <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.completeButton]}
-              onPress={() => {
-                if (taskDetail) {
-                  navigation.navigate('CreateStaffInspection', { taskDetail: taskDetail });
-                }
-              }}
-            >
-              <Text style={styles.buttonText}>
-                Create Inspection
-              </Text>
-            </TouchableOpacity>
+            {taskDetail.status !== 'Reassigned' && taskDetail.status !== 'Confirmed' && (
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.completeButton]}
+                onPress={() => {
+                  if (taskDetail) {
+                    navigation.navigate('CreateStaffInspection', { taskDetail: taskDetail });
+                  }
+                }}
+              >
+                <Text style={styles.buttonText}>
+                  Create Inspection
+                </Text>
+              </TouchableOpacity>
+            )}
             
             <TouchableOpacity 
               style={[styles.actionButton, styles.viewInspectionsButton]}

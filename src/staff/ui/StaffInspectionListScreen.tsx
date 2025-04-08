@@ -46,6 +46,7 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
   const [availableEmployees, setAvailableEmployees] = useState<Array<{employee_id: string; username: string}>>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [loadingEmployees, setLoadingEmployees] = useState(false);
+  const [taskStatus, setTaskStatus] = useState<string>('');
 
   useEffect(() => {
     const checkUserPosition = async () => {
@@ -65,6 +66,29 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
     
     checkUserPosition();
   }, []);
+
+  useEffect(() => {
+    if (inspections.length > 0 && inspections[0].taskAssignment) {
+      setTaskStatus(inspections[0].taskAssignment.status);
+    }
+  }, [inspections]);
+
+  useEffect(() => {
+    const fetchTaskAssignmentStatus = async () => {
+      try {
+        if (taskAssignmentId) {
+          const response = await TaskService.getTaskAssignmentDetail(taskAssignmentId);
+          if (response.data) {
+            setTaskStatus(response.data.status);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching task assignment status:', error);
+      }
+    };
+    
+    fetchTaskAssignmentStatus();
+  }, [taskAssignmentId]);
 
   const fetchInspections = async () => {
     try {
@@ -316,7 +340,7 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
             onRefresh={handleRefresh}
             refreshing={refreshing}
           />
-          {isLeader && inspections.length > 0 && (
+          {isLeader && inspections.length > 0 && taskStatus !== 'Reassigned' && taskStatus !== 'Confirmed' && (
             <View style={styles.changeStatusContainer}>
               <TouchableOpacity 
                 style={styles.changeStatusButton}
