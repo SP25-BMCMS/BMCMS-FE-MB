@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,12 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
-  Platform
+  Platform,
+  FlatList
 } from 'react-native';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList, TaskAssignmentDetail } from '../../types';
+import { RootStackParamList, TaskAssignmentDetail, Material } from '../../types';
 import { TaskService } from '../../service/Task';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -30,6 +31,11 @@ type Props = {
   navigation: CreateStaffInspectionScreenNavigationProp;
 };
 
+interface SelectedMaterial {
+  material: Material;
+  quantity: number;
+}
+
 const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
   const { taskDetail } = route.params;
   const navigation = useNavigation<CreateStaffInspectionScreenNavigationProp>();
@@ -39,6 +45,175 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isImageSourceModalVisible, setImageSourceModalVisible] = useState<boolean>(false);
   const [showReviewScreen, setShowReviewScreen] = useState<boolean>(false);
+
+  // Material states
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [selectedMaterials, setSelectedMaterials] = useState<SelectedMaterial[]>([]);
+  const [isMaterialModalVisible, setIsMaterialModalVisible] = useState<boolean>(false);
+  const [materialsLoading, setMaterialsLoading] = useState<boolean>(false);
+  const [selectedMaterialForEdit, setSelectedMaterialForEdit] = useState<SelectedMaterial | null>(null);
+  const [materialQuantity, setMaterialQuantity] = useState<string>('1');
+
+  // Load materials when component mounts
+  useEffect(() => {
+    loadMaterials();
+  }, []);
+
+  // Load materials from API
+  const loadMaterials = async () => {
+    try {
+      setMaterialsLoading(true);
+      const response = await TaskService.getAllMaterials();
+      if (response.isSuccess && response.data && response.data.data) {
+        // Filter out inactive materials
+        const activeMaterials = response.data.data.filter(material => material.status === 'ACTIVE');
+        setMaterials(activeMaterials);
+      }
+    } catch (error) {
+      console.error('Error loading materials:', error);
+      Alert.alert('Error', 'Failed to load materials');
+    } finally {
+      setMaterialsLoading(false);
+    }
+  };
+
+  // Open material selection modal
+  const openMaterialModal = () => {
+    setSelectedMaterialForEdit(null);
+    setMaterialQuantity('1');
+    setIsMaterialModalVisible(true);
+  };
+
+  // Close material selection modal
+  const closeMaterialModal = () => {
+    setIsMaterialModalVisible(false);
+    setSelectedMaterialForEdit(null);
+    setMaterialQuantity('1');
+  };
+
+  // Add material to selection
+  const addMaterial = (material: Material) => {
+    const quantity = parseInt(materialQuantity, 10);
+    
+    if (isNaN(quantity) || quantity <= 0) {
+      Alert.alert('Invalid Quantity', 'Please enter a valid quantity');
+      return;
+    }
+
+    if (quantity > material.stock_quantity) {
+      Alert.alert('Insufficient Stock', `Only ${material.stock_quantity} available in stock`);
+      return;
+    }
+
+    // Check if material already exists in selection
+    const existingIndex = selectedMaterials.findIndex(
+      item => item.material.material_id === material.material_id
+    );
+
+    if (existingIndex >= 0) {
+      // Update existing material
+      const updatedMaterials = [...selectedMaterials];
+      const currentQuantity = updatedMaterials[existingIndex].quantity;
+      const newQuantity = currentQuantity + quantity;
+      
+      if (newQuantity > material.stock_quantity) {
+        Alert.alert('Insufficient Stock', `You already have ${currentQuantity} in your list. Cannot add ${quantity} more as only ${material.stock_quantity} available in stock`);
+        return;
+      }
+      
+      updatedMaterials[existingIndex] = {
+        ...updatedMaterials[existingIndex],
+        quantity: newQuantity
+      };
+      
+      setSelectedMaterials(updatedMaterials);
+    } else {
+      // Add new material
+      setSelectedMaterials([
+        ...selectedMaterials,
+        { material, quantity }
+      ]);
+    }
+    
+    closeMaterialModal();
+  };
+
+  // Edit material in selection
+  const editMaterial = (index: number) => {
+    const materialToEdit = selectedMaterials[index];
+    setSelectedMaterialForEdit(materialToEdit);
+    setMaterialQuantity(materialToEdit.quantity.toString());
+    setIsMaterialModalVisible(true);
+  };
+
+  // Update material quantity
+  const updateMaterial = () => {
+    if (!selectedMaterialForEdit) return;
+    
+    const quantity = parseInt(materialQuantity, 10);
+    
+    if (isNaN(quantity) || quantity <= 0) {
+      Alert.alert('Invalid Quantity', 'Please enter a valid quantity');
+      return;
+    }
+
+    if (quantity > selectedMaterialForEdit.material.stock_quantity) {
+      Alert.alert('Insufficient Stock', `Only ${selectedMaterialForEdit.material.stock_quantity} available in stock`);
+      return;
+    }
+
+    // Check if material already exists in selection
+    const existingIndex = selectedMaterials.findIndex(
+      item => item.material.material_id === selectedMaterialForEdit.material.material_id
+    );
+
+    if (existingIndex >= 0) {
+      // Update existing material
+      const updatedMaterials = [...selectedMaterials];
+      updatedMaterials[existingIndex] = {
+        ...updatedMaterials[existingIndex],
+        quantity
+      };
+      
+      setSelectedMaterials(updatedMaterials);
+    } else {
+      // Add new material
+      setSelectedMaterials([
+        ...selectedMaterials,
+        { material: selectedMaterialForEdit.material, quantity }
+      ]);
+    }
+    
+    closeMaterialModal();
+  };
+
+  // Remove material from selection
+  const removeMaterial = (index: number) => {
+    Alert.alert(
+      'Remove Material',
+      'Are you sure you want to remove this material?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            const updatedMaterials = [...selectedMaterials];
+            updatedMaterials.splice(index, 1);
+            setSelectedMaterials(updatedMaterials);
+          }
+        }
+      ]
+    );
+  };
+
+  // Calculate total cost of materials
+  const calculateTotalCost = (): number => {
+    return selectedMaterials.reduce((total, item) => {
+      const unitPrice = parseInt(item.material.unit_price, 10);
+      return total + (unitPrice * item.quantity);
+    }, 0);
+  };
 
   const formatDate = (dateString: string) => {
     try {
@@ -170,6 +345,11 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
       return;
     }
 
+    if (selectedMaterials.length === 0) {
+      Alert.alert('Missing Materials', 'Please add at least one material for repair');
+      return;
+    }
+
     setShowReviewScreen(true);
   };
 
@@ -184,7 +364,11 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
       const inspectionData = {
         task_assignment_id: taskDetail.assignment_id,
         description: description,
-        files: selectedImages
+        files: selectedImages,
+        repairMaterials: selectedMaterials.map(item => ({
+          materialId: item.material.material_id,
+          quantity: item.quantity
+        }))
       };
       
       await TaskService.createInspection(inspectionData);
@@ -245,6 +429,54 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
             <Text style={styles.cardTitle}>Notes</Text>
             <View style={styles.divider} />
             <Text style={styles.notesPreview}>{description}</Text>
+          </View>
+          
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Materials</Text>
+            <View style={styles.divider} />
+            <View style={styles.materialList}>
+              {selectedMaterials.map((item, index) => (
+                <View key={index} style={styles.materialItem}>
+                  <View style={styles.materialContent}>
+                    <View style={styles.materialHeader}>
+                      <Text style={styles.materialName} numberOfLines={1}>
+                        {item.material.name}
+                      </Text>
+                      <Text style={styles.materialQuantity}>
+                        x{item.quantity}
+                      </Text>
+                    </View>
+                    <Text style={styles.materialPrice}>
+                      {parseInt(item.material.unit_price, 10).toLocaleString()} VND/unit
+                    </Text>
+                    <Text style={styles.materialSubtotal}>
+                      Subtotal: {(parseInt(item.material.unit_price, 10) * item.quantity).toLocaleString()} VND
+                    </Text>
+                  </View>
+                  <View style={styles.materialActions}>
+                    <TouchableOpacity 
+                      onPress={() => editMaterial(index)}
+                      style={styles.materialEditButton}
+                    >
+                      <Ionicons name="pencil" size={18} color="#B77F2E" />
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      onPress={() => removeMaterial(index)}
+                      style={styles.materialDeleteButton}
+                    >
+                      <Ionicons name="trash" size={18} color="#FF3B30" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+              
+              <View style={styles.materialTotalRow}>
+                <Text style={styles.materialTotalLabel}>Total Cost:</Text>
+                <Text style={styles.materialTotalValue}>
+                  {calculateTotalCost().toLocaleString()} VND
+                </Text>
+              </View>
+            </View>
           </View>
           
           <View style={styles.card}>
@@ -327,6 +559,167 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
           />
         </View>
 
+        {/* Materials Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Materials for Repair</Text>
+          <View style={styles.divider} />
+          
+          {materialsLoading ? (
+            <ActivityIndicator size="small" color="#B77F2E" style={styles.loadingIndicator} />
+          ) : (
+            <>
+              {selectedMaterials.length > 0 ? (
+                <View style={styles.materialList}>
+                  {selectedMaterials.map((item, index) => (
+                    <View key={index} style={styles.materialItem}>
+                      <View style={styles.materialContent}>
+                        <View style={styles.materialHeader}>
+                          <Text style={styles.materialName} numberOfLines={1}>
+                            {item.material.name}
+                          </Text>
+                          <Text style={styles.materialQuantity}>
+                            x{item.quantity}
+                          </Text>
+                        </View>
+                        <Text style={styles.materialPrice}>
+                          {parseInt(item.material.unit_price, 10).toLocaleString()} VND/unit
+                        </Text>
+                        <Text style={styles.materialSubtotal}>
+                          Subtotal: {(parseInt(item.material.unit_price, 10) * item.quantity).toLocaleString()} VND
+                        </Text>
+                      </View>
+                      <View style={styles.materialActions}>
+                        <TouchableOpacity 
+                          onPress={() => editMaterial(index)}
+                          style={styles.materialEditButton}
+                        >
+                          <Ionicons name="pencil" size={18} color="#B77F2E" />
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          onPress={() => removeMaterial(index)}
+                          style={styles.materialDeleteButton}
+                        >
+                          <Ionicons name="trash" size={18} color="#FF3B30" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))}
+                  
+                  <View style={styles.materialTotalRow}>
+                    <Text style={styles.materialTotalLabel}>Total Cost:</Text>
+                    <Text style={styles.materialTotalValue}>
+                      {calculateTotalCost().toLocaleString()} VND
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                <Text style={styles.noMaterialsText}>No materials added yet</Text>
+              )}
+              
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={openMaterialModal}
+              >
+                <Ionicons name="add-circle" size={24} color="#B77F2E" />
+                <Text style={styles.addButtonText}>Add Material</Text>
+              </TouchableOpacity>
+              
+              {/* Material Selection Modal */}
+              <Modal
+                isVisible={isMaterialModalVisible}
+                onBackdropPress={closeMaterialModal}
+                style={styles.materialModal}
+              >
+                <View style={styles.materialModalContent}>
+                  <Text style={styles.modalTitle}>
+                    {selectedMaterialForEdit ? 'Update Material Quantity' : 'Select Material'}
+                  </Text>
+                  
+                  {selectedMaterialForEdit ? (
+                    <View style={styles.materialUpdateContainer}>
+                      <Text style={styles.materialUpdateTitle}>{selectedMaterialForEdit.material.name}</Text>
+                      <Text style={styles.materialUpdateDescription}>{selectedMaterialForEdit.material.description}</Text>
+                      <Text style={styles.materialUpdateStock}>
+                        Available: {selectedMaterialForEdit.material.stock_quantity} units
+                      </Text>
+                      <Text style={styles.materialUpdatePrice}>
+                        Unit Price: {parseInt(selectedMaterialForEdit.material.unit_price, 10).toLocaleString()} VND
+                      </Text>
+                      
+                      <View style={styles.quantityContainer}>
+                        <Text style={styles.quantityLabel}>Quantity:</Text>
+                        <TextInput 
+                          style={styles.quantityInput}
+                          value={materialQuantity}
+                          onChangeText={setMaterialQuantity}
+                          keyboardType="number-pad"
+                          selectTextOnFocus
+                        />
+                      </View>
+                      
+                      <View style={styles.materialModalActions}>
+                        <TouchableOpacity
+                          style={styles.materialModalButton}
+                          onPress={closeMaterialModal}
+                        >
+                          <Text style={styles.materialModalButtonText}>Cancel</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity
+                          style={[styles.materialModalButton, styles.materialModalPrimaryButton]}
+                          onPress={updateMaterial}
+                        >
+                          <Text style={styles.materialModalPrimaryButtonText}>Update</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.materialSelectContainer}>
+                      <FlatList
+                        data={materials}
+                        keyExtractor={(item) => item.material_id}
+                        renderItem={({ item }) => (
+                          <TouchableOpacity
+                            style={styles.materialSelectItem}
+                            onPress={() => {
+                              setSelectedMaterialForEdit({ material: item, quantity: 1 });
+                              setMaterialQuantity('1');
+                            }}
+                          >
+                            <View style={styles.materialSelectContent}>
+                              <Text style={styles.materialSelectName}>{item.name}</Text>
+                              <Text style={styles.materialSelectDescription} numberOfLines={2}>
+                                {item.description}
+                              </Text>
+                              <View style={styles.materialSelectFooter}>
+                                <Text style={styles.materialSelectPrice}>
+                                  {parseInt(item.unit_price, 10).toLocaleString()} VND/unit
+                                </Text>
+                                <Text style={styles.materialSelectStock}>
+                                  Available: {item.stock_quantity}
+                                </Text>
+                              </View>
+                            </View>
+                          </TouchableOpacity>
+                        )}
+                        ItemSeparatorComponent={() => <View style={styles.materialSeparator} />}
+                        style={styles.materialSelectList}
+                      />
+                      
+                      <TouchableOpacity
+                        style={styles.closeMaterialModalButton}
+                        onPress={closeMaterialModal}
+                      >
+                        <Text style={styles.closeMaterialModalText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              </Modal>
+            </>
+          )}
+        </View>
+
         {/* Inspection Images */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Inspection Images</Text>
@@ -393,7 +786,8 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
             {
               backgroundColor: 
                 selectedImages.length > 0 && 
-                description.trim() !== ''
+                description.trim() !== '' &&
+                selectedMaterials.length > 0
                   ? '#B77F2E'
                   : '#CCC'
             }
@@ -401,6 +795,7 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
           disabled={
             selectedImages.length === 0 || 
             description.trim() === '' ||
+            selectedMaterials.length === 0 ||
             isSubmitting
           }
           onPress={handleReviewInspection}
@@ -622,6 +1017,233 @@ const styles = StyleSheet.create({
   confirmButton: {
     backgroundColor: '#4CD964',  // Green color for confirmation
     marginTop: 16,
+  },
+  materialList: {
+    marginBottom: 16,
+  },
+  materialItem: {
+    borderWidth: 1,
+    borderColor: '#DDDDDD',
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: '#F8F8F8',
+    marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  materialContent: {
+    flex: 1,
+  },
+  materialHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  materialName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333333',
+    flex: 1,
+  },
+  materialQuantity: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#B77F2E',
+    marginLeft: 8,
+  },
+  materialPrice: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 2,
+  },
+  materialSubtotal: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333333',
+  },
+  materialActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  materialEditButton: {
+    padding: 6,
+    marginRight: 6,
+  },
+  materialDeleteButton: {
+    padding: 6,
+  },
+  noMaterialsText: {
+    color: '#666666',
+    textAlign: 'center',
+    marginBottom: 16,
+    fontStyle: 'italic',
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 8,
+  },
+  addButtonText: {
+    color: '#B77F2E',
+    marginLeft: 8,
+    fontWeight: '600',
+  },
+  materialModal: {
+    justifyContent: 'flex-end',
+    margin: 0,
+  },
+  materialModalContent: {
+    backgroundColor: 'white',
+    padding: 22,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+  },
+  materialUpdateContainer: {
+    padding: 8,
+  },
+  materialUpdateTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  materialUpdateDescription: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 12,
+  },
+  materialUpdateStock: {
+    fontSize: 14,
+    color: '#333333',
+    marginBottom: 4,
+  },
+  materialUpdatePrice: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#B77F2E',
+    marginBottom: 16,
+  },
+  quantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  quantityLabel: {
+    fontSize: 16,
+    marginRight: 12,
+    width: 80,
+  },
+  quantityInput: {
+    borderWidth: 1,
+    borderColor: '#DDDDDD',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+    width: 80,
+    textAlign: 'center',
+  },
+  materialModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  materialModalButton: {
+    flex: 1,
+    padding: 12,
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DDDDDD',
+    marginHorizontal: 4,
+  },
+  materialModalButtonText: {
+    fontSize: 16,
+    color: '#333333',
+  },
+  materialModalPrimaryButton: {
+    backgroundColor: '#B77F2E',
+    borderColor: '#B77F2E',
+  },
+  materialModalPrimaryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  materialSelectContainer: {
+    maxHeight: 500,
+  },
+  materialSelectList: {
+    maxHeight: 400,
+  },
+  materialSelectItem: {
+    padding: 12,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 8,
+  },
+  materialSelectContent: {
+    flex: 1,
+  },
+  materialSelectName: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  materialSelectDescription: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 8,
+  },
+  materialSelectFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  materialSelectPrice: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#B77F2E',
+  },
+  materialSelectStock: {
+    fontSize: 14,
+    color: '#333333',
+  },
+  materialSeparator: {
+    height: 8,
+  },
+  closeMaterialModalButton: {
+    padding: 12,
+    alignItems: 'center',
+    marginTop: 16,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 8,
+  },
+  closeMaterialModalText: {
+    fontSize: 16,
+    color: '#333333',
+  },
+  loadingIndicator: {
+    marginVertical: 16,
+  },
+  materialTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+    marginTop: 8,
+  },
+  materialTotalLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333333',
+    marginRight: 8,
+  },
+  materialTotalValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#4CD964',
   },
 });
 
