@@ -20,6 +20,8 @@ import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { VITE_REASSIGN_STAFF_TASK_ASSIGNMENT} from '@env';
+import instance from '../../service/Auth';
 
 type StaffInspectionListScreenRouteProp = RouteProp<RootStackParamList, 'StaffInspectionList'>;
 type StaffInspectionListScreenNavigationProp = StackNavigationProp<RootStackParamList, 'StaffInspectionList'>;
@@ -40,6 +42,10 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
   const [showReassignModal, setShowReassignModal] = useState(false);
   const [reassignReason, setReassignReason] = useState('');
   const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null);
+  const [showEmployeeSelectModal, setShowEmployeeSelectModal] = useState(false);
+  const [availableEmployees, setAvailableEmployees] = useState<Array<{employee_id: string; username: string}>>([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
 
   useEffect(() => {
     const checkUserPosition = async () => {
@@ -140,18 +146,65 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
       return;
     }
 
+    setShowReassignModal(false);
+    setShowEmployeeSelectModal(true);
+    await fetchAvailableEmployees();
+  };
+
+  const fetchAvailableEmployees = async () => {
     try {
-      await TaskService.reassignTaskAssignment(
-        selectedInspection?.task_assignment_id || '',
-        reassignReason
-      );
+      setLoadingEmployees(true);
+      const response = await TaskService.getStaffByLeader();
+      const currentEmployeeId = selectedInspection?.taskAssignment?.employee_id;
+      
+      // Filter out the current employee and format the list
+      const employees = response.data
+        .filter((staff: { userId: string }) => staff.userId !== currentEmployeeId)
+        .map((staff: { userId: string; username: string }) => ({
+          employee_id: staff.userId,
+          username: staff.username
+        }));
+      
+      setAvailableEmployees(employees);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      showMessage({
+        message: 'Error',
+        description: 'Failed to load available employees',
+        type: 'danger',
+        duration: 3000,
+      });
+    } finally {
+      setLoadingEmployees(false);
+    }
+  };
+
+  const handleEmployeeSelect = async () => {
+    if (!selectedEmployeeId) {
+      showMessage({
+        message: 'Error',
+        description: 'Please select an employee',
+        type: 'warning',
+        duration: 3000,
+      });
+      return;
+    }
+
+    try {
+      const url = VITE_REASSIGN_STAFF_TASK_ASSIGNMENT.replace('{taskAssignmentId}', selectedInspection?.task_assignment_id || '');
+      await instance.put(url, {
+        newEmployeeId: selectedEmployeeId
+      });
+
       showMessage({
         message: 'Success',
         description: 'Task has been reassigned successfully',
         type: 'success',
         duration: 3000,
       });
-      setShowReassignModal(false);
+      
+      setShowEmployeeSelectModal(false);
+      setSelectedEmployeeId('');
       setReassignReason('');
       navigation.goBack();
     } catch (error) {
@@ -344,6 +397,61 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
           >
             <Text style={styles.modalButtonText}>Cancel</Text>
           </TouchableOpacity>
+        </View>
+      </Modal>
+
+      {/* Employee Select Modal */}
+      <Modal
+        isVisible={showEmployeeSelectModal}
+        onBackdropPress={() => setShowEmployeeSelectModal(false)}
+        backdropOpacity={0.5}
+        animationIn="fadeIn"
+        animationOut="fadeOut"
+        useNativeDriver
+        style={styles.modal}
+      >
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Chọn nhân viên mới</Text>
+          
+          {loadingEmployees ? (
+            <ActivityIndicator size="large" color="#B77F2E" />
+          ) : (
+            <>
+              <FlatList
+                data={availableEmployees}
+                keyExtractor={(item) => item.employee_id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.employeeItem,
+                      selectedEmployeeId === item.employee_id && styles.selectedEmployeeItem
+                    ]}
+                    onPress={() => setSelectedEmployeeId(item.employee_id)}
+                  >
+                    <Text style={styles.employeeName}>{item.username}</Text>
+                  </TouchableOpacity>
+                )}
+                style={styles.employeeList}
+              />
+              
+              <TouchableOpacity
+                style={styles.modalButton}
+                onPress={handleEmployeeSelect}
+              >
+                <Text style={styles.modalButtonText}>Xác nhận</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setShowEmployeeSelectModal(false);
+                  setSelectedEmployeeId('');
+                }}
+              >
+                <Text style={styles.modalButtonText}>Hủy</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </Modal>
     </SafeAreaView>
@@ -588,6 +696,23 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 20,
     textAlignVertical: 'top',
+  },
+  employeeList: {
+    maxHeight: 200,
+    width: '100%',
+    marginBottom: 20,
+  },
+  employeeItem: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  selectedEmployeeItem: {
+    backgroundColor: '#F0F0F0',
+  },
+  employeeName: {
+    fontSize: 16,
+    color: '#333333',
   },
 });
 
