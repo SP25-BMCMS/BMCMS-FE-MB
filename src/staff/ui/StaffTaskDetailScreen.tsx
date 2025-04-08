@@ -360,7 +360,7 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
               style={[styles.actionButton, styles.viewInspectionsButton]}
               onPress={() => {
                 if (taskDetail) {
-                  navigation.navigate('InspectionList', { 
+                  navigation.navigate('StaffInspectionList', { 
                     taskAssignmentId: taskDetail.assignment_id,
                     taskDescription: taskDetail.description
                   });

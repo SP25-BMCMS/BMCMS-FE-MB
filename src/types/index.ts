@@ -57,6 +57,10 @@ export type RootStackParamList = {
     taskAssignmentId: string;
     taskDescription: string;
   };
+  StaffInspectionList: {
+    taskAssignmentId: string;
+    taskDescription: string;
+  };
   InspectionDetail: {
     inspection: Inspection;
   };
