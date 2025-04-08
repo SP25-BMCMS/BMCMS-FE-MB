@@ -24,7 +24,8 @@ import {
   VITE_GET_INSPECTION_BY_TASK_ASSIGNMENT_ID,
   VITE_GET_METERIAL_LIST,
   VITE_GET_TASK_ASSIGNMENT_BY_TASK_ID,
-  VITE_GET_TASK_ASSIGNMENT_BY_EMPLOYEE_ID
+  VITE_GET_TASK_ASSIGNMENT_BY_EMPLOYEE_ID,
+  VITE_REASSIGN_TASK_ASSIGNMENT
 } from '@env';
 
 export const TaskService = {
@@ -149,13 +150,25 @@ export const TaskService = {
   },
 
   // Thay đổi trạng thái task assignment
-  async changeTaskAssignmentStatus(assignmentId: string, status: 'Pending' | 'Verified' | 'Unverified' | 'Fixed'): Promise<any> {
+  async changeTaskAssignmentStatus(assignmentId: string, status: 'Pending' | 'Verified' | 'Unverified' | 'Fixed' | 'InFixing' | 'Confirmed'): Promise<any> {
     try {
       const url = VITE_CHANGE_STATUS_TASK_ASSIGMENT.replace('{assignment_id}', assignmentId);
       const response = await instance.put(url, { status });
       return response.data;
     } catch (error) {
       console.error(`Error changing task assignment status for ID ${assignmentId}:`, error);
+      throw error;
+    }
+  },
+
+  // Reassign task assignment
+  async reassignTaskAssignment(assignmentId: string, description: string): Promise<any> {
+    try {
+      const url = VITE_REASSIGN_TASK_ASSIGNMENT.replace('{assignment_id}', assignmentId);
+      const response = await instance.patch(url, { description });
+      return response.data;
+    } catch (error) {
+      console.error(`Error reassigning task assignment for ID ${assignmentId}:`, error);
       throw error;
     }
   },

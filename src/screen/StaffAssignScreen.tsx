@@ -183,16 +183,16 @@ const StaffAssignScreen = () => {
         return '#007AFF'; // Blue
       case 'Fixed':
         return '#4CD964'; // Green
-      case 'Canceled':
-        return '#FF3B30'; // Red
+        case 'Reassigned':
+          return '#FF3B30'; // red
       case 'Verified':
         return '#4CD964'; // Green (same as Completed)
       case 'Unverified':
         return '#FF9500'; // Orange
       case 'InFixing':
         return '#5AC8FA'; // Light blue
-      case 'Reassigned':
-        return '#9C27B0'; // Purple
+        case 'Confirmed':
+          return '#5856D6'; // Indigo
       default:
         return '#8E8E93'; // Gray
     }

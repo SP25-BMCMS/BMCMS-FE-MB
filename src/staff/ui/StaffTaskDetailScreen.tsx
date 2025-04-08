@@ -67,17 +67,17 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
       case 'InProgress':
         return '#007AFF'; // Blue
       case 'Fixed':
-        return '#4CD964'; // Green
-      case 'Canceled':
-        return '#FF3B30'; // Red
+        return '#34C759'; // Light Green
       case 'Reassigned':
-        return '#9C27B0'; // Purple
+        return '#FF3B30'; // red
       case 'InFixing':
         return '#5AC8FA'; // Light blue
       case 'Verified':
-        return '#4CD964'; // Green (same as Completed)
+        return '#4CD964'; // Green
       case 'Unverified':
         return '#FF9500'; // Orange
+      case 'Confirmed':
+        return '#5856D6'; // Indigo
       default:
         return '#8E8E93'; // Gray
     }

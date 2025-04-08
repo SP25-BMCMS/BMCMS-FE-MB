@@ -7,8 +7,11 @@ import {
   FlatList, 
   ActivityIndicator, 
   Image,
-  Alert
+  Alert,
+  TextInput
 } from 'react-native';
+import Modal from 'react-native-modal';
+import { showMessage } from 'react-native-flash-message';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Inspection } from '../../types';
@@ -33,6 +36,10 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLeader, setIsLeader] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showReassignModal, setShowReassignModal] = useState(false);
+  const [reassignReason, setReassignReason] = useState('');
+  const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null);
 
   useEffect(() => {
     const checkUserPosition = async () => {
@@ -58,10 +65,11 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
       setLoading(true);
       setError(null);
       const response = await TaskService.getInspectionsByTaskAssignmentId(taskAssignmentId);
-      setInspections(response.data);
+      setInspections(response.data || []);
     } catch (error) {
       console.error('Error fetching inspections:', error);
       setError('Unable to load inspections. Please try again.');
+      setInspections([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -91,12 +99,69 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const handleChangeStatus = (inspection: Inspection) => {
-    // TODO: Implement change status functionality
-    Alert.alert(
-      'Change Status',
-      'This feature is coming soon!',
-      [{ text: 'OK' }]
-    );
+    setSelectedInspection(inspection);
+    setShowStatusModal(true);
+  };
+
+  const handleStatusSelect = async (status: 'Reassigned' | 'Confirmed') => {
+    setShowStatusModal(false);
+    
+    if (status === 'Reassigned') {
+      setShowReassignModal(true);
+    } else {
+      try {
+        await TaskService.changeTaskAssignmentStatus(selectedInspection?.task_assignment_id || '', 'Confirmed');
+        showMessage({
+          message: 'Success',
+          description: 'Task status has been updated successfully',
+          type: 'success',
+          duration: 3000,
+        });
+        navigation.goBack();
+      } catch (error) {
+        showMessage({
+          message: 'Error',
+          description: 'Failed to update task status',
+          type: 'danger',
+          duration: 3000,
+        });
+      }
+    }
+  };
+
+  const handleReassign = async () => {
+    if (!reassignReason.trim()) {
+      showMessage({
+        message: 'Error',
+        description: 'Please enter a reason for reassignment',
+        type: 'warning',
+        duration: 3000,
+      });
+      return;
+    }
+
+    try {
+      await TaskService.reassignTaskAssignment(
+        selectedInspection?.task_assignment_id || '',
+        reassignReason
+      );
+      showMessage({
+        message: 'Success',
+        description: 'Task has been reassigned successfully',
+        type: 'success',
+        duration: 3000,
+      });
+      setShowReassignModal(false);
+      setReassignReason('');
+      navigation.goBack();
+    } catch (error) {
+      showMessage({
+        message: 'Error',
+        description: 'Failed to reassign task',
+        type: 'danger',
+        duration: 3000,
+      });
+    }
   };
 
   const renderInspectionItem = ({ item }: { item: Inspection }) => (
@@ -198,7 +263,7 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
             onRefresh={handleRefresh}
             refreshing={refreshing}
           />
-          {isLeader && (
+          {isLeader && inspections.length > 0 && (
             <View style={styles.changeStatusContainer}>
               <TouchableOpacity 
                 style={styles.changeStatusButton}
@@ -210,6 +275,77 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
           )}
         </>
       )}
+
+      {/* Status Selection Modal */}
+      <Modal
+        isVisible={showStatusModal}
+        onBackdropPress={() => setShowStatusModal(false)}
+        backdropOpacity={0.5}
+        animationIn="fadeIn"
+        animationOut="fadeOut"
+        useNativeDriver
+        style={styles.modal}
+      >
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Select Action</Text>
+          <TouchableOpacity
+            style={styles.modalButton}
+            onPress={() => handleStatusSelect('Reassigned')}
+          >
+            <Text style={styles.modalButtonText}>Reassigned</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.modalButton}
+            onPress={() => handleStatusSelect('Confirmed')}
+          >
+            <Text style={styles.modalButtonText}>Confirmed</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.modalButton, styles.cancelButton]}
+            onPress={() => setShowStatusModal(false)}
+          >
+            <Text style={styles.modalButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
+      {/* Reassign Reason Modal */}
+      <Modal
+        isVisible={showReassignModal}
+        onBackdropPress={() => setShowReassignModal(false)}
+        backdropOpacity={0.5}
+        animationIn="fadeIn"
+        animationOut="fadeOut"
+        useNativeDriver
+        style={styles.modal}
+      >
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Enter Reassignment Reason</Text>
+          <TextInput
+            style={styles.reasonInput}
+            multiline
+            numberOfLines={4}
+            placeholder="Enter the reason for reassignment..."
+            value={reassignReason}
+            onChangeText={setReassignReason}
+          />
+          <TouchableOpacity
+            style={styles.modalButton}
+            onPress={handleReassign}
+          >
+            <Text style={styles.modalButtonText}>Submit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.modalButton, styles.cancelButton]}
+            onPress={() => {
+              setShowReassignModal(false);
+              setReassignReason('');
+            }}
+          >
+            <Text style={styles.modalButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -395,6 +531,63 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  modal: {
+    margin: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    width: '80%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  modalButton: {
+    backgroundColor: '#B77F2E',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    marginVertical: 8,
+    width: '100%',
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  cancelButton: {
+    backgroundColor: '#666666',
+  },
+  reasonInput: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#CCCCCC',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 20,
+    textAlignVertical: 'top',
   },
 });
 
