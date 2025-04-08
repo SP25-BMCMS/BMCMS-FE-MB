@@ -134,15 +134,6 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
           )}
         </View>
       </View>
-
-      {isLeader && (
-        <TouchableOpacity 
-          style={styles.changeStatusButton}
-          onPress={() => handleChangeStatus(item)}
-        >
-          <Text style={styles.changeStatusButtonText}>Change Status</Text>
-        </TouchableOpacity>
-      )}
     </TouchableOpacity>
   );
 
@@ -196,16 +187,28 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
           </TouchableOpacity>
         </View>
       ) : (
-        <FlatList
-          data={inspections}
-          renderItem={renderInspectionItem}
-          keyExtractor={(item) => item.inspection_id}
-          contentContainerStyle={styles.listContainer}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={renderEmptyList}
-          onRefresh={handleRefresh}
-          refreshing={refreshing}
-        />
+        <>
+          <FlatList
+            data={inspections}
+            renderItem={renderInspectionItem}
+            keyExtractor={(item) => item.inspection_id}
+            contentContainerStyle={styles.listContainer}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={renderEmptyList}
+            onRefresh={handleRefresh}
+            refreshing={refreshing}
+          />
+          {isLeader && (
+            <View style={styles.changeStatusContainer}>
+              <TouchableOpacity 
+                style={styles.changeStatusButton}
+                onPress={() => handleChangeStatus(inspections[0])}
+              >
+                <Text style={styles.changeStatusButtonText}>Change Status</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </>
       )}
     </SafeAreaView>
   );
@@ -376,18 +379,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
+  changeStatusContainer: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
   changeStatusButton: {
     backgroundColor: '#B77F2E',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 8,
-    marginTop: 8,
-    alignSelf: 'flex-end',
+    alignItems: 'center',
   },
   changeStatusButtonText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 16,
   },
 });
 

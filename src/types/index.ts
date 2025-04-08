@@ -434,6 +434,10 @@ export interface TaskAssignmentDetail {
   updated_at: string;
   task: Task;
   crackInfo: CrackInfoResponse;
+  employee?: {
+    employee_id: string;
+    username: string;
+  };
 }
 
 export interface TaskAssignmentDetailResponse {

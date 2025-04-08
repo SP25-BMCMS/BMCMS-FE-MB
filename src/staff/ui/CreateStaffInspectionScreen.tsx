@@ -22,6 +22,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import Modal from 'react-native-modal';
+import { showMessage } from "react-native-flash-message";
 
 type CreateStaffInspectionScreenRouteProp = RouteProp<RootStackParamList, 'CreateStaffInspection'>;
 type CreateStaffInspectionScreenNavigationProp = StackNavigationProp<RootStackParamList>;
@@ -53,6 +54,9 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
   const [materialsLoading, setMaterialsLoading] = useState<boolean>(false);
   const [selectedMaterialForEdit, setSelectedMaterialForEdit] = useState<SelectedMaterial | null>(null);
   const [materialQuantity, setMaterialQuantity] = useState<string>('1');
+
+  // New state for changing status
+  const [isChangingStatus, setIsChangingStatus] = useState<boolean>(false);
 
   // Load materials when component mounts
   useEffect(() => {
@@ -230,7 +234,7 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
         return '#FFA500'; // Orange
       case 'InProgress':
         return '#007AFF'; // Blue
-      case 'Completed':
+      case 'Fixed':
         return '#4CD964'; // Green
       case 'Canceled':
         return '#FF3B30'; // Red
@@ -387,6 +391,27 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
     }
   };
 
+  const handleChangeStatus = async () => {
+    try {
+      setIsChangingStatus(true);
+      await TaskService.changeTaskAssignmentStatus(taskDetail.assignment_id, 'Fixed');
+      showMessage({
+        message: "Status Changed",
+        description: "Task status has been changed to Fixed",
+        type: "success",
+      });
+    } catch (error) {
+      console.error('Error changing status:', error);
+      showMessage({
+        message: "Error",
+        description: "Failed to change task status",
+        type: "danger",
+      });
+    } finally {
+      setIsChangingStatus(false);
+    }
+  };
+
   // Render review screen
   if (showReviewScreen) {
     return (
@@ -489,17 +514,31 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
             </ScrollView>
           </View>
           
-          <TouchableOpacity
-            style={[styles.submitButton, styles.confirmButton]}
-            onPress={handleSubmitInspection}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text style={styles.submitButtonText}>Confirm & Submit</Text>
-            )}
-          </TouchableOpacity>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.changeStatusButton]}
+              onPress={handleChangeStatus}
+              disabled={isChangingStatus}
+            >
+              {isChangingStatus ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>Change Status to Fixed</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.confirmButton]}
+              onPress={handleSubmitInspection}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>Confirm & Submit</Text>
+              )}
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </SafeAreaView>
     );
@@ -1014,9 +1053,26 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginRight: 8,
   },
+  buttonContainer: {
+    marginVertical: 24,
+    gap: 12,
+  },
+  actionButton: {
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  changeStatusButton: {
+    backgroundColor: '#B77F2E',
+  },
   confirmButton: {
     backgroundColor: '#4CD964',  // Green color for confirmation
-    marginTop: 16,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   materialList: {
     marginBottom: 16,

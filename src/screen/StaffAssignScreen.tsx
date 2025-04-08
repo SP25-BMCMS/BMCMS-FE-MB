@@ -181,7 +181,7 @@ const StaffAssignScreen = () => {
         return '#FFA500'; // Orange
       case 'InProgress':
         return '#007AFF'; // Blue
-      case 'Completed':
+      case 'Fixed':
         return '#4CD964'; // Green
       case 'Canceled':
         return '#FF3B30'; // Red

@@ -66,7 +66,7 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
         return '#FFA500'; // Orange
       case 'InProgress':
         return '#007AFF'; // Blue
-      case 'Completed':
+      case 'Fixed':
         return '#4CD964'; // Green
       case 'Canceled':
         return '#FF3B30'; // Red
@@ -217,6 +217,12 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
                   <Text style={styles.statusText}>{getStatusText(taskDetail.status)}</Text>
                 </View>
               </View>
+              {taskDetail.employee && (
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Assigned to:</Text>
+                  <Text style={styles.employeeName}>{taskDetail.employee.username}</Text>
+                </View>
+              )}
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Created:</Text>
                 <Text style={styles.infoValue}>{formatDate(taskDetail.created_at)}</Text>
@@ -253,12 +259,12 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
                   </View>
                   <View style={styles.infoRow}>
                     <Text style={styles.infoLabel}>Reported by:</Text>
-                    <Text style={styles.infoValue}>{crackReport.reportedBy.username}</Text>
+                    <Text style={styles.employeeName}>{crackReport.reportedBy.username}</Text>
                   </View>
                   {crackReport.verifiedBy && (
                     <View style={styles.infoRow}>
                       <Text style={styles.infoLabel}>Verified by:</Text>
-                      <Text style={styles.infoValue}>{crackReport.verifiedBy.username}</Text>
+                      <Text style={styles.employeeName}>{crackReport.verifiedBy.username}</Text>
                     </View>
                   )}
                   <View style={styles.infoRow}>
@@ -603,6 +609,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  employeeName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#B77F2E',
   },
 });
 

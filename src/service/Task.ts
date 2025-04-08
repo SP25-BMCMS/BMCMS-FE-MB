@@ -149,7 +149,7 @@ export const TaskService = {
   },
 
   // Thay đổi trạng thái task assignment
-  async changeTaskAssignmentStatus(assignmentId: string, status: 'Pending' | 'Verified' | 'Unverified'): Promise<any> {
+  async changeTaskAssignmentStatus(assignmentId: string, status: 'Pending' | 'Verified' | 'Unverified' | 'Fixed'): Promise<any> {
     try {
       const url = VITE_CHANGE_STATUS_TASK_ASSIGMENT.replace('{assignment_id}', assignmentId);
       const response = await instance.put(url, { status });
