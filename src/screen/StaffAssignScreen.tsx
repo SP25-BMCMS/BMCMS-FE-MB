@@ -321,7 +321,7 @@ const StaffAssignScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.headerTitle}>Team Assignments</Text>
+      <Text style={styles.headerTitle}>Staff Assign</Text>
       
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>

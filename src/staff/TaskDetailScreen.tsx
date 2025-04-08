@@ -70,6 +70,10 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
         return '#4CD964'; // Green
       case 'Canceled':
         return '#FF3B30'; // Red
+        case 'Reassigned':
+        return '#9C27B0';
+        case 'InFixing':
+        return '#5AC8FA'; // Light blue
       case 'Verified':
         return '#4CD964'; // Green (same as Completed)
       case 'Unverified':
