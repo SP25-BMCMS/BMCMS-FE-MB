@@ -176,6 +176,7 @@ const styles = StyleSheet.create({
   },
   unitCode: {
     fontSize: 24,
+    color: "#B77F2E",
     textAlign: "center",
     fontWeight: "bold",
     marginBottom: 6,

@@ -14,6 +14,7 @@ import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from 'expo-linear-gradient';
 
 type AccountScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -26,6 +27,7 @@ const AccountScreen = () => {
   const [headerAnim] = useState(new Animated.Value(0));
   const [bodyAnim] = useState(new Animated.Value(0));
   const [userData, setUserData] = useState<any>(null);
+  const [userType, setUserType] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
@@ -59,6 +61,9 @@ const AccountScreen = () => {
   const checkLoginStatus = async () => {
     try {
       const userDataString = await AsyncStorage.getItem("userData");
+      const type = await AsyncStorage.getItem("userType");
+      setUserType(type);
+      
       if (userDataString) {
         const userData = JSON.parse(userDataString);
         setUserData(userData);
@@ -85,8 +90,6 @@ const AccountScreen = () => {
     Alert.alert("Thông báo", "Chức năng đổi mật khẩu sẽ được phát triển sau");
   };
 
-
-
   return (
     <View style={styles.container}>
       {/* Header Animation */}
@@ -97,7 +100,9 @@ const AccountScreen = () => {
         }}
       >
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Account</Text>
+          <Text style={styles.headerTitle}>
+            {userType === 'staff' ? 'Staff Account' : 'Account'}
+          </Text>
           {isLoggedIn && (
             <TouchableOpacity onPress={navigateToMore} style={styles.menuButton}>
               <Icon name="menu" size={28} color="#000" />
@@ -114,7 +119,11 @@ const AccountScreen = () => {
           transform: [{ translateY: bodyAnim.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }],
         }}
       >
-        {isLoggedIn ? renderUserUI() : renderGuestUI()}
+        {!isLoggedIn 
+          ? renderGuestUI() 
+          : userType === 'staff' 
+            ? renderStaffUI() 
+            : renderResidentUI()}
       </Animated.View>
     </View>
   );
@@ -149,16 +158,29 @@ const AccountScreen = () => {
     );
   }
 
-  // UI cho user
-  function renderUserUI() {
+  // UI cho resident
+  function renderResidentUI() {
+    // Hàm tạo initials cho resident
+    const getInitials = (name: string) => {
+      if (!name) return 'R';
+      const parts = name.split(' ');
+      if (parts.length === 1) return name.charAt(0).toUpperCase();
+      return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    };
+
     return (
       <>
         <View style={styles.userInfoContainer}>
-          <View style={styles.avatar}>
+          <LinearGradient
+            colors={['#CC9544', '#B77F2E', '#8E5E20'] as const}
+            style={styles.avatarGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
             <Text style={styles.avatarText}>
-              {userData?.username ? userData.username.charAt(0).toUpperCase() : "U"}
+              {getInitials(userData?.username || "R")}
             </Text>
-          </View>
+          </LinearGradient>
           <View style={styles.userDetails}>
             <Text style={styles.userName}>{userData?.username || "Resident"}</Text>
             <Text style={styles.userContact}>{userData?.phone || ""}</Text>
@@ -187,6 +209,104 @@ const AccountScreen = () => {
           <TouchableOpacity style={styles.optionItem} onPress={handleChangePassword}>
             <Icon name="lock" size={24} color="#666" />
             <Text style={styles.optionText}>ChangePassword</Text>
+            <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
+          </TouchableOpacity>
+        </View>
+      </>
+    );
+  }
+
+  // UI cho staff
+  function renderStaffUI() {
+    // Hàm lấy màu sắc dựa trên vị trí của staff
+    const getPositionColor = () => {
+      // Nếu không có thông tin vị trí rõ ràng, sử dụng màu xanh lá mặc định
+      if (!userData || !userData.role) return "#4CAF50";
+      
+      // Kiểm tra vị trí từ role
+      const position = userData.role.toLowerCase();
+      
+      if (position.includes('leader') || position.includes('1')) {
+        return '#4CAF50'; // Xanh lá cho Leader
+      } else if (position.includes('maintenance') || position.includes('2')) {
+        return '#1976D2'; // Xanh dương cho Maintenance
+      } else {
+        return '#FF9800'; // Cam cho các vị trí khác
+      }
+    };
+
+    const getGradientColors = () => {
+      const baseColor = getPositionColor();
+      
+      if (baseColor === '#4CAF50') { // Leader - Green
+        return ['#43A047', '#2E7D32', '#1B5E20'] as const;
+      } else if (baseColor === '#1976D2') { // Maintenance - Blue
+        return ['#1E88E5', '#1565C0', '#0D47A1'] as const;
+      } else { // Orange - Default or other
+        return ['#FFA726', '#F57C00', '#E65100'] as const;
+      }
+    };
+
+    // Tạo avatar chữ từ tên người dùng
+    const getInitials = (name: string) => {
+      if (!name) return 'S';
+      const parts = name.split(' ');
+      if (parts.length === 1) return name.charAt(0).toUpperCase();
+      return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    };
+
+    return (
+      <>
+        <View style={styles.userInfoContainer}>
+          <LinearGradient
+            colors={getGradientColors()}
+            style={styles.avatarGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Text style={styles.avatarText}>
+              {getInitials(userData?.username || "S")}
+            </Text>
+          </LinearGradient>
+          <View style={styles.userDetails}>
+            <Text style={styles.userName}>{userData?.username || "Staff Member"}</Text>
+            <Text style={styles.userContact}>{userData?.role || "Staff"}</Text>
+          </View>
+        </View>
+  
+        <View style={[styles.cardsContainer, { justifyContent: 'space-around' }]}>
+          <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('StaffProfile')}>
+            <Icon name="person" size={24} color="#000" />
+            <Text style={styles.cardText}>Profile</Text>
+          </TouchableOpacity>
+  
+          <TouchableOpacity style={styles.card}>
+            <Icon name="assignment" size={24} color="#000" />
+            <Text style={styles.cardText}>My Tasks</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.card}>
+            <Icon name="work" size={24} color="#000" />
+            <Text style={styles.cardText}>Department</Text>
+          </TouchableOpacity>
+        </View>
+  
+        <View style={styles.optionsList}>
+          <TouchableOpacity style={styles.optionItem}>
+            <Icon name="schedule" size={24} color="#666" />
+            <Text style={styles.optionText}>Work Schedule</Text>
+            <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
+          </TouchableOpacity>
+  
+          <TouchableOpacity style={styles.optionItem} onPress={handleChangePassword}>
+            <Icon name="lock" size={24} color="#666" />
+            <Text style={styles.optionText}>Change Password</Text>
+            <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.optionItem}>
+            <Icon name="contact-support" size={24} color="#666" />
+            <Text style={styles.optionText}>Support</Text>
             <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
           </TouchableOpacity>
         </View>
@@ -257,6 +377,13 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     backgroundColor: "#B77F2E",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarGradient: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: "center",
     alignItems: "center",
   },

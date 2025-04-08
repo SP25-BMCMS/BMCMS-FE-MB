@@ -82,16 +82,47 @@ const SignInScreen = () => {
       }
     } else {
       if (!email || !password) {
-        setErrorMessage("Please enter email and password.");
+        setErrorMessage("Please enter username and password.");
         return;
       }
-      showMessage({
-        message: "Notice",
-        description: "Login for staff is not implemented yet.",
-        type: "info",
-        icon: "info",
-        duration: 3000,
-      });
+      
+      setLoading(true);
+      try {
+        // Đăng nhập cho staff sử dụng username/password
+        await AuthService.loginStaff({ 
+          username: email, // Sử dụng trường email để nhập username 
+          password 
+        });
+        
+        const userData = await AuthService.getCurrentUser();
+        console.log('Staff user data from API:', userData);
+        
+        // Store the complete user data including position information
+        await AsyncStorage.setItem('userData', JSON.stringify(userData));
+        await AsyncStorage.setItem('userType', 'staff');
+        
+        navigation.navigate('MainApp');
+      } catch (error: any) {
+        if (error.response && error.response.status === 401) {
+          showMessage({
+            message: "Login Failed",
+            description: "Invalid username or password.",
+            type: "danger",
+            icon: "danger",
+            duration: 3000,
+          });
+        } else {
+          showMessage({
+            message: "Error",
+            description: "An unexpected error occurred. Please try again.",
+            type: "danger",
+            icon: "danger",
+            duration: 3000,
+          });
+        }
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -128,7 +159,7 @@ const SignInScreen = () => {
 
       <View style={styles.inputSection}>
         <Text style={styles.inputLabel}>
-          {activeTab === 'resident' ? "Phone Number" : "Email"}
+          {activeTab === 'resident' ? "Phone Number" : "Username"}
         </Text>
 
         {activeTab === 'resident' ? (
@@ -143,10 +174,9 @@ const SignInScreen = () => {
         ) : (
           <TextInput
             style={styles.input}
-            placeholder="your@email.com"
+            placeholder="Enter your username"
             value={email}
             onChangeText={(text) => { setEmail(text); setErrorMessage(''); }}
-            keyboardType="email-address"
             autoCapitalize="none"
           />
         )}

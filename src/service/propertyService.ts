@@ -36,7 +36,20 @@ export const PropertyService = {
         console.log('🏠 Response Headers:', response.headers);
         console.log('🏠 Danh sách apartments:', response.data);
         
-        return response.data.data || [];
+        // Xử lý dữ liệu theo cấu trúc API mới
+        if (response.data.isSuccess && response.data.data) {
+          return response.data.data.map((item: any) => ({
+            apartmentName: item.apartmentName,
+            apartmentId: item.apartmentId || item.buildingDetails?.buildingDetailId,
+            buildingId: item.buildingDetails?.building?.buildingId,
+            building: {
+              name: item.buildingDetails?.building?.name,
+              description: item.buildingDetails?.building?.description
+            }
+          }));
+        }
+        
+        return [];
       } catch (apiError: any) {
         console.error('❌ Chi tiết lỗi API:', {
           status: apiError.response?.status,
@@ -71,7 +84,7 @@ export const PropertyService = {
       console.log('🌐 Property Detail Endpoint:', endpoint);
 
       try {
-        const response = await instance.get<PropertyDetailResponse>(endpoint, {
+        const response = await instance.get(endpoint, {
           baseURL: VITE_API_SECRET
         });
         
@@ -79,18 +92,24 @@ export const PropertyService = {
         
         if (response.data.isSuccess && response.data.data) {
           const { data } = response.data;
+          const buildingData = data.buildingDetails?.building || {};
+          const buildingDetailId = data.buildingDetails?.buildingDetailId;
+          
           return {
             apartmentId: data.apartmentId,
-            building: data.building.name,
-            buildingName: data.building.name,
-            description:data.building.description,
+            buildingId: buildingData.buildingId,
+            building: buildingData.name,
+            buildingName: buildingData.name,
+            description: buildingData.description,
             unit: data.apartmentName,
-            numberFloor: data.building.numberFloor, // You might want to add this to the API response
-            status: '', // You might want to add this to the API response   
+            numberFloor: buildingData.numberFloor,
+            status: buildingData.Status || '',
             type: undefined,
-            area: data.building.area?.name,
+            area: buildingData.area?.name || '',
             owner: undefined,
             registrationDate: undefined,
+            buildingDetailId: buildingDetailId,
+            buildingDetails: data.buildingDetails ? [data.buildingDetails] : undefined
           };
         }
 

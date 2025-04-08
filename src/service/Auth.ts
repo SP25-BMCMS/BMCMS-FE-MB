@@ -1,7 +1,22 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LoginPayload, LoginResponse } from '../types';
-import { VITE_API_SECRET, VITE_LOGIN_RESIDENT, VITE_CURRENT_USER_API } from '@env';
+import { 
+  LoginPayload, 
+  LoginResponse, 
+  StaffLoginPayload, 
+  WorkingPositionResponse, 
+  DepartmentResponse,
+  StaffDetailsResponse
+} from '../types';
+import { 
+  VITE_API_SECRET, 
+  VITE_LOGIN_RESIDENT, 
+  VITE_LOGIN_STAFF, 
+  VITE_CURRENT_USER_API,
+  VITE_POSITION_STAFF,
+  VITE_DEPARTMENT_STAFF,
+  VITE_GET_STAFF_INFORMATION
+} from '@env';
 
 // Tạo instance axios với baseURL từ biến môi trường
 const instance = axios.create({
@@ -62,6 +77,7 @@ export const AuthService = {
         await AsyncStorage.setItem('refreshToken', response.data.refreshToken);
         await AsyncStorage.setItem('userId', response.data.userId);
         await AsyncStorage.setItem('username', response.data.username);
+        await AsyncStorage.setItem('userType', 'resident');
       }
       
       return response.data;
@@ -70,6 +86,27 @@ export const AuthService = {
       throw error;
     }
   },
+  
+  async loginStaff(payload: StaffLoginPayload): Promise<LoginResponse | null> {
+    try {
+      const response = await instance.post<LoginResponse>(VITE_LOGIN_STAFF, payload);
+      
+      // Lưu token vào AsyncStorage
+      if (response.data.accessToken) {
+        await AsyncStorage.setItem('accessToken', response.data.accessToken);
+        await AsyncStorage.setItem('refreshToken', response.data.refreshToken);
+        await AsyncStorage.setItem('userId', response.data.userId);
+        await AsyncStorage.setItem('username', response.data.username);
+        await AsyncStorage.setItem('userType', 'staff');
+      }
+      
+      return response.data;
+    } catch (error) {
+      // Không xử lý lỗi ở đây, mà để component xử lý
+      throw error;
+    }
+  },
+  
   async getCurrentUser(): Promise<any> {
     try {
       // Log token để kiểm tra
@@ -88,7 +125,6 @@ export const AuthService = {
     }
   },
   
-
   async logout(): Promise<void> {
     try {
       console.log('🚪 Logging out...');
@@ -103,7 +139,8 @@ export const AuthService = {
         'refreshToken', 
         'userId', 
         'username', 
-        'userData'
+        'userData',
+        'userType'  // Add userType to the list of keys to remove
       ]);
 
       // Log các key sau khi xóa
@@ -119,6 +156,40 @@ export const AuthService = {
       console.log('✅ Logout successful');
     } catch (error) {
       console.error("❌ Lỗi đăng xuất:", error);
+    }
+  },
+
+  // Phương thức lấy danh sách vị trí làm việc
+  async getWorkingPositions(): Promise<WorkingPositionResponse> {
+    try {
+      const response = await instance.get<WorkingPositionResponse>(VITE_POSITION_STAFF);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching working positions:', error);
+      throw error;
+    }
+  },
+
+  // Phương thức lấy danh sách phòng ban
+  async getDepartments(): Promise<DepartmentResponse> {
+    try {
+      const response = await instance.get<DepartmentResponse>(VITE_DEPARTMENT_STAFF);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+      throw error;
+    }
+  },
+
+  // Phương thức lấy thông tin chi tiết nhân viên
+  async getStaffDetails(staffId: string): Promise<StaffDetailsResponse> {
+    try {
+      const url = VITE_GET_STAFF_INFORMATION.replace('{staffId}', staffId);
+      const response = await instance.get<StaffDetailsResponse>(url);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching staff details:', error);
+      throw error;
     }
   }
 };
