@@ -43,7 +43,12 @@ const TaskScreen = () => {
     try {
       setLoading(true);
       setError('');
+      
+      // Thêm timeout nhỏ để đảm bảo API đã cập nhật dữ liệu
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       const response = await TaskService.getTaskAssignmentsByUserId();
+      console.log('TaskScreen - Fetched task assignments:', response.data?.length || 0);
       setTaskAssignments(response.data);
     } catch (error) {
       console.error('Error loading task list:', error);
@@ -55,7 +60,14 @@ const TaskScreen = () => {
 
   useEffect(() => {
     fetchTaskAssignments();
-  }, []);
+    
+    // Add listener for when screen comes into focus
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchTaskAssignments();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   const onRefresh = async () => {
     setRefreshing(true);

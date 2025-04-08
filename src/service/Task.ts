@@ -22,7 +22,8 @@ import {
   VITE_CREATE_INSPECTION,
   VITE_GET_INSPECTION_LIST,
   VITE_GET_INSPECTION_BY_TASK_ASSIGNMENT_ID,
-  VITE_GET_METERIAL_LIST
+  VITE_GET_METERIAL_LIST,
+  VITE_GET_TASK_ASSIGNMENT_BY_TASK_ID
 } from '@env';
 
 export const TaskService = {
@@ -56,6 +57,18 @@ export const TaskService = {
       return response.data;
     } catch (error) {
       console.error('Error fetching task assignments:', error);
+      throw error;
+    }
+  },
+
+  // Lấy task assignment theo task ID
+  async getTaskAssignmentsByTaskId(taskId: string): Promise<any> {
+    try {
+      const url = VITE_GET_TASK_ASSIGNMENT_BY_TASK_ID.replace('{taskId}', taskId);
+      const response = await instance.get(url);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching task assignments for task ID ${taskId}:`, error);
       throw error;
     }
   },

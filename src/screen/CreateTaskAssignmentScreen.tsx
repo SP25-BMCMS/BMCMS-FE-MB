@@ -107,7 +107,7 @@ const CreateTaskAssignmentScreen = () => {
     
     setSubmitting(true);
     try {
-      await TaskService.createTaskAssignment({
+      const response = await TaskService.createTaskAssignment({
         task_id: selectedTaskId,
         employee_id: selectedEmployeeId,
         description: description,
@@ -118,7 +118,16 @@ const CreateTaskAssignmentScreen = () => {
         'Success', 
         'Task assignment created successfully',
         [
-          { text: 'OK', onPress: () => navigation.goBack() }
+          { 
+            text: 'OK', 
+            onPress: () => {
+              // Thêm độ trễ để đảm bảo API cập nhật dữ liệu
+              setTimeout(() => {
+                // Refresh both screens' data by navigating back
+                navigation.goBack();
+              }, 500); // Thêm 500ms độ trễ
+            } 
+          }
         ]
       );
     } catch (error) {
