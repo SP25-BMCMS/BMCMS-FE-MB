@@ -66,7 +66,7 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const handleInspectionPress = (inspection: Inspection) => {
-    navigation.navigate('InspectionDetail', { inspection });
+    navigation.navigate('StaffInspectionDetail', { inspection });
   };
 
   const renderInspectionItem = ({ item }: { item: Inspection }) => (

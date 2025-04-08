@@ -23,6 +23,7 @@ import CreateTaskAssignmentScreen from './src/screen/CreateTaskAssignmentScreen'
 import StaffTaskDetailScreen from './src/staff/ui/StaffTaskDetailScreen';
 import CreateStaffInspectionScreen from './src/staff/ui/CreateStaffInspectionScreen';
 import StaffInspectionListScreen from './src/staff/ui/StaffInspectionListScreen';
+import StaffInspectionDetailScreen from './src/staff/ui/StaffInspectionDetailScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -51,6 +52,7 @@ const App = () => {
         <Stack.Screen name='InspectionList' component={InspectionListScreen} />
         <Stack.Screen name='StaffInspectionList' component={StaffInspectionListScreen} />
         <Stack.Screen name='InspectionDetail' component={InspectionDetailScreen} />
+        <Stack.Screen name='StaffInspectionDetail' component={StaffInspectionDetailScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

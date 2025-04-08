@@ -64,6 +64,9 @@ export type RootStackParamList = {
   InspectionDetail: {
     inspection: Inspection;
   };
+  StaffInspectionDetail: {
+    inspection: Inspection;
+  };
 };
 //residents
 export interface Resident {
