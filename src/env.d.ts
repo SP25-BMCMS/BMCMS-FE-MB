@@ -32,4 +32,5 @@ declare module '@env'{
     export const VITE_PATCH_WORKLOG_BY_ASSIGNMENT_ID: string;
     export const VITE_POST_CHATBOT: string;
     export const VITE_GET_CHATBOT: string;
+    export const VITE_GET_HISTORY_CRACK: string;
 }

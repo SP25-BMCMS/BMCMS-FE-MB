@@ -17,7 +17,8 @@ import {
   VITE_DEPARTMENT_STAFF,
   VITE_GET_STAFF_INFORMATION,
   VITE_POST_CHATBOT,
-  VITE_GET_CHATBOT
+  VITE_GET_CHATBOT,
+  VITE_GET_HISTORY_CRACK
 } from '@env';
 
 // Tạo instance axios với baseURL từ biến môi trường
@@ -242,6 +243,19 @@ export const getChatHistory = async (userId: string) => {
     return response.data;
   } catch (error) {
     console.error('Error getting chat history:', error);
+    throw error;
+  }
+};
+
+// Lấy lịch sử báo cáo vết nứt của người dùng
+export const getUserCrackReports = async (userId: string) => {
+  try {
+    const response = await instance.get(
+      `${VITE_GET_HISTORY_CRACK.replace('{userId}', userId)}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error getting user crack reports:', error);
     throw error;
   }
 };
