@@ -29,4 +29,5 @@ declare module '@env'{
     export const VITE_REASSIGN_TASK_ASSIGNMENT: string;
     export const VITE_REASSIGN_STAFF_TASK_ASSIGNMENT: string;
     export const VITE_CHANGE_STATUS_CRACK: string;
+    export const VITE_PATCH_WORKLOG_BY_ASSIGNMENT_ID: string;
 }

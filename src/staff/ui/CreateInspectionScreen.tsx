@@ -368,7 +368,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
     try {
       setLoading(true);
       const status = isVerified ? 'Verified' : 'Unverified';
-      await TaskService.changeTaskAssignmentStatus(taskDetail.assignment_id, status);
+      await TaskService.updateStatusAndCreateWorklog(taskDetail.assignment_id, status);
       return true;
     } catch (error) {
       console.error('Error changing task status:', error);

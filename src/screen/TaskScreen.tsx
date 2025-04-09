@@ -248,12 +248,16 @@ const TaskScreen = () => {
             text: "Confirm",
             onPress: async () => {
               try {
-                // Gọi API thay đổi trạng thái của crack report
+                // 1. Gọi API thay đổi trạng thái của crack report
                 const url = VITE_CHANGE_STATUS_CRACK.replace('{id}', crackReportId);
                 await instance.patch(url, {
                   status: "Reviewing",
                   description: "Đang tiến hành xem xét"
                 });
+                
+                // 2. Tạo worklog để ghi lại việc thay đổi trạng thái
+                // Cập nhật task status thành "Reviewing" trong hệ thống worklog
+                await TaskService.updateStatusAndCreateWorklog(assignment.assignment_id, 'Confirmed');
                 
                 // Thêm task này vào danh sách reviewing và cập nhật checkedTasks
                 setReviewingTasks(prev => [...prev, assignment.assignment_id]);

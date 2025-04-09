@@ -394,7 +394,7 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
   const handleChangeStatus = async () => {
     try {
       setIsChangingStatus(true);
-      await TaskService.changeTaskAssignmentStatus(taskDetail.assignment_id, 'Fixed');
+      await TaskService.updateStatusAndCreateWorklog(taskDetail.assignment_id, 'Fixed');
       showMessage({
         message: "Status Changed",
         description: "Task status has been changed to Fixed",

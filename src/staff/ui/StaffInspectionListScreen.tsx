@@ -141,7 +141,7 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
       setShowReassignModal(true);
     } else {
       try {
-        await TaskService.changeTaskAssignmentStatus(selectedInspection?.task_assignment_id || '', 'Confirmed');
+        await TaskService.updateStatusAndCreateWorklog(selectedInspection?.task_assignment_id || '', 'Confirmed');
         showMessage({
           message: 'Success',
           description: 'Task status has been updated successfully',

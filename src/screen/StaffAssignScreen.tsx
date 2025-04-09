@@ -458,8 +458,8 @@ const StaffAssignScreen = () => {
                 );
                 
                 if (mainTaskAssignment) {
-                  // Gọi API thay đổi trạng thái của task assignment chính
-                  await TaskService.changeTaskAssignmentStatus(mainTaskAssignment.assignment_id, 'Confirmed');
+                  // Gọi API thay đổi trạng thái của task assignment chính và tạo worklog
+                  await TaskService.updateStatusAndCreateWorklog(mainTaskAssignment.assignment_id, 'Confirmed');
                   
                   // Cập nhật trạng thái hiển thị button cho task này
                   setButtonVisibility(prev => ({...prev, [taskId]: false}));
