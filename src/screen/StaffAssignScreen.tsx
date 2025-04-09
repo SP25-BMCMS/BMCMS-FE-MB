@@ -44,6 +44,8 @@ const StaffAssignScreen = () => {
   const [error, setError] = useState<string>('');
   const [isLeader, setIsLeader] = useState<boolean>(false);
   const [userId, setUserId] = useState<string>('');
+  const [confirmedTasks, setConfirmedTasks] = useState<string[]>([]);
+  const [buttonVisibility, setButtonVisibility] = useState<{[key: string]: boolean}>({});
 
   useEffect(() => {
     const checkUserPosition = async () => {
@@ -136,6 +138,64 @@ const StaffAssignScreen = () => {
     }
   };
 
+  // Hàm kiểm tra xem có nên hiển thị button hay không
+  const shouldShowConfirmButton = async (taskId: string): Promise<boolean> => {
+    try {
+      // Lấy task assignments của user hiện tại (leader)
+      const response = await TaskService.getTaskAssignmentsByUserId();
+      
+      // Tìm task assignment chính liên quan đến taskId
+      const mainTaskAssignment = response.data.find(
+        assignment => assignment.task_id === taskId && assignment.employee_id === userId
+      );
+      
+      // Nếu không tìm thấy task assignment chính
+      if (!mainTaskAssignment) {
+        return false;
+      }
+      
+      // Nếu task assignment chính đã có status là Confirmed, không hiển thị button
+      if (String(mainTaskAssignment.status) === 'Confirmed') {
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error checking task status:', error);
+      return false; // Mặc định không hiển thị nếu có lỗi
+    }
+  };
+
+  // Hàm để kiểm tra và cập nhật trạng thái hiển thị button
+  const checkButtonVisibility = async (taskId: string, assignments: TaskAssignment[]) => {
+    // Kiểm tra xem có task nào đang ở trạng thái "InFixing" hoặc "Fixed" không
+    const hasInFixingOrFixedTask = assignments.some(
+      assignment => String(assignment.status) === 'InFixing' || String(assignment.status) === 'Fixed'
+    );
+    
+    if (hasInFixingOrFixedTask) {
+      setButtonVisibility(prev => ({...prev, [taskId]: false}));
+      return;
+    }
+    
+    // Kiểm tra trạng thái thực tế từ API
+    const shouldShow = await shouldShowConfirmButton(taskId);
+    setButtonVisibility(prev => ({...prev, [taskId]: shouldShow}));
+  };
+
+  // Cập nhật useEffect để kiểm tra trạng thái button khi tasks thay đổi
+  useEffect(() => {
+    const checkAllButtons = async () => {
+      for (const task of tasks) {
+        await checkButtonVisibility(task.task_id, task.taskAssignments);
+      }
+    };
+    
+    if (tasks.length > 0 && isLeader) {
+      checkAllButtons();
+    }
+  }, [tasks, isLeader, userId]);
+
   useEffect(() => {
     if (userId) {
       if (isLeader) {
@@ -193,7 +253,7 @@ const StaffAssignScreen = () => {
       case 'InFixing':
         return '#5AC8FA'; // Light blue
         case 'Confirmed':
-          return '#5856D6'; // Indigo
+          return '#4CD964';
       default:
         return '#8E8E93'; // Gray
     }
@@ -401,6 +461,9 @@ const StaffAssignScreen = () => {
                   // Gọi API thay đổi trạng thái của task assignment chính
                   await TaskService.changeTaskAssignmentStatus(mainTaskAssignment.assignment_id, 'Confirmed');
                   
+                  // Cập nhật trạng thái hiển thị button cho task này
+                  setButtonVisibility(prev => ({...prev, [taskId]: false}));
+                  
                   // Hiển thị thông báo thành công
                   showMessage({
                     message: "Success",
@@ -409,8 +472,8 @@ const StaffAssignScreen = () => {
                     duration: 3000
                   });
                   
-                  // Refresh để cập nhật UI
-                  await fetchLeaderTaskAssignments();
+                  // Fetch lại dữ liệu nhưng button đã được ẩn ngay lập tức
+                  fetchLeaderTaskAssignments();
                   
                   setLoading(false);
                 } else {
@@ -451,13 +514,11 @@ const StaffAssignScreen = () => {
   };
 
   const renderSectionFooter = ({ section }: { section: SectionData }) => {
-    // Kiểm tra xem có task nào đang ở trạng thái "InFixing" hoặc "Fixed" không
-    const hasInFixingOrFixedTask = section.data.some(
-      assignment => String(assignment.status) === 'InFixing' || String(assignment.status) === 'Fixed'
-    );
+    // Kiểm tra xem button có nên hiển thị hay không dựa vào kết quả đã kiểm tra trước đó
+    const shouldShowButton = buttonVisibility[section.taskId];
     
-    // Chỉ hiển thị button nếu là leader và không có task nào đang ở trạng thái "InFixing" hoặc "Fixed"
-    return isLeader && !hasInFixingOrFixedTask ? (
+    // Chỉ hiển thị button nếu là leader và kết quả kiểm tra cho phép
+    return isLeader && shouldShowButton ? (
       <View style={styles.taskChangeStatusContainer}>
         <TouchableOpacity 
           style={styles.taskChangeStatusButton}

@@ -74,9 +74,11 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
         return '#5AC8FA'; // Light blue
       case 'Verified':
         return '#4CD964'; // Green
+        case 'Confirmed':
+        return '#4CD964'; // Green
       case 'Unverified':
         return '#FF9500'; // Orange
-      case 'Confirmed':
+      case 'Reviewing':
         return '#5856D6'; // Indigo
       default:
         return '#8E8E93'; // Gray
