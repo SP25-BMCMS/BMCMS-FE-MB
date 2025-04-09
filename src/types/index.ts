@@ -69,6 +69,8 @@ export type RootStackParamList = {
   StaffInspectionDetail: {
     inspection: Inspection;
   };
+  ChatBot: undefined;
+  ChatHistory: undefined;
 };
 //residents
 export interface Resident {

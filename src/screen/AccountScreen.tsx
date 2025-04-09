@@ -62,15 +62,14 @@ const AccountScreen = () => {
     try {
       const userDataString = await AsyncStorage.getItem("userData");
       const type = await AsyncStorage.getItem("userType");
-      setUserType(type);
       
       if (userDataString) {
         const userData = JSON.parse(userDataString);
-        setUserData(userData);
         setIsLoggedIn(true);
+        setUserData(userData);
+        setUserType(type);
       } else {
         setIsLoggedIn(false);
-        setUserData(null);
       }
     } catch (error) {
       console.error("Lỗi khi kiểm tra trạng thái đăng nhập:", error);
@@ -85,9 +84,92 @@ const AccountScreen = () => {
     navigation.navigate("More");
   };
 
+  const navigateToChatBot = () => {
+    navigation.navigate("ChatBot");
+  };
+
   const handleChangePassword = () => {
     // Xử lý đổi mật khẩu
     Alert.alert("Thông báo", "Chức năng đổi mật khẩu sẽ được phát triển sau");
+  };
+  
+  // Lấy lịch sử chat
+  const showChatHistory = () => {
+    navigation.navigate("ChatHistory");
+  };
+
+  // Xử lý và nhóm tin nhắn theo ngày
+  const processHistoryByDate = (messages: ChatMessage[]) => {
+    const groupedByDate: {[date: string]: ChatMessage[]} = {};
+    const dates: string[] = [];
+    
+    messages.forEach(msg => {
+      const date = new Date(msg.timestamp);
+      const dateStr = date.toLocaleDateString('vi-VN', {
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric'
+      });
+      
+      if (!groupedByDate[dateStr]) {
+        groupedByDate[dateStr] = [];
+        dates.push(dateStr);
+      }
+      
+      groupedByDate[dateStr].push(msg);
+    });
+    
+    // Sắp xếp ngày từ mới đến cũ
+    dates.sort((a, b) => {
+      const dateA = new Date(a.split(' ').slice(1).join(' ').replace('tháng', ''));
+      const dateB = new Date(b.split(' ').slice(1).join(' ').replace('tháng', ''));
+      return dateB.getTime() - dateA.getTime();
+    });
+    
+    setHistoryDates(dates);
+    setGroupedHistory(groupedByDate);
+  };
+
+  // Hiển thị tin nhắn trong lịch sử
+  const renderHistoryMessage = (item: ChatMessage) => {
+    const messageTime = new Date(item.timestamp).toLocaleTimeString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    if (item.isBot) {
+      return (
+        <View style={styles.historyBotMessageContainer}>
+          <View style={styles.historyBotAvatarContainer}>
+            <LinearGradient
+              colors={['#4A90E2', '#5A5DE8', '#7367F0']}
+              style={styles.historyBotAvatar}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <Icon name="smart-toy" size={14} color="#FFFFFF" />
+            </LinearGradient>
+          </View>
+          <View style={styles.historyBotMessageContent}>
+            <View style={styles.historyBotMessageBubble}>
+              <Text style={styles.historyBotMessageText}>{item.text}</Text>
+            </View>
+            <Text style={styles.historyTimeText}>{messageTime}</Text>
+          </View>
+        </View>
+      );
+    } else {
+      return (
+        <View style={styles.historyUserMessageContainer}>
+          <View style={styles.historyUserMessageContent}>
+            <View style={styles.historyUserMessageBubble}>
+              <Text style={styles.historyUserMessageText}>{item.text}</Text>
+            </View>
+            <Text style={styles.historyTimeText}>{messageTime}</Text>
+          </View>
+        </View>
+      );
+    }
   };
 
   return (
@@ -125,6 +207,23 @@ const AccountScreen = () => {
             ? renderStaffUI() 
             : renderResidentUI()}
       </Animated.View>
+
+      {/* ChatBot Floating Button - Chỉ hiển thị khi là resident đã đăng nhập */}
+      {isLoggedIn && userType === 'resident' && (
+        <TouchableOpacity 
+          style={styles.chatBotButton}
+          onPress={navigateToChatBot}
+        >
+          <LinearGradient
+            colors={['#4A90E2', '#5A5DE8', '#7367F0']}
+            style={styles.chatBotGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Icon name="chat" size={24} color="#FFFFFF" />
+          </LinearGradient>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
@@ -193,9 +292,14 @@ const AccountScreen = () => {
             <Text style={styles.cardText}>MyReport</Text>
           </TouchableOpacity>
   
-          <TouchableOpacity style={styles.card}>
-            <Icon name="bookmarks" size={24} color="#000" />
-            <Text style={styles.cardText}>My review</Text>
+          <TouchableOpacity style={styles.card} onPress={showChatHistory}>
+            <Icon name="history" size={24} color="#4A90E2" />
+            <Text style={styles.cardText}>Chat History</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.card} onPress={navigateToChatBot}>
+            <Icon name="forum" size={24} color="#4A90E2" />
+            <Text style={styles.cardText}>ChatBot</Text>
           </TouchableOpacity>
         </View>
   
@@ -209,6 +313,18 @@ const AccountScreen = () => {
           <TouchableOpacity style={styles.optionItem} onPress={handleChangePassword}>
             <Icon name="lock" size={24} color="#666" />
             <Text style={styles.optionText}>ChangePassword</Text>
+            <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.optionItem} onPress={showChatHistory}>
+            <Icon name="history" size={24} color="#4A90E2" />
+            <Text style={styles.optionText}>Chat History</Text>
+            <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.optionItem} onPress={navigateToChatBot}>
+            <Icon name="support-agent" size={24} color="#4A90E2" />
+            <Text style={styles.optionText}>Virtual Assistant</Text>
             <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
           </TouchableOpacity>
         </View>
@@ -438,6 +554,87 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     marginRight: 8,
+  },
+  chatBotButton: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  chatBotGradient: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  historyBotMessageContainer: {
+    flexDirection: 'row',
+    marginBottom: 10,
+    paddingHorizontal: 10,
+  },
+  historyUserMessageContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 10,
+    paddingHorizontal: 10,
+  },
+  historyBotAvatarContainer: {
+    marginRight: 6,
+    alignSelf: 'flex-start',
+  },
+  historyBotAvatar: {
+    width: 25,
+    height: 25,
+    borderRadius: 12.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  historyBotMessageContent: {
+    maxWidth: '75%',
+  },
+  historyUserMessageContent: {
+    maxWidth: '75%',
+    alignItems: 'flex-end',
+  },
+  historyBotMessageBubble: {
+    backgroundColor: '#FFFFFF',
+    padding: 10,
+    borderRadius: 16,
+    borderTopLeftRadius: 5,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+  },
+  historyUserMessageBubble: {
+    backgroundColor: '#4A90E2',
+    padding: 10,
+    borderRadius: 16,
+    borderTopRightRadius: 5,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+  },
+  historyBotMessageText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  historyUserMessageText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+  },
+  historyTimeText: {
+    fontSize: 10,
+    color: '#999',
+    marginTop: 3,
   },
 });
 

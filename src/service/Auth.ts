@@ -15,13 +15,18 @@ import {
   VITE_CURRENT_USER_API,
   VITE_POSITION_STAFF,
   VITE_DEPARTMENT_STAFF,
-  VITE_GET_STAFF_INFORMATION
+  VITE_GET_STAFF_INFORMATION,
+  VITE_POST_CHATBOT,
+  VITE_GET_CHATBOT
 } from '@env';
 
 // Tạo instance axios với baseURL từ biến môi trường
 const instance = axios.create({
   baseURL: VITE_API_SECRET,
   timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // Thêm interceptor để tự động thêm token vào header
@@ -29,11 +34,13 @@ instance.interceptors.request.use(
   async (config) => {
     const token = await AsyncStorage.getItem('accessToken');
     if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
 // Thêm interceptor response để xử lý token hết hạn
@@ -191,6 +198,51 @@ export const AuthService = {
       console.error('Error fetching staff details:', error);
       throw error;
     }
+  }
+};
+
+// Function để kiểm tra token hiện tại
+export const validateToken = async () => {
+  try {
+    const token = await AsyncStorage.getItem('accessToken');
+    if (!token) {
+      return false;
+    }
+    
+    const response = await instance.get(VITE_CURRENT_USER_API);
+    return response.status === 200;
+  } catch (error) {
+    console.error('Token validation error:', error);
+    return false;
+  }
+};
+
+// Chatbot service
+export const sendChatMessage = async (message: string) => {
+  try {
+    const userId = await AsyncStorage.getItem('userId');
+    const response = await axios.post(
+      `${VITE_API_SECRET}${VITE_POST_CHATBOT.replace('{userId}', userId || '')}`,
+      { message }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error sending message:', error);
+    throw error;
+  }
+};
+
+export const getChatHistory = async (userId: string) => {
+  try {
+    const response = await axios.get(
+      `${VITE_API_SECRET}${VITE_GET_CHATBOT.replace('{userId}', userId)}`
+    );
+    
+    // API trả về cấu trúc { data: [...], meta: {...} }
+    return response.data;
+  } catch (error) {
+    console.error('Error getting chat history:', error);
+    throw error;
   }
 };
 
