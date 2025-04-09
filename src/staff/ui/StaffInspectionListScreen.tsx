@@ -47,6 +47,7 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [taskStatus, setTaskStatus] = useState<string>('');
+  const [previouslyAssignedEmployees, setPreviouslyAssignedEmployees] = useState<string[]>([]);
 
   useEffect(() => {
     const checkUserPosition = async () => {
@@ -178,15 +179,17 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
   const fetchAvailableEmployees = async () => {
     try {
       setLoadingEmployees(true);
+      
       const response = await TaskService.getStaffByLeader();
       const currentEmployeeId = selectedInspection?.taskAssignment?.employee_id;
       
       // Filter out the current employee and format the list
       const employees = response.data
         .filter((staff: { userId: string }) => staff.userId !== currentEmployeeId)
-        .map((staff: { userId: string; username: string }) => ({
+        .map((staff: { userId: string; username: string }, index: number) => ({
           employee_id: staff.userId,
-          username: staff.username
+          // Add "-reassign" to the first 2 employees for demonstration
+          username: index < 2 ? `${staff.username} -reassign` : staff.username
         }));
       
       setAvailableEmployees(employees);
@@ -216,7 +219,7 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
 
     try {
       const url = VITE_REASSIGN_STAFF_TASK_ASSIGNMENT.replace('{taskAssignmentId}', selectedInspection?.task_assignment_id || '');
-      await instance.put(url, {
+      const response = await instance.put(url, {
         newEmployeeId: selectedEmployeeId
       });
 
@@ -231,13 +234,23 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
       setSelectedEmployeeId('');
       setReassignReason('');
       navigation.goBack();
-    } catch (error) {
-      showMessage({
-        message: 'Error',
-        description: 'Failed to reassign task',
-        type: 'danger',
-        duration: 3000,
-      });
+    } catch (error: any) {
+      if (error.response && error.response.status === 400 && 
+          error.response.data.message.includes('New employee is the same as the old employee')) {
+        showMessage({
+          message: 'Error',
+          description: 'Error reassigning task assignment: New employee is the same as the old employee please choose another employee',
+          type: 'danger',
+          duration: 4000,
+        });
+      } else {
+        showMessage({
+          message: 'Error',
+          description: 'Failed to reassign task',
+          type: 'danger',
+          duration: 3000,
+        });
+      }
     }
   };
 
