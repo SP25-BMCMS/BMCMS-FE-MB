@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, FlatList } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, FlatList, SectionList } from 'react-native';
 import { TaskService } from '../service/Task';
 import { TaskAssignment, Task } from '../types';
 import { format } from 'date-fns';
@@ -225,10 +225,6 @@ const StaffAssignScreen = () => {
     navigation.navigate('StaffTaskDetail', { assignmentId });
   };
 
-  const handleCreateTaskAssignment = () => {
-    navigation.navigate('CreateTaskAssignment');
-  };
-
   const renderEmployeeTaskItem = (assignment: EmployeeTaskAssignment) => {
     return (
       <TouchableOpacity 
@@ -308,16 +304,80 @@ const StaffAssignScreen = () => {
       return null;
     }
 
+    // Debug information
+    console.log(`Task ${task.task_id} has ${staffAssignments.length} staff assignments`);
+    const statuses = staffAssignments.map(assignment => assignment.status);
+    console.log(`Task ${task.task_id} statuses:`, statuses);
+
     return (
       <View style={styles.taskSection} key={task.task_id}>
         <View style={styles.taskSectionHeader}>
           <Icon name="assignment" size={20} color="#B77F2E" />
           <Text style={styles.taskSectionTitle}>Task: {task.description}</Text>
         </View>
+        
         {staffAssignments.map(renderTaskAssignmentItem)}
+        
+        {/* Add Change Status button for each task group */}
+        {isLeader && (
+          <View style={styles.taskChangeStatusContainer}>
+            <TouchableOpacity 
+              style={styles.taskChangeStatusButton}
+              onPress={() => {
+                // Will implement API call later
+                console.log(`Change task ${task.task_id} to Confirmed`);
+              }}
+            >
+              <Text style={styles.taskChangeStatusButtonText}>Change Status to Confirm</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     );
   };
+
+  // Chuẩn bị dữ liệu cho SectionList
+  const prepareSectionData = () => {
+    if (!isLeader || tasks.length === 0) return [];
+
+    return tasks.map(task => {
+      // Lọc chỉ hiển thị task assignments được giao cho nhân viên (không hiển thị của leader)
+      const staffAssignments = task.taskAssignments.filter(
+        assignment => assignment.employee_id !== userId
+      );
+      
+      if (!staffAssignments || staffAssignments.length === 0) return null;
+      
+      return {
+        title: task.description,
+        taskId: task.task_id,
+        data: staffAssignments
+      };
+    }).filter(section => section !== null); // Lọc bỏ các null
+  };
+
+  const renderSectionHeader = ({ section }) => (
+    <View style={styles.stickyHeader}>
+      <Icon name="assignment" size={20} color="#B77F2E" />
+      <Text style={styles.stickyHeaderTitle}>Task: {section.title}</Text>
+    </View>
+  );
+
+  const renderSectionFooter = ({ section }) => (
+    isLeader ? (
+      <View style={styles.taskChangeStatusContainer}>
+        <TouchableOpacity 
+          style={styles.taskChangeStatusButton}
+          onPress={() => {
+            // Will implement API call later
+            console.log(`Change task ${section.taskId} to Confirmed`);
+          }}
+        >
+          <Text style={styles.taskChangeStatusButtonText}>Change Status to Confirm</Text>
+        </TouchableOpacity>
+      </View>
+    ) : null
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -338,37 +398,45 @@ const StaffAssignScreen = () => {
           </TouchableOpacity>
         </View>
       ) : (
-        <ScrollView 
-          style={styles.scrollView}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        >
+        <>
           {!isLeader ? (
-            employeeTasks.length === 0 ? (
+            // Hiển thị danh sách task của nhân viên
+            <ScrollView 
+              style={styles.scrollView}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
+            >
+              {employeeTasks.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No tasks assigned to you yet.</Text>
+                </View>
+              ) : (
+                employeeTasks.map(renderEmployeeTaskItem)
+              )}
+            </ScrollView>
+          ) : (
+            // Hiển thị danh sách task của leader với sticky header
+            tasks.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No tasks assigned to you yet.</Text>
+                <Text style={styles.emptyText}>No team assignments available.</Text>
               </View>
             ) : (
-              employeeTasks.map(renderEmployeeTaskItem)
+              <SectionList
+                sections={prepareSectionData()}
+                keyExtractor={(item) => item.assignment_id}
+                renderItem={({ item }) => renderTaskAssignmentItem(item)}
+                renderSectionHeader={renderSectionHeader}
+                renderSectionFooter={renderSectionFooter}
+                stickySectionHeadersEnabled={true}
+                refreshControl={
+                  <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                }
+                style={styles.scrollView}
+              />
             )
-          ) : tasks.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No team assignments available.</Text>
-            </View>
-          ) : (
-            tasks.map(renderTaskSection)
           )}
-        </ScrollView>
-      )}
-
-      {isLeader && (
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={handleCreateTaskAssignment}
-        >
-          <Icon name="add" size={24} color="#FFF" />
-        </TouchableOpacity>
+        </>
       )}
     </SafeAreaView>
   );
@@ -490,21 +558,43 @@ const styles = StyleSheet.create({
   taskInfoLabel: {
     fontWeight: '600',
   },
-  fab: {
-    position: 'absolute',
-    width: 56,
-    height: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-    right: 20,
-    bottom: 20,
+  taskChangeStatusContainer: {
+    padding: 12,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 8,
+    marginTop: 8,
+    marginLeft: 12,
+  },
+  taskChangeStatusButton: {
     backgroundColor: '#B77F2E',
-    borderRadius: 28,
-    elevation: 8,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  taskChangeStatusButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  stickyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 8,
+    marginBottom: 12,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  stickyHeaderTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333333',
+    marginLeft: 8,
   },
 });
 
