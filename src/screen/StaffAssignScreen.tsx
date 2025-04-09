@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, FlatList, SectionList } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, FlatList, SectionList, Alert } from 'react-native';
 import { TaskService } from '../service/Task';
 import { TaskAssignment, Task } from '../types';
 import { format } from 'date-fns';
@@ -9,6 +9,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { showMessage } from 'react-native-flash-message';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -356,28 +357,117 @@ const StaffAssignScreen = () => {
     }).filter(section => section !== null); // Lọc bỏ các null
   };
 
-  const renderSectionHeader = ({ section }) => (
+  interface SectionData {
+    title: string;
+    taskId: string;
+    data: TaskAssignment[];
+  }
+
+  const renderSectionHeader = ({ section }: { section: SectionData }) => (
     <View style={styles.stickyHeader}>
       <Icon name="assignment" size={20} color="#B77F2E" />
       <Text style={styles.stickyHeaderTitle}>Task: {section.title}</Text>
     </View>
   );
 
-  const renderSectionFooter = ({ section }) => (
-    isLeader ? (
+  const handleChangeStatusToConfirm = async (taskId: string, assignments: TaskAssignment[]) => {
+    try {
+      // Hiển thị loading state nếu cần
+      setLoading(true);
+      
+      // Hiển thị dialog xác nhận
+      Alert.alert(
+        "Confirm Status Change",
+        "Are you sure you want to change the status of this main task to Confirmed?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+            onPress: () => setLoading(false)
+          },
+          {
+            text: "Confirm",
+            onPress: async () => {
+              try {
+                // Lấy tất cả task assignments của user hiện tại
+                const response = await TaskService.getTaskAssignmentsByUserId();
+                
+                // Tìm task assignment lớn liên quan đến taskId hiện tại
+                const mainTaskAssignment = response.data.find(
+                  assignment => assignment.task_id === taskId && assignment.employee_id === userId
+                );
+                
+                if (mainTaskAssignment) {
+                  // Gọi API thay đổi trạng thái của task assignment chính
+                  await TaskService.changeTaskAssignmentStatus(mainTaskAssignment.assignment_id, 'Confirmed');
+                  
+                  // Hiển thị thông báo thành công
+                  showMessage({
+                    message: "Success",
+                    description: "Main task has been confirmed successfully",
+                    type: "success",
+                    duration: 3000
+                  });
+                  
+                  // Refresh để cập nhật UI
+                  await fetchLeaderTaskAssignments();
+                  
+                  setLoading(false);
+                } else {
+                  // Nếu không tìm thấy task assignment chính
+                  showMessage({
+                    message: "Error",
+                    description: "Could not find the main task assignment for this task",
+                    type: "danger",
+                    duration: 3000
+                  });
+                  setLoading(false);
+                }
+              } catch (error) {
+                console.error('Error changing task status:', error);
+                showMessage({
+                  message: "Error",
+                  description: "Failed to update task status. Please try again.",
+                  type: "danger",
+                  duration: 3000
+                });
+                setLoading(false);
+              }
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error in handleChangeStatusToConfirm:', error);
+      setLoading(false);
+      
+      showMessage({
+        message: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        type: "danger",
+        duration: 3000
+      });
+    }
+  };
+
+  const renderSectionFooter = ({ section }: { section: SectionData }) => {
+    // Kiểm tra xem có task nào đang ở trạng thái "InFixing" hoặc "Fixed" không
+    const hasInFixingOrFixedTask = section.data.some(
+      assignment => String(assignment.status) === 'InFixing' || String(assignment.status) === 'Fixed'
+    );
+    
+    // Chỉ hiển thị button nếu là leader và không có task nào đang ở trạng thái "InFixing" hoặc "Fixed"
+    return isLeader && !hasInFixingOrFixedTask ? (
       <View style={styles.taskChangeStatusContainer}>
         <TouchableOpacity 
           style={styles.taskChangeStatusButton}
-          onPress={() => {
-            // Will implement API call later
-            console.log(`Change task ${section.taskId} to Confirmed`);
-          }}
+          onPress={() => handleChangeStatusToConfirm(section.taskId, section.data)}
         >
           <Text style={styles.taskChangeStatusButtonText}>Change Status to Confirm</Text>
         </TouchableOpacity>
       </View>
-    ) : null
-  );
+    ) : null;
+  };
 
   return (
     <SafeAreaView style={styles.container}>
