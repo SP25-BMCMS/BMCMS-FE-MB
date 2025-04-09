@@ -22,6 +22,7 @@ import { PropertyDetail } from "../../types";
 type RootStackParamList = {
   PropertyDetail: { apartmentId?: string };
   RepairInside: { property: PropertyDetail };
+  RepairOutside: { property: PropertyDetail };
   // ... other existing routes
 };
 
@@ -83,6 +84,12 @@ const PropertyDetailScreen = () => {
     }
   };
 
+  const handleRepairOutside = () => {
+    if (property) {
+      navigation.navigate("RepairOutside", { property });
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Header với nút Back */}
@@ -133,6 +140,8 @@ const PropertyDetailScreen = () => {
             onPress={() => {
               if (item.name === "Sửa chữa trong nhà") {
                 handleRepairInside();
+              } else if (item.name === "Sửa chữa ngoài nhà") {
+                handleRepairOutside();
               }
             }}
           >

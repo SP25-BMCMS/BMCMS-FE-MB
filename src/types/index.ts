@@ -25,13 +25,15 @@ export type RootStackParamList = {
   More: undefined;
   PropertyDetail: undefined;
   RepairInside: { property?: Property };
+  RepairOutside: { property?: Property };
   RepairReview: { 
     property: Property; 
     description: string; 
     images: string[]; 
     buildingDetailId?: string;
-    selectedRoom?: keyof typeof CRACK_POSITIONS;
+    selectedRoom?: keyof typeof CRACK_POSITIONS | keyof typeof OUTDOOR_CRACK_POSITIONS;
     selectedPosition?: string;
+    isPrivatesAsset?: boolean;
   };
   RepairSuccess: undefined;
   MyReport: undefined;
@@ -322,6 +324,30 @@ export const CRACK_POSITIONS = {
     WALL: 'bathroom/wall',
     FLOOR: 'bathroom/floor',
     CEILING: 'bathroom/ceiling',
+  }
+};
+
+// Positions for outdoor crack reporting
+export const OUTDOOR_CRACK_POSITIONS = {
+  BUILDING_EXTERIOR: {
+    WALL: 'exterior/building/1/wall',
+    FOUNDATION: 'exterior/building/ground/foundation',
+    ROOF: 'exterior/building/top/roof',
+  },
+  COMMON_AREA: {
+    STAIRS: 'common/building/1/stairs',
+    CORRIDOR: 'common/building/1/corridor',
+    LOBBY: 'common/building/ground/lobby',
+  },
+  PARKING: {
+    SURFACE: 'parking/area/ground/surface',
+    PILLAR: 'parking/area/1/pillar',
+    CEILING: 'parking/area/1/ceiling',
+  },
+  LANDSCAPE: {
+    PAVEMENT: 'landscape/garden/ground/pavement',
+    FENCE: 'landscape/perimeter/ground/fence',
+    POOL: 'landscape/amenity/ground/pool',
   }
 };
 

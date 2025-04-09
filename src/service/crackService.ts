@@ -26,6 +26,8 @@ export const CrackService = {
       console.group('🔍 Crack Report Debug');
       console.log('Payload:', payload);
       console.log('User ID:', userId);
+      console.log('isPrivatesAsset type:', typeof payload.isPrivatesAsset);
+      console.log('isPrivatesAsset value:', payload.isPrivatesAsset);
 
       if (!userId) {
         console.error('❌ User ID not found');
@@ -58,18 +60,25 @@ export const CrackService = {
         isPrivatesAsset: payload.isPrivatesAsset !== undefined ? payload.isPrivatesAsset : true,
         position: payload.position || '',
         positionType: typeof payload.position,
-        positionIsEmpty: !payload.position
+        positionIsEmpty: !payload.position,
+        isPrivatesAssetType: typeof requestBody.isPrivatesAsset
       });
 
       // Prepare files for upload
       const formData = new FormData();
       
       // Add text fields to formData
-      Object.entries(requestBody).forEach(([key, value]) => {
-        if (value !== undefined) {
-          formData.append(key, value.toString());
-        }
-      });
+      formData.append('buildingDetailId', requestBody.buildingDetailId);
+      formData.append('description', requestBody.description);
+      
+      // Log position trước khi append
+      console.log('Position before appending to FormData:', requestBody.position);
+      formData.append('position', requestBody.position);
+      
+      // Explicitly handle isPrivatesAsset as a string
+      const isPrivateAssetStr = requestBody.isPrivatesAsset === false ? 'false' : 'true';
+      formData.append('isPrivatesAsset', isPrivateAssetStr);
+      console.log('isPrivatesAsset added to formData as:', isPrivateAssetStr);
 
       // Add files with error handling
       payload.files.forEach((fileUri, index) => {

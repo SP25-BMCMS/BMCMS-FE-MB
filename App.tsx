@@ -24,6 +24,7 @@ import StaffTaskDetailScreen from './src/staff/ui/StaffTaskDetailScreen';
 import CreateStaffInspectionScreen from './src/staff/ui/CreateStaffInspectionScreen';
 import StaffInspectionListScreen from './src/staff/ui/StaffInspectionListScreen';
 import StaffInspectionDetailScreen from './src/staff/ui/StaffInspectionDetailScreen';
+import RepairOutsideScreen from './src/Resident/ui/RepairOutsideScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -39,6 +40,7 @@ const App = () => {
         <Stack.Screen name="More" component={MoreScreen} />
         <Stack.Screen name="PropertyDetail" component={PropertyDetailScreen} />
         <Stack.Screen name='RepairInside' component={RepairInsideScreen}/>
+        <Stack.Screen name='RepairOutside' component={RepairOutsideScreen}/>
         <Stack.Screen name="RepairReview" component={RepairReviewScreen} />
         <Stack.Screen name="RepairSuccess" component={RepairSuccessScreen} />
         <Stack.Screen name='MyReport' component={MyReportScreen}/>

@@ -17,7 +17,7 @@ import {
   RouteProp
 } from '@react-navigation/native';
 import { CrackService } from '../../service/crackService';
-import { Property, CRACK_POSITIONS } from '../../types';
+import { Property, CRACK_POSITIONS, OUTDOOR_CRACK_POSITIONS } from '../../types';
 
 type RootStackParamList = {
   RepairReview: {
@@ -25,8 +25,9 @@ type RootStackParamList = {
     description: string;
     images: string[];
     buildingDetailId?: string;
-    selectedRoom?: keyof typeof CRACK_POSITIONS;
+    selectedRoom?: keyof typeof CRACK_POSITIONS | keyof typeof OUTDOOR_CRACK_POSITIONS;
     selectedPosition?: string;
+    isPrivatesAsset?: boolean;
   };
   RepairSuccess: undefined;
 };
@@ -41,6 +42,7 @@ const RepairReviewScreen = () => {
     buildingDetailId,
     selectedRoom,
     selectedPosition,
+    isPrivatesAsset = true,
   } = route.params;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,18 +60,29 @@ const RepairReviewScreen = () => {
       description,
       selectedRoom,
       selectedPosition,
-      position: selectedPosition || ''
+      position: selectedPosition || '',
+      isPrivatesAsset: isPrivatesAsset === true ? true : false // Ensure boolean type
     });
 
     setIsSubmitting(true);
 
     try {
+      // Convert to explicit boolean to avoid any type issues
+      const privateAssetValue = isPrivatesAsset === true;
+      
+      console.log('📤 Sending API request with payload:', {
+        buildingDetailId,
+        description,
+        position: selectedPosition || '',
+        isPrivatesAsset: privateAssetValue
+      });
+      
       const response = await CrackService.reportCrack({
         buildingDetailId,
         description,
         position: selectedPosition || '',
         files: images,
-        isPrivatesAsset: true,
+        isPrivatesAsset: privateAssetValue, // Ensure boolean type
       });
 
       if (response) {
