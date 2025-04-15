@@ -282,54 +282,77 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
     setImageSourceModalVisible(false);
   };
 
-  const pickImageFromLibrary = async () => {
+  const pickImageFromLibrary = () => {
+    // On iOS, close modal and give it time to fully close before opening image picker
     closeImageSourceModal();
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please grant camera roll permissions to select images.');
-        return;
+    
+    // iOS needs a longer delay to avoid conflicts between modal dismissal and picker launch
+    const delay = Platform.OS === 'ios' ? 800 : 300;
+    
+    setTimeout(async () => {
+      try {
+        // Check permissions
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert("Permission Needed", "We need permission to access your photos");
+          return;
+        }
+        
+        // For iOS, avoid allowsEditing for multiple selection
+        // On iOS, allowsEditing doesn't work well with multiple selection
+        const pickerResult = await ImagePicker.launchImageLibraryAsync({
+          allowsEditing: Platform.OS !== 'ios',
+          quality: 0.7,
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsMultipleSelection: true,
+          presentationStyle: Platform.OS === 'ios' ? ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN : undefined,
+        });
+        
+        if (!pickerResult.canceled && pickerResult.assets) {
+          console.log("Selected images:", pickerResult.assets.length);
+          const newImages = pickerResult.assets.map(asset => asset.uri);
+          setSelectedImages(current => [...current, ...newImages]);
+        }
+      } catch (error) {
+        console.log("Error picking image:", error);
+        Alert.alert("Error", "Could not select image. Please try again.");
       }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsMultipleSelection: true,
-        quality: 0.8,
-        aspect: [4, 3],
-      });
-
-      if (!result.canceled && result.assets.length > 0) {
-        const imageUris = result.assets.map(asset => asset.uri);
-        setSelectedImages([...selectedImages, ...imageUris]);
-      }
-    } catch (error) {
-      console.error('Error picking images:', error);
-      Alert.alert('Error', 'Failed to pick images. Please try again.');
-    }
+    }, delay);
   };
 
-  const takePhoto = async () => {
+  const takePhoto = () => {
+    // On iOS, close modal and give it time to fully close before opening camera
     closeImageSourceModal();
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please grant camera permissions to take pictures.');
-        return;
+    
+    // iOS needs a longer delay to avoid conflicts between modal dismissal and camera launch
+    const delay = Platform.OS === 'ios' ? 800 : 300;
+    
+    setTimeout(async () => {
+      try {
+        // Check permissions
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert("Permission Needed", "We need permission to access your camera");
+          return;
+        }
+        
+        // For iOS, use full screen presentation
+        const pickerResult = await ImagePicker.launchCameraAsync({
+          allowsEditing: true,
+          quality: 0.7,
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          presentationStyle: Platform.OS === 'ios' ? ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN : undefined,
+        });
+        
+        if (!pickerResult.canceled && pickerResult.assets && pickerResult.assets.length > 0) {
+          console.log("Captured image:", pickerResult.assets[0].uri);
+          setSelectedImages(current => [...current, pickerResult.assets[0].uri]);
+        }
+      } catch (error) {
+        console.log("Error taking photo:", error);
+        Alert.alert("Error", "Could not take photo. Please try again.");
       }
-
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.8,
-        aspect: [4, 3],
-      });
-
-      if (!result.canceled && result.assets.length > 0) {
-        setSelectedImages([...selectedImages, result.assets[0].uri]);
-      }
-    } catch (error) {
-      console.error('Error taking picture:', error);
-      Alert.alert('Error', 'Failed to take picture. Please try again.');
-    }
+    }, delay);
   };
 
   const removeImage = (index: number) => {
@@ -776,6 +799,11 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
             isVisible={isImageSourceModalVisible}
             onBackdropPress={closeImageSourceModal}
             style={styles.modal}
+            backdropTransitionOutTiming={0}
+            avoidKeyboard={true}
+            useNativeDriverForBackdrop={true}
+            animationIn="slideInUp"
+            animationOut="slideOutDown"
           >
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Select Image Source</Text>
@@ -794,6 +822,13 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
               >
                 <Ionicons name="images" size={24} color="#B77F2E" />
                 <Text style={styles.modalOptionText}>Choose from Gallery</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={closeImageSourceModal}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </Modal>
@@ -959,6 +994,7 @@ const styles = StyleSheet.create({
     padding: 22,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 22, // Add extra padding for iOS
   },
   modalTitle: {
     fontSize: 18,
@@ -976,6 +1012,18 @@ const styles = StyleSheet.create({
   modalOptionText: {
     fontSize: 16,
     marginLeft: 12,
+  },
+  cancelButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FF3B30',
   },
   imageContainer: {
     flexDirection: 'row',
