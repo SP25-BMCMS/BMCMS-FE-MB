@@ -132,7 +132,9 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
     }
   };
 
-  const getPositionText = (position: string) => {
+  const getPositionText = (position: string | null) => {
+    if (!position) return '';
+    
     const parts = position.split('/');
     if (parts.length === 2) {
       let room = '';
