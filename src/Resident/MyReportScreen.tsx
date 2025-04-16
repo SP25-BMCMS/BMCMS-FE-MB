@@ -7,10 +7,12 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useNavigation } from "@react-navigation/native";
+import { getUserCrackReports } from "../service/Auth";
 
 const MyReportScreen = () => {
   const [reports, setReports] = useState<any[]>([]);
@@ -19,37 +21,75 @@ const MyReportScreen = () => {
 
   useEffect(() => {
     const loadReports = async () => {
-      const userString = await AsyncStorage.getItem("userData");
-      if (!userString) return;
-    
-      const user = JSON.parse(userString);
-      const userKey = user.phone.toString();
-    
-      const stored = await AsyncStorage.getItem(`myReports_${userKey}`);
-      if (stored) setReports(JSON.parse(stored));
+      try {
+        setLoading(true);
+        const userId = await AsyncStorage.getItem("userId");
+        
+        if (!userId) {
+          setLoading(false);
+          return;
+        }
+        
+        const response = await getUserCrackReports(userId);
+        
+        if (response.isSuccess && response.data && response.data.crackReports) {
+          setReports(response.data.crackReports);
+        } else {
+          setReports([]);
+        }
+      } catch (error) {
+        console.error("Error loading crack reports:", error);
+        setReports([]);
+      } finally {
+        setLoading(false);
+      }
     };
+
     const unsubscribe = navigation.addListener("focus", loadReports);
     return unsubscribe;
   }, [navigation]);
 
   const handleClearAll = async () => {
-    const userString = await AsyncStorage.getItem("userData");
-    if (!userString) return;
-  
-    const user = JSON.parse(userString);
-    const userKey = user.phone.toString();
-  
-    await AsyncStorage.removeItem(`myReports_${userKey}`);
     setReports([]);
   };
 
-  // if (loading) {
-  //   return (
-  //     <View style={styles.loadingContainer}>
-  //       <ActivityIndicator size="large" color="#B77F2E" />
-  //     </View>
-  //   );
-  // }
+  const handleCreateFeedback = (reportId: string) => {
+    Alert.alert(
+      "Feedback",
+      "How would you rate the repair?",
+      [
+        {
+          text: "Submit Feedback",
+          onPress: () => console.log(`Feedback submitted for report ${reportId}`),
+        },
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+      ]
+    );
+  };
+
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case 'InProgress':
+        return { backgroundColor: '#E3F2FD', textColor: '#1976D2' }; // Blue
+      case 'Reviewing':
+        return { backgroundColor: '#FFF9C4', textColor: '#F57F17' }; // Yellow
+      case 'Completed':
+        return { backgroundColor: '#E8F5E9', textColor: '#388E3C' }; // Green
+      default: // Pending or other
+        return { backgroundColor: '#FFF3E0', textColor: '#B77F2E' }; // Default orange
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#B77F2E" />
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -72,33 +112,50 @@ const MyReportScreen = () => {
           <Text style={styles.emptyText}>Chưa có báo cáo nào.</Text>
         </View>
       ) : (
-        reports.map((item, index) => (
-          <View key={index} style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View>
-                <Text style={styles.unitText}>
-                  {item.property.building} {item.property.unit}
-                </Text>
-                <Text style={styles.dateText}>
-                  {new Date(item.date).toLocaleString()}
-                </Text>
+        reports.map((item, index) => {
+          const statusStyle = getStatusStyle(item.status);
+          return (
+            <View key={index} style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View>
+                  <Text style={styles.unitText}>
+                    {item.position.split('/').join(' - ')}
+                  </Text>
+                  <Text style={styles.dateText}>
+                    {new Date(item.createdAt).toLocaleString()}
+                  </Text>
+                </View>
+                <View style={[styles.statusTag, { backgroundColor: statusStyle.backgroundColor }]}>
+                  <Text style={[styles.statusText, { color: statusStyle.textColor }]}>
+                    {item.status}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.statusTag}>
-                <Text style={styles.statusText}>Pending</Text>
-              </View>
+              <Text style={styles.descriptionText}>{item.description}</Text>
+              {item.crackDetails && item.crackDetails.length > 0 && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {item.crackDetails.map((detail: any, idx: number) => (
+                    <Image
+                      key={idx}
+                      source={{ uri: detail.photoUrl }}
+                      style={styles.reportImage}
+                    />
+                  ))}
+                </ScrollView>
+              )}
+              
+              {item.status === 'Completed' && (
+                <TouchableOpacity 
+                  style={styles.feedbackButton}
+                  onPress={() => handleCreateFeedback(item.crackReportId)}
+                >
+                  <Icon name="star" size={16} color="#FFFFFF" />
+                  <Text style={styles.feedbackButtonText}>Create Feedback</Text>
+                </TouchableOpacity>
+              )}
             </View>
-            <Text style={styles.descriptionText}>{item.description}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {item.images.map((img: string, idx: number) => (
-                <Image
-                  key={idx}
-                  source={{ uri: img }}
-                  style={styles.reportImage}
-                />
-              ))}
-            </ScrollView>
-          </View>
-        ))
+          );
+        })
       )}
     </ScrollView>
   );
@@ -165,6 +222,20 @@ const styles = StyleSheet.create({
   },
   emptyImage: { width: 200, height: 200, marginBottom: 20 },
   emptyText: { color: "#999", fontSize: 16 },
+  feedbackButton: {
+    backgroundColor: "#388E3C",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  feedbackButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    marginLeft: 6,
+  },
 });
 
 export default MyReportScreen;

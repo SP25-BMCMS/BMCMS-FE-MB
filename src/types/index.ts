@@ -25,13 +25,15 @@ export type RootStackParamList = {
   More: undefined;
   PropertyDetail: undefined;
   RepairInside: { property?: Property };
+  RepairOutside: { property?: Property };
   RepairReview: { 
     property: Property; 
     description: string; 
     images: string[]; 
     buildingDetailId?: string;
-    selectedRoom?: keyof typeof CRACK_POSITIONS;
+    selectedRoom?: keyof typeof CRACK_POSITIONS | keyof typeof OUTDOOR_CRACK_POSITIONS;
     selectedPosition?: string;
+    isPrivatesAsset?: boolean;
   };
   RepairSuccess: undefined;
   MyReport: undefined;
@@ -49,9 +51,16 @@ export type RootStackParamList = {
   CreateStaffInspection: { 
     taskDetail: TaskAssignmentDetail;
   };
-  CreateLocation: { 
+  CreateLocation: {
     onGoBack?: () => void;
-    editIndex?: number;
+    initialData: {
+      buildingDetailId: string;
+      inspection_id: string;
+    };
+  };
+  EditLocation: {
+    locationId: string;
+    onGoBack?: () => void;
   };
   InspectionList: {
     taskAssignmentId: string;
@@ -67,6 +76,8 @@ export type RootStackParamList = {
   StaffInspectionDetail: {
     inspection: Inspection;
   };
+  ChatBot: undefined;
+  ChatHistory: undefined;
 };
 //residents
 export interface Resident {
@@ -325,6 +336,30 @@ export const CRACK_POSITIONS = {
   }
 };
 
+// Positions for outdoor crack reporting
+export const OUTDOOR_CRACK_POSITIONS = {
+  BUILDING_EXTERIOR: {
+    WALL: 'exterior/building/1/wall',
+    FOUNDATION: 'exterior/building/ground/foundation',
+    ROOF: 'exterior/building/top/roof',
+  },
+  COMMON_AREA: {
+    STAIRS: 'common/building/1/stairs',
+    CORRIDOR: 'common/building/1/corridor',
+    LOBBY: 'common/building/ground/lobby',
+  },
+  PARKING: {
+    SURFACE: 'parking/area/ground/surface',
+    PILLAR: 'parking/area/1/pillar',
+    CEILING: 'parking/area/1/ceiling',
+  },
+  LANDSCAPE: {
+    PAVEMENT: 'landscape/garden/ground/pavement',
+    FENCE: 'landscape/perimeter/ground/fence',
+    POOL: 'landscape/amenity/ground/pool',
+  }
+};
+
 // Task Types
 export interface Task {
   task_id: string;
@@ -458,7 +493,6 @@ export interface Inspection {
   total_cost: string;
   taskAssignment?: TaskAssignment;
   repairMaterials?: RepairMaterial[];
-  locationDetails?: LocationDetail[];
 }
 
 export interface InspectionListResponse {
@@ -511,12 +545,68 @@ export interface RepairMaterial {
   inspection_id?: string;
 }
 
-export interface LocationDetail {
-  inspection_id?: string;
-  buildingDetailId?: string;
+export interface LocationData {
+  buildingDetailId: string;
+  inspection_id: string;
   roomNumber: string;
   floorNumber: number;
-  areaType: string;
+  areaType: 'Floor' | 'Wall' | 'Ceiling' | 'column' | 'Other';
   description: string;
+}
+
+export interface InspectionDetailResponse {
+  isSuccess: boolean;
+  message: string;
+  data: {
+    inspection_id: string;
+    task_assignment_id: string;
+    inspected_by: string;
+    image_urls: string[];
+    description: string;
+    created_at: string;
+    updated_at: string;
+    total_cost: string;
+    taskAssignment: {
+      assignment_id: string;
+      task_id: string;
+      employee_id: string;
+      description: string;
+      status: string;
+      created_at: string;
+      updated_at: string;
+      task: {
+        task_id: string;
+        description: string;
+        status: string;
+        created_at: string;
+        updated_at: string;
+        crack_id: string;
+        schedule_job_id: string;
+      };
+    };
+    crackInfo: {
+      isSuccess: boolean;
+      message: string;
+      data: Array<{
+        crackReportId: string;
+        buildingDetailId: string;
+        description: string;
+        isPrivatesAsset: boolean;
+        position: string | null;
+        status: string;
+        reportedBy: {
+          userId: string;
+          username: string;
+        };
+        verifiedBy: {
+          userId: string;
+          username: string;
+        };
+        createdAt: string;
+        updatedAt: string;
+        crackDetails: any[];
+      }>;
+    };
+  };
 }
 

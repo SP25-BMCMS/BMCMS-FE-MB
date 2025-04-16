@@ -1,41 +1,128 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
-  Image, 
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Image,
   Dimensions,
-  ActivityIndicator
-} from 'react-native';
-import { RouteProp } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList, Inspection } from '../../types';
-import { format } from 'date-fns';
-import { enUS } from 'date-fns/locale';
-import { Ionicons } from '@expo/vector-icons';
-import Modal from 'react-native-modal';
+  ActivityIndicator,
+  Alert,
+} from "react-native";
+import { RouteProp } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import {
+  RootStackParamList,
+  Inspection,
+  InspectionDetailResponse,
+} from "../../types";
+import { format } from "date-fns";
+import { enUS } from "date-fns/locale";
+import { Ionicons } from "@expo/vector-icons";
+import Modal from "react-native-modal";
+import { LocationService, LocationDetail } from "../../service/Location";
+import { useQuery } from "@tanstack/react-query";
+import { StaffService, StaffInfo } from "../../service/Staff";
+import { useQueryClient } from "@tanstack/react-query";
 
-type InspectionDetailScreenRouteProp = RouteProp<RootStackParamList, 'InspectionDetail'>;
-type InspectionDetailScreenNavigationProp = StackNavigationProp<RootStackParamList, 'InspectionDetail'>;
+type InspectionDetailScreenRouteProp = RouteProp<
+  RootStackParamList,
+  "InspectionDetail"
+>;
+type InspectionDetailScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  "InspectionDetail"
+>;
 
 type Props = {
   route: InspectionDetailScreenRouteProp;
   navigation: InspectionDetailScreenNavigationProp;
 };
 
-const windowWidth = Dimensions.get('window').width;
+const windowWidth = Dimensions.get("window").width;
 
 const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { inspection } = route.params;
+  const [inspectionDetail, setInspectionDetail] = useState<
+    InspectionDetailResponse["data"] | null
+  >(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(-1);
   const [imageLoading, setImageLoading] = useState<boolean>(false);
+  const [showAllLocations, setShowAllLocations] = useState<boolean>(false);
+  const [selectedLocation, setSelectedLocation] = useState<LocationDetail | null>(null);
+
+  const queryClient = useQueryClient();
+
+  // Fetch inspection details
+  useEffect(() => {
+    const fetchInspectionDetail = async () => {
+      try {
+        setLoading(true);
+        const response = await LocationService.getInspectionById(
+          inspection.inspection_id
+        );
+        if (response.isSuccess) {
+          setInspectionDetail(response.data);
+        } else {
+          Alert.alert("Error", "Failed to load inspection details");
+        }
+      } catch (error) {
+        console.error("Error fetching inspection details:", error);
+        Alert.alert("Error", "Failed to load inspection details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInspectionDetail();
+  }, [inspection.inspection_id]);
+
+  // Query staff information
+  const { data: staffInfo } = useQuery<StaffInfo>({
+    queryKey: ["staff", inspectionDetail?.inspected_by],
+    queryFn: () =>
+      StaffService.getStaffById(inspectionDetail?.inspected_by || ""),
+    enabled: !!inspectionDetail?.inspected_by,
+  });
+
+  // Query location information with proper error handling
+  const { 
+    data: locationData, 
+    isLoading: locationsLoading,
+    error: locationsError
+  } = useQuery<LocationDetail[]>({
+    queryKey: ["locations", inspection.inspection_id],
+    queryFn: async () => {
+      try {
+        const response = await LocationService.getLocationsByInspectionId(inspection.inspection_id);
+        console.log(`Fetched ${response.data.length} locations for inspection ${inspection.inspection_id}`);
+        return response.data || [];
+      } catch (error) {
+        console.error("Error fetching locations:", error);
+        return [];
+      }
+    },
+    staleTime: 30000, // Cache for 30 seconds to prevent unnecessary refetches
+  });
+
+  // Add a useEffect to refetch data when returning to this screen
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // When the screen is focused (coming back to it)
+      console.log("Screen focused, refetching data...");
+      queryClient.invalidateQueries({ queryKey: ["locations", inspection.inspection_id] });
+    });
+
+    // Clean up the listener when component unmounts
+    return unsubscribe;
+  }, [navigation, queryClient, inspection.inspection_id]);
 
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return format(date, 'MM/dd/yyyy HH:mm', { locale: enUS });
+      return format(date, "MM/dd/yyyy HH:mm", { locale: enUS });
     } catch (error) {
       return dateString;
     }
@@ -49,10 +136,78 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     setSelectedImageIndex(-1);
   };
 
+  const handleAddLocation = () => {
+    navigation.navigate("CreateLocation", {
+      initialData: {
+        buildingDetailId: buildingDetailId,
+        inspection_id: inspection.inspection_id,
+      },
+      onGoBack: () => {
+        // This will refetch the locations when coming back from Create Location screen
+        queryClient.invalidateQueries({
+          queryKey: ["locations", inspection.inspection_id],
+        });
+      },
+    });
+  };
+
+  // Handle showing all locations
+  const toggleShowAllLocations = () => {
+    setShowAllLocations(!showAllLocations);
+  };
+
+  // Handle editing a location
+  const handleEditLocation = (locationId: string) => {
+    navigation.navigate("EditLocation", {
+      locationId,
+      onGoBack: () => {
+        // This will refetch the locations when coming back from Edit Location screen
+        queryClient.invalidateQueries({
+          queryKey: ["locations", inspection.inspection_id],
+        });
+      },
+    });
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#000" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Inspection Details</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#B77F2E" />
+          <Text style={styles.loadingText}>Loading inspection details...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const currentInspection = inspectionDetail || inspection;
+  const imageUrls = currentInspection.image_urls || [];
+  const buildingDetailId =
+    inspectionDetail?.crackInfo?.data[0]?.buildingDetailId || "";
+
+  const hasLocations = locationData && locationData.length > 0;
+  
+  // Determine locations to display
+  const displayLocations = hasLocations 
+    ? (showAllLocations ? locationData : locationData.slice(0, 3))
+    : [];
+  
+  const hasMoreLocations = hasLocations && locationData.length > 3;
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
@@ -63,64 +218,145 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       </View>
 
       <ScrollView style={styles.scrollView}>
+        {/* Task Information Card - Moved to top */}
+        {inspectionDetail?.taskAssignment?.task && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Task Information</Text>
+            <View style={styles.divider} />
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Task Status:</Text>
+              <View
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor: getStatusColor(
+                      inspectionDetail.taskAssignment.task.status
+                    ),
+                  },
+                ]}
+              >
+                <Text style={styles.statusText}>
+                  {inspectionDetail.taskAssignment.task.status}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Task Description:</Text>
+              <Text style={styles.infoValue}>
+                {inspectionDetail.taskAssignment.task.description}
+              </Text>
+            </View>
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Inspected By:</Text>
+              <Text style={styles.infoValue}>
+                {staffInfo?.username || currentInspection.inspected_by}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Crack Information Card */}
+        {inspectionDetail?.crackInfo?.data[0] && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Crack Information</Text>
+            <View style={styles.divider} />
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Status:</Text>
+              <View
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor: getStatusColor(
+                      inspectionDetail.crackInfo.data[0].status
+                    ),
+                  },
+                ]}
+              >
+                <Text style={styles.statusText}>
+                  {inspectionDetail.crackInfo.data[0].status}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Reported By:</Text>
+              <Text style={styles.infoValue}>
+                {inspectionDetail.crackInfo.data[0].reportedBy.username}
+              </Text>
+            </View>
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Verified By:</Text>
+              <Text style={styles.infoValue}>
+                {inspectionDetail.crackInfo.data[0].verifiedBy?.username ||
+                  "Not verified"}
+              </Text>
+            </View>
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Description:</Text>
+              <Text style={styles.infoValue}>
+                {inspectionDetail.crackInfo.data[0].description}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Inspection Details Card */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>General Information</Text>
+          <Text style={styles.cardTitle}>Inspection Details</Text>
           <View style={styles.divider} />
-          
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Inspection ID:</Text>
-            <Text style={styles.infoValue}>{inspection.inspection_id}</Text>
-          </View>
-          
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Task Assignment ID:</Text>
-            <Text style={styles.infoValue}>{inspection.task_assignment_id}</Text>
-          </View>
-          
+
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Created:</Text>
-            <Text style={styles.infoValue}>{formatDate(inspection.created_at)}</Text>
+            <Text style={styles.infoValue}>
+              {formatDate(currentInspection.created_at)}
+            </Text>
           </View>
-          
+
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Updated:</Text>
-            <Text style={styles.infoValue}>{formatDate(inspection.updated_at)}</Text>
+            <Text style={styles.infoValue}>
+              {formatDate(currentInspection.updated_at)}
+            </Text>
           </View>
-          
+
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Total Cost:</Text>
             <Text style={[styles.infoValue, styles.costValue]}>
-              {parseInt(inspection.total_cost) > 0 
-                ? `${parseInt(inspection.total_cost).toLocaleString()} VND` 
-                : 'No cost assigned'}
+              {parseInt(currentInspection.total_cost) > 0
+                ? `${parseInt(
+                    currentInspection.total_cost
+                  ).toLocaleString()} VND`
+                : "No cost assigned"}
+            </Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Description:</Text>
+            <Text style={styles.infoValue}>
+              {currentInspection.description || "No description provided."}
             </Text>
           </View>
         </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Description</Text>
-          <View style={styles.divider} />
-          
-          <Text style={styles.descriptionText}>
-            {inspection.description || 'No description provided.'}
-          </Text>
-        </View>
-
-        {inspection.image_urls.length > 0 && (
+        {/* Images Card - Moved to bottom */}
+        {imageUrls.length > 0 && (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>
-              Images ({inspection.image_urls.length})
-            </Text>
+            <Text style={styles.cardTitle}>Images ({imageUrls.length})</Text>
             <View style={styles.divider} />
-            
+
             <View style={styles.imageGrid}>
-              {inspection.image_urls.map((url, index) => (
-                <TouchableOpacity 
-                  key={index} 
+              {imageUrls.map((url, index) => (
+                <TouchableOpacity
+                  key={index}
                   style={styles.imageContainer}
                   onPress={() => handleImagePress(index)}
                 >
-                  <Image 
+                  <Image
                     source={{ uri: url }}
                     style={styles.thumbnailImage}
                     resizeMode="cover"
@@ -130,6 +366,104 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             </View>
           </View>
         )}
+        {/* Location Information Card */}
+        <View style={styles.card}>
+          <View style={styles.cardTitleContainer}>
+            <Text style={styles.cardTitle}>
+              Location Information{" "}
+              {hasLocations ? `(${locationData.length})` : ""}
+            </Text>
+            <TouchableOpacity onPress={handleAddLocation}>
+              <Ionicons name="add-circle-outline" size={24} color="#B77F2E" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.divider} />
+          
+          {locationsLoading ? (
+            <View style={styles.locationLoadingContainer}>
+              <ActivityIndicator size="small" color="#B77F2E" />
+              <Text style={styles.locationLoadingText}>Loading locations...</Text>
+            </View>
+          ) : locationsError ? (
+            <View style={styles.locationErrorContainer}>
+              <Text style={styles.locationErrorText}>Failed to load locations</Text>
+              <TouchableOpacity 
+                style={styles.retryButton}
+                onPress={() => {
+                  queryClient.invalidateQueries({
+                    queryKey: ["locations", inspection.inspection_id],
+                  });
+                }}
+              >
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : hasLocations ? (
+            <>
+              {displayLocations.map((location, index) => (
+                <View key={location.locationDetailId} style={styles.locationItem}>
+                  <View style={styles.locationHeader}>
+                    <Text style={styles.locationTitle}>
+                      Room {location.roomNumber}, Floor {location.floorNumber}
+                    </Text>
+                    <View style={styles.locationActions}>
+                      <View style={styles.areaTypeBadge}>
+                        <Text style={styles.areaTypeText}>{location.areaType}</Text>
+                      </View>
+                      <TouchableOpacity 
+                        style={styles.editButton}
+                        onPress={() => handleEditLocation(location.locationDetailId)}
+                      >
+                        <Ionicons name="create-outline" size={18} color="#B77F2E" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  
+                  {location.description && (
+                    <Text style={styles.locationDescription}>
+                      {location.description}
+                    </Text>
+                  )}
+                  
+                  {index < displayLocations.length - 1 && (
+                    <View style={styles.locationDivider} />
+                  )}
+                </View>
+              ))}
+              
+              {hasMoreLocations && (
+                <TouchableOpacity 
+                  style={styles.seeMoreButton}
+                  onPress={toggleShowAllLocations}
+                >
+                  <Text style={styles.seeMoreButtonText}>
+                    {showAllLocations ? "See less" : `See all ${locationData.length} locations`}
+                  </Text>
+                  <Ionicons 
+                    name={showAllLocations ? "chevron-up" : "chevron-down"} 
+                    size={16} 
+                    color="#B77F2E" 
+                  />
+                </TouchableOpacity>
+              )}
+            </>
+          ) : (
+            <View style={styles.emptyLocationContainer}>
+              <Text style={styles.emptyLocationText}>
+                No location information available
+              </Text>
+              <TouchableOpacity
+                style={styles.addLocationButton}
+                onPress={handleAddLocation}
+              >
+                <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
+                <Text style={styles.addLocationButtonText}>
+                  Add Location Information
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       </ScrollView>
 
       {/* Image Modal */}
@@ -140,33 +474,30 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         style={styles.modal}
       >
         <View style={styles.modalContent}>
-          <TouchableOpacity 
-            style={styles.closeButton}
-            onPress={closeModal}
-          >
+          <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
             <Ionicons name="close" size={24} color="#FFFFFF" />
           </TouchableOpacity>
-          
-          {selectedImageIndex !== -1 && (
+
+          {selectedImageIndex !== -1 && imageUrls.length > 0 && (
             <>
               {imageLoading && (
-                <ActivityIndicator 
-                  size="large" 
-                  color="#FFFFFF" 
+                <ActivityIndicator
+                  size="large"
+                  color="#FFFFFF"
                   style={styles.imageLoader}
                 />
               )}
-              
-              <Image 
-                source={{ uri: inspection.image_urls[selectedImageIndex] }}
+
+              <Image
+                source={{ uri: imageUrls[selectedImageIndex] }}
                 style={styles.fullImage}
                 resizeMode="contain"
                 onLoadStart={() => setImageLoading(true)}
                 onLoadEnd={() => setImageLoading(false)}
               />
-              
+
               <Text style={styles.imageCount}>
-                {selectedImageIndex + 1} / {inspection.image_urls.length}
+                {selectedImageIndex + 1} / {imageUrls.length}
               </Text>
             </>
           )}
@@ -176,86 +507,115 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   );
 };
 
+// Helper function to get status color
+const getStatusColor = (status: string): string => {
+  switch (status) {
+    case "Pending":
+      return "#FF9500";
+    case "Assigned":
+      return "#007AFF";
+    case "InProgress":
+      return "#5856D6";
+    case "Completed":
+      return "#4CD964";
+    case "Canceled":
+      return "#FF3B30";
+    default:
+      return "#8E8E93";
+  }
+};
+
 const SafeAreaView = (props: any) => {
-  return <View style={{flex: 1, backgroundColor: '#FFFFFF'}} {...props} />;
+  return <View style={{ flex: 1, backgroundColor: "#FFFFFF" }} {...props} />;
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: "#F5F5F5",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingTop: 50,
     paddingBottom: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: "#E0E0E0",
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   backButton: {
     padding: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#666",
   },
   scrollView: {
     flex: 1,
     padding: 16,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 12,
-    color: '#333333',
+    color: "#333333",
   },
   divider: {
     height: 1,
-    backgroundColor: '#EEEEEE',
+    backgroundColor: "#EEEEEE",
     marginBottom: 16,
   },
   infoRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 12,
+    alignItems: "center",
   },
   infoLabel: {
     width: 140,
     fontSize: 15,
-    fontWeight: '600',
-    color: '#555555',
+    fontWeight: "600",
+    color: "#555555",
   },
   infoValue: {
     flex: 1,
     fontSize: 15,
-    color: '#333333',
+    color: "#333333",
   },
   costValue: {
-    fontWeight: '600',
-    color: '#4CD964',
+    fontWeight: "600",
+    color: "#4CD964",
   },
   descriptionText: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#333333',
+    color: "#333333",
   },
   imageGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginHorizontal: -4,
   },
   imageContainer: {
@@ -263,30 +623,30 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     margin: 4,
     borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#F0F0F0',
+    overflow: "hidden",
+    backgroundColor: "#F0F0F0",
   },
   thumbnailImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   modal: {
     margin: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalContent: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
   },
   closeButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 40,
     right: 20,
     zIndex: 10,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: "rgba(0,0,0,0.5)",
     borderRadius: 20,
     padding: 8,
   },
@@ -295,21 +655,145 @@ const styles = StyleSheet.create({
     height: windowWidth,
   },
   imageLoader: {
-    position: 'absolute',
-    alignSelf: 'center',
+    position: "absolute",
+    alignSelf: "center",
     zIndex: 5,
   },
   imageCount: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 100,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    color: '#FFFFFF',
+    alignSelf: "center",
+    backgroundColor: "rgba(0,0,0,0.7)",
+    color: "#FFFFFF",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
     fontSize: 14,
   },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  addLocationButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#B77F2E",
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+  },
+  addLocationButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  locationItem: {
+    marginBottom: 12,
+  },
+  locationHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  locationTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333333",
+  },
+  areaTypeBadge: {
+    backgroundColor: "#E0E0E0",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  areaTypeText: {
+    fontSize: 12,
+    color: "#555555",
+    fontWeight: "500",
+  },
+  locationDescription: {
+    fontSize: 14,
+    color: "#666666",
+    marginBottom: 8,
+  },
+  locationDivider: {
+    height: 1,
+    backgroundColor: "#EEEEEE",
+    marginVertical: 12,
+  },
+  cardTitleContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  emptyLocationContainer: {
+    alignItems: "center",
+    paddingVertical: 16,
+  },
+  emptyLocationText: {
+    fontSize: 15,
+    color: "#666666",
+    marginBottom: 16,
+  },
+  seeMoreButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    marginTop: 8,
+  },
+  seeMoreButtonText: {
+    color: "#B77F2E",
+    fontWeight: "600",
+    fontSize: 14,
+    marginRight: 4,
+  },
+  locationActions: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  editButton: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  locationLoadingContainer: {
+    alignItems: "center",
+    paddingVertical: 24,
+  },
+  locationLoadingText: {
+    marginTop: 8,
+    color: "#666666",
+    fontSize: 14,
+  },
+  locationErrorContainer: {
+    alignItems: "center",
+    paddingVertical: 24,
+  },
+  locationErrorText: {
+    color: "#FF3B30",
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  retryButton: {
+    backgroundColor: "#F0F0F0",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "#B77F2E",
+    fontWeight: "600",
+  },
 });
 
-export default InspectionDetailScreen; 
+export default InspectionDetailScreen;

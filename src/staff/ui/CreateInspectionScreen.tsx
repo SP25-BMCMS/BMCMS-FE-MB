@@ -29,13 +29,6 @@ type Props = {
   navigation: CreateInspectionScreenNavigationProp;
 };
 
-interface LocationData {
-  roomNumber: string;
-  floorNumber: number;
-  areaType: string;
-  description: string;
-}
-
 interface SelectedMaterial {
   material: Material;
   quantity: number;
@@ -50,7 +43,6 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
   const [notes, setNotes] = useState<string>('');
   const [isVerified, setIsVerified] = useState<boolean>(false);
   const [isImageSourceModalVisible, setImageSourceModalVisible] = useState<boolean>(false);
-  const [locationDetails, setLocationDetails] = useState<LocationData[]>([]);
   const [showReviewScreen, setShowReviewScreen] = useState<boolean>(false);
   
   // Material states
@@ -60,35 +52,6 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
   const [materialsLoading, setMaterialsLoading] = useState<boolean>(false);
   const [selectedMaterialForEdit, setSelectedMaterialForEdit] = useState<SelectedMaterial | null>(null);
   const [materialQuantity, setMaterialQuantity] = useState<string>('1');
-
-  // Load location data when component mounts
-  useEffect(() => {
-    const loadLocationDetails = async () => {
-      try {
-        const savedLocations = await AsyncStorage.getItem('tempLocationDetails');
-        if (savedLocations) {
-          try {
-            const parsedLocations = JSON.parse(savedLocations);
-            setLocationDetails(Array.isArray(parsedLocations) ? parsedLocations : [parsedLocations]);
-          } catch (parseError) {
-            console.error('Error parsing location JSON:', parseError);
-            // Initialize with empty array if parsing fails
-            setLocationDetails([]);
-            // Clear invalid data
-            await AsyncStorage.removeItem('tempLocationDetails');
-          }
-        } else {
-          // Initialize with empty array if no saved data
-          setLocationDetails([]);
-        }
-      } catch (error) {
-        console.error('Error loading location details:', error);
-        setLocationDetails([]);
-      }
-    };
-    
-    loadLocationDetails();
-  }, []);
 
   // Load materials when verified is toggled to true
   useEffect(() => {
@@ -245,54 +208,6 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
     );
   };
 
-  // Navigate to location creation screen
-  const navigateToCreateLocation = (editIndex: number = -1) => {
-    navigation.navigate('CreateLocation', { 
-      editIndex,
-      onGoBack: () => {
-        // This will be called when returning from CreateLocation screen
-        loadLocationAfterReturn();
-      }
-    });
-  };
-
-  // Load location data after returning from CreateLocation screen
-  const loadLocationAfterReturn = async () => {
-    try {
-      const savedLocations = await AsyncStorage.getItem('tempLocationDetails');
-      if (savedLocations) {
-        try {
-          const parsedLocations = JSON.parse(savedLocations);
-          setLocationDetails(Array.isArray(parsedLocations) ? parsedLocations : [parsedLocations]);
-        } catch (parseError) {
-          console.error('Error parsing location JSON after return:', parseError);
-          // Initialize with empty array if parsing fails
-          setLocationDetails([]);
-          // Clear invalid data
-          await AsyncStorage.removeItem('tempLocationDetails');
-        }
-      } else {
-        // Initialize with empty array if no saved data
-        setLocationDetails([]);
-      }
-    } catch (error) {
-      console.error('Error loading location details after return:', error);
-      setLocationDetails([]);
-    }
-  };
-
-  // Delete a location
-  const deleteLocation = async (indexToDelete: number) => {
-    try {
-      const updatedLocations = locationDetails.filter((_, index) => index !== indexToDelete);
-      await AsyncStorage.setItem('tempLocationDetails', JSON.stringify(updatedLocations));
-      setLocationDetails(updatedLocations);
-    } catch (error) {
-      console.error('Error deleting location:', error);
-      Alert.alert('Error', 'Failed to delete location');
-    }
-  };
-
   // Handle image selection
   const openImageSourceModal = () => {
     setImageSourceModalVisible(true);
@@ -368,7 +283,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
     try {
       setLoading(true);
       const status = isVerified ? 'Verified' : 'Unverified';
-      await TaskService.changeTaskAssignmentStatus(taskDetail.assignment_id, status);
+      await TaskService.updateStatusAndCreateWorklog(taskDetail.assignment_id, status);
       return true;
     } catch (error) {
       console.error('Error changing task status:', error);
@@ -399,11 +314,6 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
       return;
     }
 
-    if (locationDetails.length === 0) {
-      Alert.alert('Missing Location', 'Please add at least one location detail');
-      return;
-    }
-
     if (isVerified && selectedMaterials.length === 0) {
       Alert.alert('Missing Materials', 'Please add at least one material for repair');
       return;
@@ -429,15 +339,6 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
         return;
       }
       
-      // Get the first location detail
-      const locationDetail = locationDetails.length > 0 ? locationDetails[0] : null;
-      
-      if (!locationDetail) {
-        Alert.alert('Error', 'No location details found');
-        setLoading(false);
-        return;
-      }
-      
       // Prepare repair materials data if verified
       const repairMaterials = isVerified ? selectedMaterials.map(item => ({
         materialId: item.material.material_id,
@@ -448,7 +349,6 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
         task_assignment_id: taskDetail.assignment_id,
         description: notes,
         files: images, // Truyền trực tiếp URI ảnh - API sẽ xử lý việc upload
-        additionalLocationDetails: locationDetail,
         repairMaterials
       };
       
@@ -505,11 +405,6 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
               <Text style={styles.infoValue}>{images.length} added</Text>
             </View>
             
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Locations:</Text>
-              <Text style={styles.infoValue}>{locationDetails.length} specified</Text>
-            </View>
-            
             {isVerified && (
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Total Cost:</Text>
@@ -534,22 +429,6 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
                 <Image key={index} source={{ uri: image }} style={styles.reviewImage} />
               ))}
             </ScrollView>
-          </View>
-          
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Location Details</Text>
-            <View style={styles.divider} />
-            {locationDetails.map((location, index) => (
-              <View key={index} style={styles.locationReviewItem}>
-                <Text style={styles.locationReviewTitle}>Location {index + 1}</Text>
-                <View style={styles.locationReviewDetails}>
-                  <Text>Room: {location.roomNumber}</Text>
-                  <Text>Floor: {location.floorNumber}</Text>
-                  <Text>Area Type: {location.areaType || 'Not specified'}</Text>
-                  <Text>Description: {location.description || 'None'}</Text>
-                </View>
-              </View>
-            ))}
           </View>
           
           {isVerified && selectedMaterials.length > 0 && (
@@ -907,64 +786,6 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
         )}
 
-        {/* Location Details */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Location Details</Text>
-          <View style={styles.divider} />
-          
-          {locationDetails.length > 0 ? (
-            <View style={styles.locationList}>
-              {locationDetails.map((location, index) => (
-                <View key={index} style={styles.locationItem}>
-                  <View style={styles.locationContent}>
-                    <Text style={styles.locationText} numberOfLines={2}>
-                      Room {location.roomNumber}, Floor {location.floorNumber}, {location.areaType || 'Floor'}
-                      {location.description ? ` (${location.description})` : ''}
-                    </Text>
-                    <View style={styles.locationActions}>
-                      <TouchableOpacity 
-                        onPress={() => navigateToCreateLocation(index)}
-                        style={styles.locationEditButton}
-                      >
-                        <Ionicons name="pencil" size={18} color="#B77F2E" />
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        onPress={() => {
-                          Alert.alert(
-                            'Delete Location',
-                            'Are you sure you want to delete this location?',
-                            [
-                              { text: 'Cancel', style: 'cancel' },
-                              { text: 'Delete', onPress: () => deleteLocation(index), style: 'destructive' }
-                            ]
-                          );
-                        }}
-                        style={styles.locationDeleteButton}
-                      >
-                        <Ionicons name="trash" size={18} color="#FF3B30" />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <Text style={styles.noLocationsText}>No locations added yet</Text>
-          )}
-          
-          {locationDetails.length < 5 ? (
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={() => navigateToCreateLocation()}
-            >
-              <Ionicons name="add-circle" size={24} color="#B77F2E" />
-              <Text style={styles.addButtonText}>Add Location</Text>
-            </TouchableOpacity>
-          ) : (
-            <Text style={styles.limitReachedText}>Maximum number of locations reached (5)</Text>
-          )}
-        </View>
-
         {/* Submit Button */}
         <TouchableOpacity
           style={[
@@ -973,7 +794,6 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
               backgroundColor: 
                 images.length > 0 && 
                 notes.trim() !== '' && 
-                locationDetails.length > 0 &&
                 (!isVerified || (isVerified && selectedMaterials.length > 0))
                   ? '#B77F2E'
                   : '#CCC'
@@ -982,7 +802,6 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
           disabled={
             images.length === 0 || 
             notes.trim() === '' || 
-            locationDetails.length === 0 ||
             (isVerified && selectedMaterials.length === 0) ||
             loading
           }
@@ -1182,50 +1001,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontWeight: '600',
   },
-  locationList: {
-    marginBottom: 16,
-  },
-  locationItem: {
-    borderWidth: 1,
-    borderColor: '#DDDDDD',
-    borderRadius: 8,
-    padding: 12,
-    backgroundColor: '#F8F8F8',
-    marginBottom: 8,
-  },
-  locationContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  locationText: {
-    fontSize: 15,
-    flex: 1,
-    color: '#333333',
-  },
-  locationActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  locationEditButton: {
-    padding: 6,
-    marginRight: 6,
-  },
-  locationDeleteButton: {
-    padding: 6,
-  },
-  noLocationsText: {
-    color: '#666666',
-    textAlign: 'center',
-    marginBottom: 16,
-    fontStyle: 'italic',
-  },
-  limitReachedText: {
-    color: '#FF3B30',
-    textAlign: 'center',
-    fontStyle: 'italic',
-    marginTop: 8,
-  },
   submitButton: {
     paddingVertical: 16,
     borderRadius: 8,
@@ -1249,20 +1024,6 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 8,
     marginRight: 8,
-  },
-  locationReviewItem: {
-    marginBottom: 12,
-    padding: 8,
-    backgroundColor: '#F8F8F8',
-    borderRadius: 8,
-  },
-  locationReviewTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  locationReviewDetails: {
-    paddingLeft: 8,
   },
   confirmButton: {
     backgroundColor: '#4CD964',  // Green color for confirmation
@@ -1518,7 +1279,23 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontStyle: 'italic',
   },
- 
+  defaultLocationContainer: {
+    padding: 12,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 8,
+  },
+  defaultLocationTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  defaultLocationDetails: {
+    paddingLeft: 8,
+  },
+  defaultLocationText: {
+    fontSize: 14,
+    color: '#333333',
+  },
 });
 
 export default CreateInspectionScreen; 

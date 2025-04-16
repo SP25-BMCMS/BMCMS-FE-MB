@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, FlatList } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, FlatList, SectionList, Alert } from 'react-native';
 import { TaskService } from '../service/Task';
 import { TaskAssignment, Task } from '../types';
 import { format } from 'date-fns';
@@ -9,6 +9,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { showMessage } from 'react-native-flash-message';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -43,6 +44,8 @@ const StaffAssignScreen = () => {
   const [error, setError] = useState<string>('');
   const [isLeader, setIsLeader] = useState<boolean>(false);
   const [userId, setUserId] = useState<string>('');
+  const [confirmedTasks, setConfirmedTasks] = useState<string[]>([]);
+  const [buttonVisibility, setButtonVisibility] = useState<{[key: string]: boolean}>({});
 
   useEffect(() => {
     const checkUserPosition = async () => {
@@ -135,6 +138,64 @@ const StaffAssignScreen = () => {
     }
   };
 
+  // Hàm kiểm tra xem có nên hiển thị button hay không
+  const shouldShowConfirmButton = async (taskId: string): Promise<boolean> => {
+    try {
+      // Lấy task assignments của user hiện tại (leader)
+      const response = await TaskService.getTaskAssignmentsByUserId();
+      
+      // Tìm task assignment chính liên quan đến taskId
+      const mainTaskAssignment = response.data.find(
+        assignment => assignment.task_id === taskId && assignment.employee_id === userId
+      );
+      
+      // Nếu không tìm thấy task assignment chính
+      if (!mainTaskAssignment) {
+        return false;
+      }
+      
+      // Nếu task assignment chính đã có status là Confirmed, không hiển thị button
+      if (String(mainTaskAssignment.status) === 'Confirmed') {
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error checking task status:', error);
+      return false; // Mặc định không hiển thị nếu có lỗi
+    }
+  };
+
+  // Hàm để kiểm tra và cập nhật trạng thái hiển thị button
+  const checkButtonVisibility = async (taskId: string, assignments: TaskAssignment[]) => {
+    // Kiểm tra xem có task nào đang ở trạng thái "InFixing" hoặc "Fixed" không
+    const hasInFixingOrFixedTask = assignments.some(
+      assignment => String(assignment.status) === 'InFixing' || String(assignment.status) === 'Fixed'
+    );
+    
+    if (hasInFixingOrFixedTask) {
+      setButtonVisibility(prev => ({...prev, [taskId]: false}));
+      return;
+    }
+    
+    // Kiểm tra trạng thái thực tế từ API
+    const shouldShow = await shouldShowConfirmButton(taskId);
+    setButtonVisibility(prev => ({...prev, [taskId]: shouldShow}));
+  };
+
+  // Cập nhật useEffect để kiểm tra trạng thái button khi tasks thay đổi
+  useEffect(() => {
+    const checkAllButtons = async () => {
+      for (const task of tasks) {
+        await checkButtonVisibility(task.task_id, task.taskAssignments);
+      }
+    };
+    
+    if (tasks.length > 0 && isLeader) {
+      checkAllButtons();
+    }
+  }, [tasks, isLeader, userId]);
+
   useEffect(() => {
     if (userId) {
       if (isLeader) {
@@ -192,7 +253,7 @@ const StaffAssignScreen = () => {
       case 'InFixing':
         return '#5AC8FA'; // Light blue
         case 'Confirmed':
-          return '#5856D6'; // Indigo
+          return '#4CD964';
       default:
         return '#8E8E93'; // Gray
     }
@@ -223,10 +284,6 @@ const StaffAssignScreen = () => {
 
   const handleTaskPress = (assignmentId: string) => {
     navigation.navigate('StaffTaskDetail', { assignmentId });
-  };
-
-  const handleCreateTaskAssignment = () => {
-    navigation.navigate('CreateTaskAssignment');
   };
 
   const renderEmployeeTaskItem = (assignment: EmployeeTaskAssignment) => {
@@ -308,15 +365,169 @@ const StaffAssignScreen = () => {
       return null;
     }
 
+    // Debug information
+    console.log(`Task ${task.task_id} has ${staffAssignments.length} staff assignments`);
+    const statuses = staffAssignments.map(assignment => assignment.status);
+    console.log(`Task ${task.task_id} statuses:`, statuses);
+
     return (
       <View style={styles.taskSection} key={task.task_id}>
         <View style={styles.taskSectionHeader}>
           <Icon name="assignment" size={20} color="#B77F2E" />
           <Text style={styles.taskSectionTitle}>Task: {task.description}</Text>
         </View>
+        
         {staffAssignments.map(renderTaskAssignmentItem)}
+        
+        {/* Add Change Status button for each task group */}
+        {isLeader && (
+          <View style={styles.taskChangeStatusContainer}>
+            <TouchableOpacity 
+              style={styles.taskChangeStatusButton}
+              onPress={() => {
+                // Will implement API call later
+                console.log(`Change task ${task.task_id} to Confirmed`);
+              }}
+            >
+              <Text style={styles.taskChangeStatusButtonText}>Change Status to Confirm</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     );
+  };
+
+  // Chuẩn bị dữ liệu cho SectionList
+  const prepareSectionData = () => {
+    if (!isLeader || tasks.length === 0) return [];
+
+    return tasks.map(task => {
+      // Lọc chỉ hiển thị task assignments được giao cho nhân viên (không hiển thị của leader)
+      const staffAssignments = task.taskAssignments.filter(
+        assignment => assignment.employee_id !== userId
+      );
+      
+      if (!staffAssignments || staffAssignments.length === 0) return null;
+      
+      return {
+        title: task.description,
+        taskId: task.task_id,
+        data: staffAssignments
+      };
+    }).filter(section => section !== null); // Lọc bỏ các null
+  };
+
+  interface SectionData {
+    title: string;
+    taskId: string;
+    data: TaskAssignment[];
+  }
+
+  const renderSectionHeader = ({ section }: { section: SectionData }) => (
+    <View style={styles.stickyHeader}>
+      <Icon name="assignment" size={20} color="#B77F2E" />
+      <Text style={styles.stickyHeaderTitle}>Task: {section.title}</Text>
+    </View>
+  );
+
+  const handleChangeStatusToConfirm = async (taskId: string, assignments: TaskAssignment[]) => {
+    try {
+      // Hiển thị loading state nếu cần
+      setLoading(true);
+      
+      // Hiển thị dialog xác nhận
+      Alert.alert(
+        "Confirm Status Change",
+        "Are you sure you want to change the status of this main task to Confirmed?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+            onPress: () => setLoading(false)
+          },
+          {
+            text: "Confirm",
+            onPress: async () => {
+              try {
+                // Lấy tất cả task assignments của user hiện tại
+                const response = await TaskService.getTaskAssignmentsByUserId();
+                
+                // Tìm task assignment lớn liên quan đến taskId hiện tại
+                const mainTaskAssignment = response.data.find(
+                  assignment => assignment.task_id === taskId && assignment.employee_id === userId
+                );
+                
+                if (mainTaskAssignment) {
+                  // Gọi API thay đổi trạng thái của task assignment chính và tạo worklog
+                  await TaskService.updateStatusAndCreateWorklog(mainTaskAssignment.assignment_id, 'Confirmed');
+                  
+                  // Cập nhật trạng thái hiển thị button cho task này
+                  setButtonVisibility(prev => ({...prev, [taskId]: false}));
+                  
+                  // Hiển thị thông báo thành công
+                  showMessage({
+                    message: "Success",
+                    description: "Main task has been confirmed successfully",
+                    type: "success",
+                    duration: 3000
+                  });
+                  
+                  // Fetch lại dữ liệu nhưng button đã được ẩn ngay lập tức
+                  fetchLeaderTaskAssignments();
+                  
+                  setLoading(false);
+                } else {
+                  // Nếu không tìm thấy task assignment chính
+                  showMessage({
+                    message: "Error",
+                    description: "Could not find the main task assignment for this task",
+                    type: "danger",
+                    duration: 3000
+                  });
+                  setLoading(false);
+                }
+              } catch (error) {
+                console.error('Error changing task status:', error);
+                showMessage({
+                  message: "Error",
+                  description: "Failed to update task status. Please try again.",
+                  type: "danger",
+                  duration: 3000
+                });
+                setLoading(false);
+              }
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error in handleChangeStatusToConfirm:', error);
+      setLoading(false);
+      
+      showMessage({
+        message: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        type: "danger",
+        duration: 3000
+      });
+    }
+  };
+
+  const renderSectionFooter = ({ section }: { section: SectionData }) => {
+    // Kiểm tra xem button có nên hiển thị hay không dựa vào kết quả đã kiểm tra trước đó
+    const shouldShowButton = buttonVisibility[section.taskId];
+    
+    // Chỉ hiển thị button nếu là leader và kết quả kiểm tra cho phép
+    return isLeader && shouldShowButton ? (
+      <View style={styles.taskChangeStatusContainer}>
+        <TouchableOpacity 
+          style={styles.taskChangeStatusButton}
+          onPress={() => handleChangeStatusToConfirm(section.taskId, section.data)}
+        >
+          <Text style={styles.taskChangeStatusButtonText}>Change Status to Confirm</Text>
+        </TouchableOpacity>
+      </View>
+    ) : null;
   };
 
   return (
@@ -338,37 +549,45 @@ const StaffAssignScreen = () => {
           </TouchableOpacity>
         </View>
       ) : (
-        <ScrollView 
-          style={styles.scrollView}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        >
+        <>
           {!isLeader ? (
-            employeeTasks.length === 0 ? (
+            // Hiển thị danh sách task của nhân viên
+            <ScrollView 
+              style={styles.scrollView}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
+            >
+              {employeeTasks.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No tasks assigned to you yet.</Text>
+                </View>
+              ) : (
+                employeeTasks.map(renderEmployeeTaskItem)
+              )}
+            </ScrollView>
+          ) : (
+            // Hiển thị danh sách task của leader với sticky header
+            tasks.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No tasks assigned to you yet.</Text>
+                <Text style={styles.emptyText}>No team assignments available.</Text>
               </View>
             ) : (
-              employeeTasks.map(renderEmployeeTaskItem)
+              <SectionList
+                sections={prepareSectionData()}
+                keyExtractor={(item) => item.assignment_id}
+                renderItem={({ item }) => renderTaskAssignmentItem(item)}
+                renderSectionHeader={renderSectionHeader}
+                renderSectionFooter={renderSectionFooter}
+                stickySectionHeadersEnabled={true}
+                refreshControl={
+                  <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                }
+                style={styles.scrollView}
+              />
             )
-          ) : tasks.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No team assignments available.</Text>
-            </View>
-          ) : (
-            tasks.map(renderTaskSection)
           )}
-        </ScrollView>
-      )}
-
-      {isLeader && (
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={handleCreateTaskAssignment}
-        >
-          <Icon name="add" size={24} color="#FFF" />
-        </TouchableOpacity>
+        </>
       )}
     </SafeAreaView>
   );
@@ -490,21 +709,43 @@ const styles = StyleSheet.create({
   taskInfoLabel: {
     fontWeight: '600',
   },
-  fab: {
-    position: 'absolute',
-    width: 56,
-    height: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-    right: 20,
-    bottom: 20,
+  taskChangeStatusContainer: {
+    padding: 12,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 8,
+    marginTop: 8,
+    marginLeft: 12,
+  },
+  taskChangeStatusButton: {
     backgroundColor: '#B77F2E',
-    borderRadius: 28,
-    elevation: 8,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  taskChangeStatusButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  stickyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 8,
+    marginBottom: 12,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  stickyHeaderTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333333',
+    marginLeft: 8,
   },
 });
 

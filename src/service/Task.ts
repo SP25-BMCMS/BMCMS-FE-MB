@@ -25,7 +25,8 @@ import {
   VITE_GET_METERIAL_LIST,
   VITE_GET_TASK_ASSIGNMENT_BY_TASK_ID,
   VITE_GET_TASK_ASSIGNMENT_BY_EMPLOYEE_ID,
-  VITE_REASSIGN_TASK_ASSIGNMENT
+  VITE_REASSIGN_TASK_ASSIGNMENT,
+  VITE_PATCH_WORKLOG_BY_ASSIGNMENT_ID
 } from '@env';
 
 export const TaskService = {
@@ -274,6 +275,21 @@ export const TaskService = {
       return response.data;
     } catch (error) {
       console.error(`Error fetching task assignments for employee ID ${employeeId}:`, error);
+      throw error;
+    }
+  },
+
+  // Cập nhật trạng thái task assignment và tạo worklog
+  async updateStatusAndCreateWorklog(
+    assignmentId: string, 
+    status: 'InFixing' | 'Pending' | 'Verified' | 'Unverified' | 'Fixed' | 'Confirmed' | 'Reassigned'
+  ): Promise<any> {
+    try {
+      const url = VITE_PATCH_WORKLOG_BY_ASSIGNMENT_ID.replace('{assignment_id}', assignmentId);
+      const response = await instance.patch(url, { status });
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating status and creating worklog for assignment ID ${assignmentId}:`, error);
       throw error;
     }
   }

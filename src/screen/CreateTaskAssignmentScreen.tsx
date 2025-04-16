@@ -45,7 +45,7 @@ const CreateTaskAssignmentScreen = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [selectedEmployeeLabel, setSelectedEmployeeLabel] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('InFixing');
+  const [selectedStatus, setSelectedStatus] = useState<'InFixing' | 'Pending' | 'Verified' | 'Unverified' | 'Fixed' | 'Confirmed' | 'Reassigned'>('InFixing');
   const [selectedStatusLabel, setSelectedStatusLabel] = useState('InFixing');
   
   // Dropdown state
@@ -54,8 +54,8 @@ const CreateTaskAssignmentScreen = () => {
   const [statusDropdownVisible, setStatusDropdownVisible] = useState(false);
   
   const statusOptions = [
-    { label: 'InFixing', value: 'InFixing' },
-    { label: 'Reassigned', value: 'Reassigned' }
+    { label: 'InFixing', value: 'InFixing' as const },
+    { label: 'Reassigned', value: 'Reassigned' as const }
   ];
   
   const fetchInitialData = async () => {
@@ -107,12 +107,17 @@ const CreateTaskAssignmentScreen = () => {
     
     setSubmitting(true);
     try {
+      // Tạo task assignment trực tiếp với trạng thái đã chọn
       const response = await TaskService.createTaskAssignment({
         task_id: selectedTaskId,
         employee_id: selectedEmployeeId,
         description: description,
         status: selectedStatus
       });
+      
+      // Đồng thời tạo worklog cho hành động này
+      const assignmentId = response.data.assignment_id;
+      await TaskService.updateStatusAndCreateWorklog(assignmentId, selectedStatus);
       
       Alert.alert(
         'Success', 
@@ -154,7 +159,7 @@ const CreateTaskAssignmentScreen = () => {
   };
   
   // Handle status selection
-  const handleStatusSelect = (status: string) => {
+  const handleStatusSelect = (status: 'InFixing' | 'Reassigned') => {
     setSelectedStatus(status);
     setSelectedStatusLabel(status);
     setStatusDropdownVisible(false);

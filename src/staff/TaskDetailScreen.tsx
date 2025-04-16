@@ -66,12 +66,16 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
         return '#FFA500'; // Orange
       case 'InProgress':
         return '#007AFF'; // Blue
-      case 'Completed':
+      case 'Confirmed':
         return '#4CD964'; // Green
+        case 'Completed':
+          return '#4CD964'; // Green
       case 'Canceled':
         return '#FF3B30'; // Red
         case 'Reassigned':
         return '#9C27B0';
+        case 'Reviewing':
+          return '#5856D6'; // Purple
         case 'InFixing':
         return '#5AC8FA'; // Light blue
       case 'Verified':
@@ -128,7 +132,9 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
     }
   };
 
-  const getPositionText = (position: string) => {
+  const getPositionText = (position: string | null) => {
+    if (!position) return '';
+    
     const parts = position.split('/');
     if (parts.length === 2) {
       let room = '';
@@ -339,21 +345,24 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
           )}
           
           <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.completeButton]}
-              onPress={() => {
-                if (taskDetail) {
-                  navigation.navigate('CreateInspection', { taskDetail: taskDetail });
-                }
-              }}
-            >
-              <Text style={styles.buttonText}>
-                {taskDetail.status === 'Pending' ? 'Start Task' : 
-                 taskDetail.status === 'InProgress' ? 'Complete Task' : 
-                 taskDetail.status === 'Verified' ? 'Create More Inspection' :
-                 taskDetail.status === 'Unverified' ? 'Review Task' : 'View Details'}
-              </Text>
-            </TouchableOpacity>
+            {/* Chỉ hiển thị button này khi status không phải là Confirmed */}
+            {taskDetail.status !== 'Confirmed' && (
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.completeButton]}
+                onPress={() => {
+                  if (taskDetail) {
+                    navigation.navigate('CreateInspection', { taskDetail: taskDetail });
+                  }
+                }}
+              >
+                <Text style={styles.buttonText}>
+                  {taskDetail.status === 'Pending' ? 'Start Task' : 
+                   taskDetail.status === 'InProgress' ? 'Complete Task' : 
+                   taskDetail.status === 'Verified' ? 'Create More Inspection' :
+                   taskDetail.status === 'Unverified' ? 'Review Task' : 'View Details'}
+                </Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity 
               style={[styles.actionButton, styles.viewInspectionsButton]}
