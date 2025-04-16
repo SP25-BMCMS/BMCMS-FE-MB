@@ -51,9 +51,12 @@ export type RootStackParamList = {
   CreateStaffInspection: { 
     taskDetail: TaskAssignmentDetail;
   };
-  CreateLocation: { 
+  CreateLocation: {
     onGoBack?: () => void;
-    editIndex?: number;
+    initialData: {
+      buildingDetailId: string;
+      inspection_id: string;
+    };
   };
   InspectionList: {
     taskAssignmentId: string;
@@ -486,7 +489,6 @@ export interface Inspection {
   total_cost: string;
   taskAssignment?: TaskAssignment;
   repairMaterials?: RepairMaterial[];
-  locationDetails?: LocationDetail[];
 }
 
 export interface InspectionListResponse {
@@ -539,12 +541,68 @@ export interface RepairMaterial {
   inspection_id?: string;
 }
 
-export interface LocationDetail {
-  inspection_id?: string;
-  buildingDetailId?: string;
+export interface LocationData {
+  buildingDetailId: string;
+  inspection_id: string;
   roomNumber: string;
   floorNumber: number;
-  areaType: string;
+  areaType: 'Floor' | 'Wall' | 'Ceiling' | 'column' | 'Other';
   description: string;
+}
+
+export interface InspectionDetailResponse {
+  isSuccess: boolean;
+  message: string;
+  data: {
+    inspection_id: string;
+    task_assignment_id: string;
+    inspected_by: string;
+    image_urls: string[];
+    description: string;
+    created_at: string;
+    updated_at: string;
+    total_cost: string;
+    taskAssignment: {
+      assignment_id: string;
+      task_id: string;
+      employee_id: string;
+      description: string;
+      status: string;
+      created_at: string;
+      updated_at: string;
+      task: {
+        task_id: string;
+        description: string;
+        status: string;
+        created_at: string;
+        updated_at: string;
+        crack_id: string;
+        schedule_job_id: string;
+      };
+    };
+    crackInfo: {
+      isSuccess: boolean;
+      message: string;
+      data: Array<{
+        crackReportId: string;
+        buildingDetailId: string;
+        description: string;
+        isPrivatesAsset: boolean;
+        position: string | null;
+        status: string;
+        reportedBy: {
+          userId: string;
+          username: string;
+        };
+        verifiedBy: {
+          userId: string;
+          username: string;
+        };
+        createdAt: string;
+        updatedAt: string;
+        crackDetails: any[];
+      }>;
+    };
+  };
 }
 

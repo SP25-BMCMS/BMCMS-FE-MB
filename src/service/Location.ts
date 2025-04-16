@@ -1,0 +1,72 @@
+import instance from './Auth';
+import { 
+  VITE_GET_LOCATION_LIST,
+  VITE_CREATE_LOCATION,
+  VITE_GET_INSPECTION_BY_ID,
+  VITE_GET_LOCATION_BY_ID
+} from '@env';
+import { InspectionDetailResponse, LocationData } from '../types';
+
+export interface LocationDetail {
+  locationDetailId: string;
+  buildingDetailId: string;
+  inspection_id: string;
+  roomNumber: string;
+  floorNumber: number;
+  areaType: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LocationListResponse {
+  statusCode: number;
+  message: string;
+  data: LocationDetail[];
+}
+
+export const LocationService = {
+  // Get inspection details by ID
+  async getInspectionById(inspectionId: string): Promise<InspectionDetailResponse> {
+    try {
+      const url = VITE_GET_INSPECTION_BY_ID.replace('{id}', inspectionId);
+      const response = await instance.get<InspectionDetailResponse>(url);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching inspection with ID ${inspectionId}:`, error);
+      throw error;
+    }
+  },
+
+  // Create new location
+  async createLocation(data: LocationData): Promise<any> {
+    try {
+      const response = await instance.post(VITE_CREATE_LOCATION, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating location:', error);
+      throw error;
+    }
+  },
+
+  async getLocationsByInspectionId(inspectionId: string): Promise<LocationListResponse> {
+    try {
+      const response = await instance.get<LocationListResponse>(`${VITE_GET_LOCATION_LIST}?inspection_id=${inspectionId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching locations by inspection ID:', error);
+      throw error;
+    }
+  },
+
+  async getLocationById(locationId: string): Promise<any> {
+    try {
+      const url = VITE_GET_LOCATION_BY_ID.replace('{id}', locationId);
+      const response = await instance.get(url);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching location by ID:', error);
+      throw error;
+    }
+  }
+}; 

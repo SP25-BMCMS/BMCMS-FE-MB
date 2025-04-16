@@ -13,9 +13,12 @@ import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Inspection } from '../../types';
 import { TaskService } from '../../service/Task';
+import { LocationService} from '../../service/Location';
+import { LocationData } from '../../types';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { Ionicons } from '@expo/vector-icons';
+import { useQuery } from '@tanstack/react-query';
 
 type InspectionListScreenRouteProp = RouteProp<RootStackParamList, 'InspectionList'>;
 type InspectionListScreenNavigationProp = StackNavigationProp<RootStackParamList, 'InspectionList'>;
@@ -56,6 +59,32 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
     fetchInspections();
   };
 
+  const handleAddLocation = async (inspectionId: string) => {
+    try {
+      // Fetch inspection details first
+      const inspectionDetail = await LocationService.getInspectionById(inspectionId);
+      
+      if (!inspectionDetail.isSuccess || !inspectionDetail.data.crackInfo.data[0]) {
+        Alert.alert('Error', 'Could not find crack information for this inspection');
+        return;
+      }
+
+      const buildingDetailId = inspectionDetail.data.crackInfo.data[0].buildingDetailId;
+      
+      // Navigate to CreateLocation with the required data
+      navigation.navigate('CreateLocation', { 
+        onGoBack: fetchInspections,
+        initialData: {
+          buildingDetailId,
+          inspection_id: inspectionId
+        }
+      });
+    } catch (error) {
+      console.error('Error preparing location data:', error);
+      Alert.alert('Error', 'Failed to prepare location data');
+    }
+  };
+
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -70,41 +99,61 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const renderInspectionItem = ({ item }: { item: Inspection }) => (
-    <TouchableOpacity 
-      style={styles.inspectionCard}
-      onPress={() => handleInspectionPress(item)}
-    >
-      <View style={styles.inspectionHeader}>
-        <Text style={styles.inspectionId} numberOfLines={1}>
-          ID: {item.inspection_id.substring(0, 8)}...
-        </Text>
-        <Text style={styles.totalCost}>
-          {parseInt(item.total_cost) > 0 ? `${item.total_cost} VND` : 'No cost'}
-        </Text>
-      </View>
-      
-      <Text style={styles.inspectionDescription} numberOfLines={2}>
-        {item.description}
-      </Text>
-      
-      <View style={styles.inspectionInfo}>
-        <Text style={styles.infoText}>
-          <Text style={styles.infoLabel}>Created: </Text>
-          {formatDate(item.created_at)}
+    <View style={styles.inspectionCard}>
+      <TouchableOpacity 
+        style={styles.inspectionContent}
+        onPress={() => handleInspectionPress(item)}
+      >
+        <View style={styles.inspectionHeader}>
+          <View style={styles.idContainer}>
+            <Ionicons name="document-text" size={16} color="#B77F2E" />
+            <Text style={styles.inspectionId}>
+              {item.inspection_id.substring(0, 8)}...
+            </Text>
+          </View>
+          <View style={styles.costContainer}>
+            <Ionicons name="cash" size={16} color="#4CD964" />
+            <Text style={styles.totalCost}>
+              {parseInt(item.total_cost) > 0 ? `${item.total_cost} VND` : 'No cost'}
+            </Text>
+          </View>
+        </View>
+        
+        <Text style={styles.inspectionDescription} numberOfLines={2}>
+          {item.description}
         </Text>
         
-        <View style={styles.imagesPreview}>
-          {item.image_urls.length > 0 ? (
-            <View style={styles.imageCountContainer}>
-              <Ionicons name="images" size={16} color="#666" />
-              <Text style={styles.imageCount}>{item.image_urls.length}</Text>
-            </View>
-          ) : (
-            <Text style={styles.noImagesText}>No images</Text>
-          )}
+        <View style={styles.inspectionInfo}>
+          <View style={styles.dateContainer}>
+            <Ionicons name="calendar" size={14} color="#666" />
+            <Text style={styles.infoText}>
+              {formatDate(item.created_at)}
+            </Text>
+          </View>
+          
+          <View style={styles.imagesPreview}>
+            {item.image_urls.length > 0 ? (
+              <View style={styles.imageCountContainer}>
+                <Ionicons name="images" size={16} color="#666" />
+                <Text style={styles.imageCount}>{item.image_urls.length}</Text>
+              </View>
+            ) : (
+              <Text style={styles.noImagesText}>No images</Text>
+            )}
+          </View>
         </View>
+      </TouchableOpacity>
+
+      <View style={styles.cardActions}>
+        <TouchableOpacity 
+          style={[styles.actionButton, styles.createLocationButton]}
+          onPress={() => handleAddLocation(item.inspection_id)}
+        >
+          <Ionicons name="location" size={20} color="#FFFFFF" />
+          <Text style={[styles.actionButtonText, styles.createLocationText]}>Add Location</Text>
+        </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
   const renderEmptyList = () => (
@@ -247,35 +296,57 @@ const styles = StyleSheet.create({
   },
   inspectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    elevation: 2,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  inspectionContent: {
+    flex: 1,
   },
   inspectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  idContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF9E6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   inspectionId: {
     fontSize: 14,
     fontWeight: '600',
-    flex: 1,
+    color: '#B77F2E',
+    marginLeft: 4,
+  },
+  costContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   totalCost: {
     fontSize: 14,
     fontWeight: '600',
     color: '#4CD964',
+    marginLeft: 4,
   },
   inspectionDescription: {
     fontSize: 15,
     color: '#333333',
     marginBottom: 12,
+    lineHeight: 20,
   },
   inspectionInfo: {
     flexDirection: 'row',
@@ -283,12 +354,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 4,
   },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   infoText: {
     fontSize: 13,
     color: '#666666',
-  },
-  infoLabel: {
-    fontWeight: '600',
+    marginLeft: 4,
   },
   imagesPreview: {
     flexDirection: 'row',
@@ -297,7 +370,7 @@ const styles = StyleSheet.create({
   imageCountContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#F5F5F5',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -311,6 +384,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999999',
     fontStyle: 'italic',
+  },
+  cardActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  actionButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#B77F2E',
+    marginLeft: 4,
+  },
+  createLocationButton: {
+    backgroundColor: '#B77F2E',
+  },
+  createLocationText: {
+    color: '#FFFFFF',
   },
   emptyContainer: {
     flex: 1,

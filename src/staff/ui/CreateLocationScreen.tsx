@@ -13,6 +13,8 @@ import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
+import { LocationService } from '../../service/Location';
+import { LocationData } from '../../types';
 
 type CreateLocationScreenRouteProp = RouteProp<RootStackParamList, 'CreateLocation'>;
 type CreateLocationScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CreateLocation'>;
@@ -22,52 +24,14 @@ type Props = {
   navigation: CreateLocationScreenNavigationProp;
 };
 
-interface LocationData {
-  roomNumber: string;
-  floorNumber: number;
-  areaType: string;
-  description: string;
-}
-
 const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
-  const editIndex = route.params?.editIndex ?? -1;
-  const isEditing = editIndex >= 0;
+  const { onGoBack, initialData } = route.params;
+  const isEditing = false;
 
   const [roomNumber, setRoomNumber] = useState<string>('');
   const [floorNumber, setFloorNumber] = useState<string>('');
-  const [areaType, setAreaType] = useState<string>('');
+  const [areaType, setAreaType] = useState<'Floor' | 'Wall' | 'Ceiling' | 'column' | 'Other'>('Floor');
   const [description, setDescription] = useState<string>('');
-
-  // Load existing location data if editing
-  useEffect(() => {
-    const loadLocationData = async () => {
-      try {
-        const savedLocations = await AsyncStorage.getItem('tempLocationDetails');
-        if (savedLocations) {
-          try {
-            const parsedLocations = JSON.parse(savedLocations);
-            
-            if (isEditing && Array.isArray(parsedLocations) && parsedLocations.length > editIndex) {
-              const locationToEdit = parsedLocations[editIndex];
-              
-              setRoomNumber(locationToEdit.roomNumber || '');
-              setFloorNumber(locationToEdit.floorNumber?.toString() || '');
-              setAreaType(locationToEdit.areaType || '');
-              setDescription(locationToEdit.description || '');
-            }
-          } catch (parseError) {
-            console.error('Error parsing location JSON:', parseError);
-            // Clear invalid data
-            await AsyncStorage.removeItem('tempLocationDetails');
-          }
-        }
-      } catch (error) {
-        console.error('Error loading location data:', error);
-      }
-    };
-
-    loadLocationData();
-  }, [editIndex, isEditing]);
 
   const handleSaveLocation = async () => {
     if (!roomNumber.trim() || !floorNumber.trim()) {
@@ -76,49 +40,19 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
     }
 
     try {
-      // Create location object for the current location
       const locationData: LocationData = {
+        buildingDetailId: initialData.buildingDetailId,
+        inspection_id: initialData.inspection_id,
         roomNumber: roomNumber.trim(),
         floorNumber: parseInt(floorNumber.trim(), 10),
-        areaType: areaType || 'Floor', // Default to Floor if not selected
+        areaType: areaType,
         description: description.trim(),
       };
 
-      // Get existing locations or initialize empty array
-      const savedLocations = await AsyncStorage.getItem('tempLocationDetails');
-      let locations: LocationData[] = [];
-      
-      if (savedLocations) {
-        try {
-          const parsedLocations = JSON.parse(savedLocations);
-          locations = Array.isArray(parsedLocations) ? parsedLocations : [parsedLocations];
-        } catch (parseError) {
-          console.error('Error parsing locations when saving:', parseError);
-          // Continue with empty array if parsing fails
-          locations = [];
-        }
-      }
+      await LocationService.createLocation(locationData);
 
-      if (isEditing) {
-        // Replace the edited location
-        locations[editIndex] = locationData;
-      } else {
-        // Check for max locations
-        if (locations.length >= 5) {
-          Alert.alert('Maximum Reached', 'You can add a maximum of 5 locations.');
-          return;
-        }
-        
-        // Add new location
-        locations.push(locationData);
-      }
-
-      // Save updated locations array
-      await AsyncStorage.setItem('tempLocationDetails', JSON.stringify(locations));
-
-      // Navigate back
-      if (route.params?.onGoBack) {
-        route.params.onGoBack();
+      if (onGoBack) {
+        onGoBack();
       }
       navigation.goBack();
     } catch (error) {
@@ -178,6 +112,18 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
               onPress={() => setAreaType('Ceiling')}
             >
               <Text style={[styles.positionText, areaType === 'Ceiling' && styles.selectedPositionText]}>Ceiling</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.positionButton, areaType === 'column' && styles.selectedPosition]}
+              onPress={() => setAreaType('column')}
+            >
+              <Text style={[styles.positionText, areaType === 'column' && styles.selectedPositionText]}>Column</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.positionButton, areaType === 'Other' && styles.selectedPosition]}
+              onPress={() => setAreaType('Other')}
+            >
+              <Text style={[styles.positionText, areaType === 'Other' && styles.selectedPositionText]}>Other</Text>
             </TouchableOpacity>
           </View>
 
