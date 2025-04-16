@@ -58,6 +58,10 @@ export type RootStackParamList = {
       inspection_id: string;
     };
   };
+  EditLocation: {
+    locationId: string;
+    onGoBack?: () => void;
+  };
   InspectionList: {
     taskAssignmentId: string;
     taskDescription: string;

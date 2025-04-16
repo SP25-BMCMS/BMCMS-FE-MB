@@ -35,4 +35,9 @@ declare module '@env'{
   export const VITE_GET_CHATBOT: string;
   export const VITE_GET_HISTORY_CRACK: string;
   export const VITE_GET_LOCATION_BY_ID: string;
+  export const VITE_PUT_LOCATION_BY_ID: string;
+  export const VITE_CREATE_CRACK_RECORD: string;
+  export const VITE_GET_CRACK_RECORD_LIST: string;
+  export const VITE_GET_CRACK_RECORD_BY_INSPECTION_ID: string;
+  export const VITE_GET_CRACK_RECORD_BY_ID: string;
 }

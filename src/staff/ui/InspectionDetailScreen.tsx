@@ -50,6 +50,8 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(-1);
   const [imageLoading, setImageLoading] = useState<boolean>(false);
+  const [showAllLocations, setShowAllLocations] = useState<boolean>(false);
+  const [selectedLocation, setSelectedLocation] = useState<LocationDetail | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -85,16 +87,37 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     enabled: !!inspectionDetail?.inspected_by,
   });
 
-  // Query location information
-  const { data: locationData } = useQuery<LocationDetail[]>({
+  // Query location information with proper error handling
+  const { 
+    data: locationData, 
+    isLoading: locationsLoading,
+    error: locationsError
+  } = useQuery<LocationDetail[]>({
     queryKey: ["locations", inspection.inspection_id],
     queryFn: async () => {
-      const response = await LocationService.getLocationsByInspectionId(
-        inspection.inspection_id
-      );
-      return response.data || [];
+      try {
+        const response = await LocationService.getLocationsByInspectionId(inspection.inspection_id);
+        console.log(`Fetched ${response.data.length} locations for inspection ${inspection.inspection_id}`);
+        return response.data || [];
+      } catch (error) {
+        console.error("Error fetching locations:", error);
+        return [];
+      }
     },
+    staleTime: 30000, // Cache for 30 seconds to prevent unnecessary refetches
   });
+
+  // Add a useEffect to refetch data when returning to this screen
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // When the screen is focused (coming back to it)
+      console.log("Screen focused, refetching data...");
+      queryClient.invalidateQueries({ queryKey: ["locations", inspection.inspection_id] });
+    });
+
+    // Clean up the listener when component unmounts
+    return unsubscribe;
+  }, [navigation, queryClient, inspection.inspection_id]);
 
   const formatDate = (dateString: string) => {
     try {
@@ -121,6 +144,24 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       },
       onGoBack: () => {
         // This will refetch the locations when coming back from Create Location screen
+        queryClient.invalidateQueries({
+          queryKey: ["locations", inspection.inspection_id],
+        });
+      },
+    });
+  };
+
+  // Handle showing all locations
+  const toggleShowAllLocations = () => {
+    setShowAllLocations(!showAllLocations);
+  };
+
+  // Handle editing a location
+  const handleEditLocation = (locationId: string) => {
+    navigation.navigate("EditLocation", {
+      locationId,
+      onGoBack: () => {
+        // This will refetch the locations when coming back from Edit Location screen
         queryClient.invalidateQueries({
           queryKey: ["locations", inspection.inspection_id],
         });
@@ -155,6 +196,13 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     inspectionDetail?.crackInfo?.data[0]?.buildingDetailId || "";
 
   const hasLocations = locationData && locationData.length > 0;
+  
+  // Determine locations to display
+  const displayLocations = hasLocations 
+    ? (showAllLocations ? locationData : locationData.slice(0, 3))
+    : [];
+  
+  const hasMoreLocations = hasLocations && locationData.length > 3;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -330,30 +378,75 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             </TouchableOpacity>
           </View>
           <View style={styles.divider} />
-
-          {hasLocations ? (
-            locationData.map((location, index) => (
-              <View key={location.locationDetailId} style={styles.locationItem}>
-                <View style={styles.locationHeader}>
-                  <Text style={styles.locationTitle}>
-                    Room {location.roomNumber}, Floor {location.floorNumber}
-                  </Text>
-                  <View style={styles.areaTypeBadge}>
-                    <Text style={styles.areaTypeText}>{location.areaType}</Text>
+          
+          {locationsLoading ? (
+            <View style={styles.locationLoadingContainer}>
+              <ActivityIndicator size="small" color="#B77F2E" />
+              <Text style={styles.locationLoadingText}>Loading locations...</Text>
+            </View>
+          ) : locationsError ? (
+            <View style={styles.locationErrorContainer}>
+              <Text style={styles.locationErrorText}>Failed to load locations</Text>
+              <TouchableOpacity 
+                style={styles.retryButton}
+                onPress={() => {
+                  queryClient.invalidateQueries({
+                    queryKey: ["locations", inspection.inspection_id],
+                  });
+                }}
+              >
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : hasLocations ? (
+            <>
+              {displayLocations.map((location, index) => (
+                <View key={location.locationDetailId} style={styles.locationItem}>
+                  <View style={styles.locationHeader}>
+                    <Text style={styles.locationTitle}>
+                      Room {location.roomNumber}, Floor {location.floorNumber}
+                    </Text>
+                    <View style={styles.locationActions}>
+                      <View style={styles.areaTypeBadge}>
+                        <Text style={styles.areaTypeText}>{location.areaType}</Text>
+                      </View>
+                      <TouchableOpacity 
+                        style={styles.editButton}
+                        onPress={() => handleEditLocation(location.locationDetailId)}
+                      >
+                        <Ionicons name="create-outline" size={18} color="#B77F2E" />
+                      </TouchableOpacity>
+                    </View>
                   </View>
+                  
+                  {location.description && (
+                    <Text style={styles.locationDescription}>
+                      {location.description}
+                    </Text>
+                  )}
+                  
+                  {index < displayLocations.length - 1 && (
+                    <View style={styles.locationDivider} />
+                  )}
                 </View>
-
-                {location.description && (
-                  <Text style={styles.locationDescription}>
-                    {location.description}
+              ))}
+              
+              {hasMoreLocations && (
+                <TouchableOpacity 
+                  style={styles.seeMoreButton}
+                  onPress={toggleShowAllLocations}
+                >
+                  <Text style={styles.seeMoreButtonText}>
+                    {showAllLocations ? "See less" : `See all ${locationData.length} locations`}
                   </Text>
-                )}
-
-                {index < locationData.length - 1 && (
-                  <View style={styles.locationDivider} />
-                )}
-              </View>
-            ))
+                  <Ionicons 
+                    name={showAllLocations ? "chevron-up" : "chevron-down"} 
+                    size={16} 
+                    color="#B77F2E" 
+                  />
+                </TouchableOpacity>
+              )}
+            </>
           ) : (
             <View style={styles.emptyLocationContainer}>
               <Text style={styles.emptyLocationText}>
@@ -651,6 +744,55 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#666666",
     marginBottom: 16,
+  },
+  seeMoreButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    marginTop: 8,
+  },
+  seeMoreButtonText: {
+    color: "#B77F2E",
+    fontWeight: "600",
+    fontSize: 14,
+    marginRight: 4,
+  },
+  locationActions: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  editButton: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  locationLoadingContainer: {
+    alignItems: "center",
+    paddingVertical: 24,
+  },
+  locationLoadingText: {
+    marginTop: 8,
+    color: "#666666",
+    fontSize: 14,
+  },
+  locationErrorContainer: {
+    alignItems: "center",
+    paddingVertical: 24,
+  },
+  locationErrorText: {
+    color: "#FF3B30",
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  retryButton: {
+    backgroundColor: "#F0F0F0",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "#B77F2E",
+    fontWeight: "600",
   },
 });
 

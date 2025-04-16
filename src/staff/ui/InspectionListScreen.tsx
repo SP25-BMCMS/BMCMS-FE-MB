@@ -59,31 +59,6 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
     fetchInspections();
   };
 
-  const handleAddLocation = async (inspectionId: string) => {
-    try {
-      // Fetch inspection details first
-      const inspectionDetail = await LocationService.getInspectionById(inspectionId);
-      
-      if (!inspectionDetail.isSuccess || !inspectionDetail.data.crackInfo.data[0]) {
-        Alert.alert('Error', 'Could not find crack information for this inspection');
-        return;
-      }
-
-      const buildingDetailId = inspectionDetail.data.crackInfo.data[0].buildingDetailId;
-      
-      // Navigate to CreateLocation with the required data
-      navigation.navigate('CreateLocation', { 
-        onGoBack: fetchInspections,
-        initialData: {
-          buildingDetailId,
-          inspection_id: inspectionId
-        }
-      });
-    } catch (error) {
-      console.error('Error preparing location data:', error);
-      Alert.alert('Error', 'Failed to prepare location data');
-    }
-  };
 
   const formatDate = (dateString: string) => {
     try {
@@ -143,16 +118,6 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
         </View>
       </TouchableOpacity>
-
-      <View style={styles.cardActions}>
-        <TouchableOpacity 
-          style={[styles.actionButton, styles.createLocationButton]}
-          onPress={() => handleAddLocation(item.inspection_id)}
-        >
-          <Ionicons name="location" size={20} color="#FFFFFF" />
-          <Text style={[styles.actionButtonText, styles.createLocationText]}>Add Location</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 
