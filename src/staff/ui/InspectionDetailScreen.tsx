@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   Alert,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -18,6 +20,7 @@ import {
   Inspection,
   InspectionDetailResponse,
   CrackRecordPayload,
+  CrackRecord,
 } from "../../types";
 import { format } from "date-fns";
 import { enUS } from "date-fns/locale";
@@ -64,6 +67,8 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     depth: 0,
     description: ''
   });
+  const [crackRecordModalVisible, setCrackRecordModalVisible] = useState<boolean>(false);
+  const [selectedCrackRecord, setSelectedCrackRecord] = useState<CrackRecord | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -325,6 +330,33 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
     // Submit the crack record
     createRecordMutation.mutate(crackRecordData);
+  };
+
+  // Function to handle opening crack record modal
+  const handleOpenCrackRecordDetailModal = async (location: LocationDetail) => {
+    try {
+      const [crackRecords, locationDetail] = await Promise.all([
+        CrackRecordService.getCrackRecordsByLocationId(location.locationDetailId),
+        LocationService.getLocationById(location.locationDetailId),
+      ]);
+
+      if (crackRecords.length > 0) {
+        setSelectedCrackRecord(crackRecords[0]); // Assuming one record per location for simplicity
+      } else {
+        setSelectedCrackRecord(null);
+      }
+
+      setSelectedLocation(locationDetail);
+      setCrackRecordModalVisible(true);
+    } catch (error) {
+      console.error('Error fetching details:', error);
+    }
+  };
+
+  // Function to close crack record modal
+  const handleCloseCrackRecordDetailModal = () => {
+    setCrackRecordModalVisible(false);
+    setSelectedCrackRecord(null);
   };
 
   if (loading) {
@@ -687,101 +719,137 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         onBackButtonPress={handleCloseCrackModal}
         style={styles.modal}
       >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "position"}
+          style={styles.crackModalContent}
+        >
+          <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+
+            <Text style={styles.crackModalTitle}>Create Crack Record</Text>
+            {selectedLocation && (
+              <Text style={styles.crackModalLocation}>
+                Room {selectedLocation.roomNumber}, Floor {selectedLocation.floorNumber}, {selectedLocation.areaType}
+              </Text>
+            )}
+
+            <View style={styles.crackFormContainer}>
+              {/* Crack Type Picker */}
+              <Text style={styles.crackInputLabel}>Crack Type:</Text>
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={crackRecordData.crackType}
+                  onValueChange={(value) => 
+                    setCrackRecordData({...crackRecordData, crackType: value})
+                  }
+                  style={styles.picker}
+                >
+                  <Picker.Item label="Vertical" value="Vertical" />
+                  <Picker.Item label="Horizontal" value="Horizontal" />
+                  <Picker.Item label="Diagonal" value="Diagonal" />
+                  <Picker.Item label="Structural" value="Structural" />
+                  <Picker.Item label="NonStructural" value="NonStructural" />
+                </Picker>
+              </View>
+
+              {/* Measurements */}
+              <Text style={styles.crackInputLabel}>Length (m):</Text>
+              <TextInput
+                style={styles.crackInput}
+                keyboardType="numeric"
+                value={crackRecordData.length.toString()}
+                onChangeText={(text) => 
+                  setCrackRecordData({
+                    ...crackRecordData, 
+                    length: text ? parseFloat(text) : 0
+                  })
+                }
+              />
+
+              <Text style={styles.crackInputLabel}>Width (m):</Text>
+              <TextInput
+                style={styles.crackInput}
+                keyboardType="numeric"
+                value={crackRecordData.width.toString()}
+                onChangeText={(text) => 
+                  setCrackRecordData({
+                    ...crackRecordData, 
+                    width: text ? parseFloat(text) : 0
+                  })
+                }
+              />
+
+              <Text style={styles.crackInputLabel}>Depth (m):</Text>
+              <TextInput
+                style={styles.crackInput}
+                keyboardType="numeric"
+                value={crackRecordData.depth.toString()}
+                onChangeText={(text) => 
+                  setCrackRecordData({
+                    ...crackRecordData, 
+                    depth: text ? parseFloat(text) : 0
+                  })
+                }
+              />
+
+              <Text style={styles.crackInputLabel}>Description:</Text>
+              <TextInput
+                style={[styles.crackInput, styles.crackTextarea]}
+                multiline
+                numberOfLines={4}
+                value={crackRecordData.description}
+                onChangeText={(text) => 
+                  setCrackRecordData({...crackRecordData, description: text})
+                }
+              />
+              
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleSubmitCrackRecord}
+                disabled={createRecordMutation.isPending}
+              >
+                {createRecordMutation.isPending ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.submitButtonText}>Create Crack Record</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Crack Record Detail Modal */}
+      <Modal
+        isVisible={crackRecordModalVisible}
+        onBackdropPress={handleCloseCrackRecordDetailModal}
+        onBackButtonPress={handleCloseCrackRecordDetailModal}
+        style={styles.modal}
+      >
         <View style={styles.crackModalContent}>
-          <TouchableOpacity style={styles.closeButton} onPress={handleCloseCrackModal}>
+          <TouchableOpacity style={styles.closeButton} onPress={handleCloseCrackRecordDetailModal}>
             <Ionicons name="close" size={24} color="#000" />
           </TouchableOpacity>
-
-          <Text style={styles.crackModalTitle}>Create Crack Record</Text>
-          
-          {selectedLocation && (
-            <Text style={styles.crackModalLocation}>
-              Room {selectedLocation.roomNumber}, Floor {selectedLocation.floorNumber}, {selectedLocation.areaType}
-            </Text>
+          {selectedCrackRecord ? (
+            <>
+              <Text style={styles.crackModalTitle}>Crack Record Details</Text>
+              <Text style={styles.crackModalLocation}>Type: {selectedCrackRecord.crackType}</Text>
+              <Text style={styles.crackModalLocation}>Length: {selectedCrackRecord.length} m</Text>
+              <Text style={styles.crackModalLocation}>Width: {selectedCrackRecord.width} m</Text>
+              <Text style={styles.crackModalLocation}>Depth: {selectedCrackRecord.depth} m</Text>
+              <Text style={styles.crackModalLocation}>Description: {selectedCrackRecord.description}</Text>
+            </>
+          ) : (
+            <Text style={styles.crackModalTitle}>No Crack Record</Text>
           )}
-
-          <View style={styles.crackFormContainer}>
-            {/* Crack Type Picker */}
-            <Text style={styles.crackInputLabel}>Crack Type:</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={crackRecordData.crackType}
-                onValueChange={(value) => 
-                  setCrackRecordData({...crackRecordData, crackType: value})
-                }
-                style={styles.picker}
-              >
-                <Picker.Item label="Vertical" value="Vertical" />
-                <Picker.Item label="Horizontal" value="Horizontal" />
-                <Picker.Item label="Diagonal" value="Diagonal" />
-                <Picker.Item label="Structural" value="Structural" />
-                <Picker.Item label="NonStructural" value="NonStructural" />
-              </Picker>
-            </View>
-
-            {/* Measurements */}
-            <Text style={styles.crackInputLabel}>Length (m):</Text>
-            <TextInput
-              style={styles.crackInput}
-              keyboardType="numeric"
-              value={crackRecordData.length.toString()}
-              onChangeText={(text) => 
-                setCrackRecordData({
-                  ...crackRecordData, 
-                  length: text ? parseFloat(text) : 0
-                })
-              }
-            />
-
-            <Text style={styles.crackInputLabel}>Width (m):</Text>
-            <TextInput
-              style={styles.crackInput}
-              keyboardType="numeric"
-              value={crackRecordData.width.toString()}
-              onChangeText={(text) => 
-                setCrackRecordData({
-                  ...crackRecordData, 
-                  width: text ? parseFloat(text) : 0
-                })
-              }
-            />
-
-            <Text style={styles.crackInputLabel}>Depth (m):</Text>
-            <TextInput
-              style={styles.crackInput}
-              keyboardType="numeric"
-              value={crackRecordData.depth.toString()}
-              onChangeText={(text) => 
-                setCrackRecordData({
-                  ...crackRecordData, 
-                  depth: text ? parseFloat(text) : 0
-                })
-              }
-            />
-
-            <Text style={styles.crackInputLabel}>Description:</Text>
-            <TextInput
-              style={[styles.crackInput, styles.crackTextarea]}
-              multiline
-              numberOfLines={4}
-              value={crackRecordData.description}
-              onChangeText={(text) => 
-                setCrackRecordData({...crackRecordData, description: text})
-              }
-            />
-            
-            <TouchableOpacity
-              style={styles.submitButton}
-              onPress={handleSubmitCrackRecord}
-              disabled={createRecordMutation.isPending}
-            >
-              {createRecordMutation.isPending ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text style={styles.submitButtonText}>Create Crack Record</Text>
-              )}
-            </TouchableOpacity>
-          </View>
+          {selectedLocation && (
+            <>
+              <Text style={styles.crackModalTitle}>Location Details</Text>
+              <Text style={styles.crackModalLocation}>Room: {selectedLocation.roomNumber}</Text>
+              <Text style={styles.crackModalLocation}>Floor: {selectedLocation.floorNumber}</Text>
+              <Text style={styles.crackModalLocation}>Area Type: {selectedLocation.areaType}</Text>
+              <Text style={styles.crackModalLocation}>Description: {selectedLocation.description}</Text>
+            </>
+          )}
         </View>
       </Modal>
     </SafeAreaView>
