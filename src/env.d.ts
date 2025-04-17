@@ -41,4 +41,5 @@ declare module '@env'{
   export const VITE_GET_CRACK_RECORD_BY_INSPECTION_ID: string;
   export const VITE_GET_CRACK_RECORD_BY_ID: string;
   export const VITE_CHANGE_STATUS_CRACK: string;
+  export const VITE_GET_CRACK_RECORD_BY_LOCATION_ID: string;
 }

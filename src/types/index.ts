@@ -610,3 +610,43 @@ export interface InspectionDetailResponse {
   };
 }
 
+// CrackRecord Types
+export interface CrackRecord {
+  crackRecordId: string;
+  locationDetailId: string;
+  crackType: 'Vertical' | 'Horizontal' | 'Diagonal' | 'Structural' | 'NonStructural';
+  length: number;
+  width: number;
+  depth: number;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CrackRecordPayload {
+  locationDetailId: string;
+  crackType: 'Vertical' | 'Horizontal' | 'Diagonal' | 'Structural' | 'NonStructural';
+  length: number;
+  width: number;
+  depth: number;
+  description: string;
+}
+
+export interface CrackRecordResponse {
+  statusCode: number;
+  message: string;
+  data: CrackRecord;
+}
+
+export interface CrackRecordListResponse {
+  statusCode: number;
+  message: string;
+  data: CrackRecord[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+

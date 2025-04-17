@@ -24,7 +24,7 @@ import {
 // Tạo instance axios với baseURL từ biến môi trường
 const instance = axios.create({
   baseURL: VITE_API_SECRET,
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },

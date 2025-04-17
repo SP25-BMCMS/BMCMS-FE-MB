@@ -9,6 +9,7 @@ import {
   Dimensions,
   ActivityIndicator,
   Alert,
+  TextInput,
 } from "react-native";
 import { RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -16,15 +17,17 @@ import {
   RootStackParamList,
   Inspection,
   InspectionDetailResponse,
+  CrackRecordPayload,
 } from "../../types";
 import { format } from "date-fns";
 import { enUS } from "date-fns/locale";
 import { Ionicons } from "@expo/vector-icons";
 import Modal from "react-native-modal";
 import { LocationService, LocationDetail } from "../../service/Location";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { StaffService, StaffInfo } from "../../service/Staff";
-import { useQueryClient } from "@tanstack/react-query";
+import { CrackRecordService } from "../../service/CrackRecord";
+import { Picker } from "@react-native-picker/picker";
 
 type InspectionDetailScreenRouteProp = RouteProp<
   RootStackParamList,
@@ -52,6 +55,15 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [imageLoading, setImageLoading] = useState<boolean>(false);
   const [showAllLocations, setShowAllLocations] = useState<boolean>(false);
   const [selectedLocation, setSelectedLocation] = useState<LocationDetail | null>(null);
+  const [crackModalVisible, setCrackModalVisible] = useState<boolean>(false);
+  const [crackRecordData, setCrackRecordData] = useState<CrackRecordPayload>({
+    locationDetailId: '',
+    crackType: 'Vertical',
+    length: 0,
+    width: 0,
+    depth: 0,
+    description: ''
+  });
 
   const queryClient = useQueryClient();
 
@@ -60,12 +72,35 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     const fetchInspectionDetail = async () => {
       try {
         setLoading(true);
-        const response = await LocationService.getInspectionById(
-          inspection.inspection_id
-        );
-        if (response.isSuccess) {
+        
+        // Thêm logic retry
+        let attempts = 0;
+        const maxAttempts = 3;
+        let success = false;
+        let response;
+        
+        while (attempts < maxAttempts && !success) {
+          try {
+            console.log(`Attempt ${attempts + 1} to fetch inspection details for ID: ${inspection.inspection_id}`);
+            response = await LocationService.getInspectionById(
+              inspection.inspection_id
+            );
+            success = true;
+          } catch (error) {
+            attempts++;
+            if (attempts >= maxAttempts) throw error;
+            
+            console.error(`Attempt ${attempts} failed. Retrying in ${1000 * attempts}ms...`);
+            // Đợi trước khi thử lại
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+          }
+        }
+        
+        if (success && response && response.isSuccess) {
+          console.log("Successfully fetched inspection details");
           setInspectionDetail(response.data);
         } else {
+          console.error("Failed to fetch inspection details: Invalid response format");
           Alert.alert("Error", "Failed to load inspection details");
         }
       } catch (error) {
@@ -85,6 +120,9 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     queryFn: () =>
       StaffService.getStaffById(inspectionDetail?.inspected_by || ""),
     enabled: !!inspectionDetail?.inspected_by,
+    staleTime: 5 * 60 * 1000, // Cache dữ liệu trong 5 phút
+    retry: 3, // Thử lại 3 lần nếu request thất bại
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 
   // Query location information with proper error handling
@@ -96,6 +134,7 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     queryKey: ["locations", inspection.inspection_id],
     queryFn: async () => {
       try {
+        console.log(`Fetching locations for inspection ${inspection.inspection_id}`);
         const response = await LocationService.getLocationsByInspectionId(inspection.inspection_id);
         console.log(`Fetched ${response.data.length} locations for inspection ${inspection.inspection_id}`);
         return response.data || [];
@@ -104,7 +143,72 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         return [];
       }
     },
-    staleTime: 30000, // Cache for 30 seconds to prevent unnecessary refetches
+    staleTime: 5 * 60 * 1000, // Cache dữ liệu trong 5 phút thay vì 30 giây
+    retry: 3, // Thử lại 3 lần nếu request thất bại
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+  });
+
+  // Query crack records for selected location
+  const { 
+    data: crackRecordsMap,
+    refetch: refetchCrackRecords
+  } = useQuery({
+    queryKey: ["crackRecords", inspection.inspection_id],
+    queryFn: async () => {
+      if (!locationData) return {};
+
+      // Create a map to store whether each location has crack records
+      const recordsMap: Record<string, boolean> = {};
+      
+      // Process each location
+      await Promise.all(
+        locationData.map(async (location) => {
+          const records = await CrackRecordService.getCrackRecordsByLocationId(
+            location.locationDetailId
+          );
+          recordsMap[location.locationDetailId] = records.length > 0;
+        })
+      );
+      
+      return recordsMap;
+    },
+    enabled: !!locationData && locationData.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Mutation for creating a crack record
+  const createRecordMutation = useMutation({
+    mutationFn: (data: CrackRecordPayload) => {
+      return CrackRecordService.createCrackRecord(data);
+    },
+    onSuccess: () => {
+      // Reset modal and form
+      setCrackModalVisible(false);
+      setCrackRecordData({
+        locationDetailId: '',
+        crackType: 'Vertical',
+        length: 0,
+        width: 0,
+        depth: 0,
+        description: ''
+      });
+      
+      // Refetch crack records to update UI
+      refetchCrackRecords();
+      
+      Alert.alert(
+        "Success",
+        "Crack record created successfully",
+        [{ text: "OK" }]
+      );
+    },
+    onError: (error: any) => {
+      Alert.alert(
+        "Error",
+        error.response?.data?.message || "Failed to create crack record",
+        [{ text: "OK" }]
+      );
+    },
   });
 
   // Add a useEffect to refetch data when returning to this screen
@@ -137,6 +241,8 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const handleAddLocation = () => {
+    const buildingDetailId = inspectionDetail?.crackInfo?.data[0]?.buildingDetailId || "";
+    
     navigation.navigate("CreateLocation", {
       initialData: {
         buildingDetailId: buildingDetailId,
@@ -167,6 +273,58 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         });
       },
     });
+  };
+
+  // Handler for opening the crack record modal
+  const handleOpenCrackRecordModal = (location: LocationDetail) => {
+    // Check if location already has a crack record
+    if (crackRecordsMap && crackRecordsMap[location.locationDetailId]) {
+      Alert.alert(
+        "Crack Record Exists",
+        "This location already has a crack record.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
+    setSelectedLocation(location);
+    setCrackRecordData({
+      ...crackRecordData,
+      locationDetailId: location.locationDetailId,
+      description: `Crack in ${location.areaType} of Room ${location.roomNumber}, Floor ${location.floorNumber}`
+    });
+    setCrackModalVisible(true);
+  };
+
+  // Handler for closing the crack record modal
+  const handleCloseCrackModal = () => {
+    setCrackModalVisible(false);
+    setSelectedLocation(null);
+    setCrackRecordData({
+      locationDetailId: '',
+      crackType: 'Vertical',
+      length: 0,
+      width: 0,
+      depth: 0,
+      description: ''
+    });
+  };
+
+  // Submit crack record form
+  const handleSubmitCrackRecord = () => {
+    // Validate fields
+    if (crackRecordData.length <= 0 || crackRecordData.width <= 0 || crackRecordData.depth <= 0) {
+      Alert.alert("Validation Error", "All measurements must be greater than 0");
+      return;
+    }
+
+    if (!crackRecordData.description.trim()) {
+      Alert.alert("Validation Error", "Description is required");
+      return;
+    }
+
+    // Submit the crack record
+    createRecordMutation.mutate(crackRecordData);
   };
 
   if (loading) {
@@ -410,12 +568,30 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                       <View style={styles.areaTypeBadge}>
                         <Text style={styles.areaTypeText}>{location.areaType}</Text>
                       </View>
+                      
+                      {/* Show badge if location has crack records */}
+                      {crackRecordsMap && crackRecordsMap[location.locationDetailId] && (
+                        <View style={styles.crackRecordBadge}>
+                          <Text style={styles.crackRecordText}>Crack Record</Text>
+                        </View>
+                      )}
+                      
                       <TouchableOpacity 
                         style={styles.editButton}
                         onPress={() => handleEditLocation(location.locationDetailId)}
                       >
                         <Ionicons name="create-outline" size={18} color="#B77F2E" />
                       </TouchableOpacity>
+                      
+                      {/* Add crack record button */}
+                      {!(crackRecordsMap && crackRecordsMap[location.locationDetailId]) && (
+                        <TouchableOpacity 
+                          style={styles.crackButton}
+                          onPress={() => handleOpenCrackRecordModal(location)}
+                        >
+                          <Ionicons name="construct-outline" size={18} color="#B77F2E" />
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </View>
                   
@@ -501,6 +677,111 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               </Text>
             </>
           )}
+        </View>
+      </Modal>
+
+      {/* Crack Record Modal */}
+      <Modal
+        isVisible={crackModalVisible}
+        onBackdropPress={handleCloseCrackModal}
+        onBackButtonPress={handleCloseCrackModal}
+        style={styles.modal}
+      >
+        <View style={styles.crackModalContent}>
+          <TouchableOpacity style={styles.closeButton} onPress={handleCloseCrackModal}>
+            <Ionicons name="close" size={24} color="#000" />
+          </TouchableOpacity>
+
+          <Text style={styles.crackModalTitle}>Create Crack Record</Text>
+          
+          {selectedLocation && (
+            <Text style={styles.crackModalLocation}>
+              Room {selectedLocation.roomNumber}, Floor {selectedLocation.floorNumber}, {selectedLocation.areaType}
+            </Text>
+          )}
+
+          <View style={styles.crackFormContainer}>
+            {/* Crack Type Picker */}
+            <Text style={styles.crackInputLabel}>Crack Type:</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={crackRecordData.crackType}
+                onValueChange={(value) => 
+                  setCrackRecordData({...crackRecordData, crackType: value})
+                }
+                style={styles.picker}
+              >
+                <Picker.Item label="Vertical" value="Vertical" />
+                <Picker.Item label="Horizontal" value="Horizontal" />
+                <Picker.Item label="Diagonal" value="Diagonal" />
+                <Picker.Item label="Structural" value="Structural" />
+                <Picker.Item label="NonStructural" value="NonStructural" />
+              </Picker>
+            </View>
+
+            {/* Measurements */}
+            <Text style={styles.crackInputLabel}>Length (m):</Text>
+            <TextInput
+              style={styles.crackInput}
+              keyboardType="numeric"
+              value={crackRecordData.length.toString()}
+              onChangeText={(text) => 
+                setCrackRecordData({
+                  ...crackRecordData, 
+                  length: text ? parseFloat(text) : 0
+                })
+              }
+            />
+
+            <Text style={styles.crackInputLabel}>Width (m):</Text>
+            <TextInput
+              style={styles.crackInput}
+              keyboardType="numeric"
+              value={crackRecordData.width.toString()}
+              onChangeText={(text) => 
+                setCrackRecordData({
+                  ...crackRecordData, 
+                  width: text ? parseFloat(text) : 0
+                })
+              }
+            />
+
+            <Text style={styles.crackInputLabel}>Depth (m):</Text>
+            <TextInput
+              style={styles.crackInput}
+              keyboardType="numeric"
+              value={crackRecordData.depth.toString()}
+              onChangeText={(text) => 
+                setCrackRecordData({
+                  ...crackRecordData, 
+                  depth: text ? parseFloat(text) : 0
+                })
+              }
+            />
+
+            <Text style={styles.crackInputLabel}>Description:</Text>
+            <TextInput
+              style={[styles.crackInput, styles.crackTextarea]}
+              multiline
+              numberOfLines={4}
+              value={crackRecordData.description}
+              onChangeText={(text) => 
+                setCrackRecordData({...crackRecordData, description: text})
+              }
+            />
+            
+            <TouchableOpacity
+              style={styles.submitButton}
+              onPress={handleSubmitCrackRecord}
+              disabled={createRecordMutation.isPending}
+            >
+              {createRecordMutation.isPending ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.submitButtonText}>Create Crack Record</Text>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
     </SafeAreaView>
@@ -793,6 +1074,83 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: "#B77F2E",
     fontWeight: "600",
+  },
+  crackRecordBadge: {
+    backgroundColor: "#FF9500",
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  crackRecordText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  crackButton: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  crackModalContent: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    width: "90%",
+    maxHeight: "80%",
+    padding: 20,
+    alignSelf: "center",
+    overflow: "hidden",
+  },
+  crackModalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 12,
+    color: "#333333",
+  },
+  crackModalLocation: {
+    fontSize: 14,
+    color: "#666666",
+    marginBottom: 16,
+  },
+  crackFormContainer: {
+    width: "100%",
+    padding: 0,
+  },
+  crackInputLabel: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#555555",
+    marginBottom: 8,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  picker: {
+    width: "100%",
+    height: 50,
+  },
+  crackInput: {
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  crackTextarea: {
+    height: 100,
+  },
+  submitButton: {
+    backgroundColor: "#B77F2E",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  submitButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 
