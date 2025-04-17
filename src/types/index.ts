@@ -78,6 +78,9 @@ export type RootStackParamList = {
   };
   ChatBot: undefined;
   ChatHistory: undefined;
+  LocationDetail: {
+    locationDetailId: string;
+  };
 };
 //residents
 export interface Resident {
@@ -552,6 +555,15 @@ export interface LocationData {
   floorNumber: number;
   areaType: 'Floor' | 'Wall' | 'Ceiling' | 'column' | 'Other';
   description: string;
+  crackRecords: CrackRecord[];
+  buildingDetail?: {
+    buildingDetailId: string;
+    buildingId: string;
+    name: string;
+    total_apartments: number;
+    createdAt: string;
+    updatedAt: string;
+  };
 }
 
 export interface InspectionDetailResponse {

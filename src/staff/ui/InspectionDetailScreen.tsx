@@ -57,18 +57,21 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(-1);
   const [imageLoading, setImageLoading] = useState<boolean>(false);
   const [showAllLocations, setShowAllLocations] = useState<boolean>(false);
-  const [selectedLocation, setSelectedLocation] = useState<LocationDetail | null>(null);
+  const [selectedLocation, setSelectedLocation] =
+    useState<LocationDetail | null>(null);
   const [crackModalVisible, setCrackModalVisible] = useState<boolean>(false);
   const [crackRecordData, setCrackRecordData] = useState<CrackRecordPayload>({
-    locationDetailId: '',
-    crackType: 'Vertical',
+    locationDetailId: "",
+    crackType: "Vertical",
     length: 0,
     width: 0,
     depth: 0,
-    description: ''
+    description: "",
   });
-  const [crackRecordModalVisible, setCrackRecordModalVisible] = useState<boolean>(false);
-  const [selectedCrackRecord, setSelectedCrackRecord] = useState<CrackRecord | null>(null);
+  const [crackRecordModalVisible, setCrackRecordModalVisible] =
+    useState<boolean>(false);
+  const [selectedCrackRecord, setSelectedCrackRecord] =
+    useState<CrackRecord | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -77,16 +80,20 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     const fetchInspectionDetail = async () => {
       try {
         setLoading(true);
-        
+
         // Thêm logic retry
         let attempts = 0;
         const maxAttempts = 3;
         let success = false;
         let response;
-        
+
         while (attempts < maxAttempts && !success) {
           try {
-            console.log(`Attempt ${attempts + 1} to fetch inspection details for ID: ${inspection.inspection_id}`);
+            console.log(
+              `Attempt ${attempts + 1} to fetch inspection details for ID: ${
+                inspection.inspection_id
+              }`
+            );
             response = await LocationService.getInspectionById(
               inspection.inspection_id
             );
@@ -94,18 +101,24 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           } catch (error) {
             attempts++;
             if (attempts >= maxAttempts) throw error;
-            
-            console.error(`Attempt ${attempts} failed. Retrying in ${1000 * attempts}ms...`);
+
+            console.error(
+              `Attempt ${attempts} failed. Retrying in ${1000 * attempts}ms...`
+            );
             // Đợi trước khi thử lại
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+            await new Promise((resolve) =>
+              setTimeout(resolve, 1000 * attempts)
+            );
           }
         }
-        
+
         if (success && response && response.isSuccess) {
           console.log("Successfully fetched inspection details");
           setInspectionDetail(response.data);
         } else {
-          console.error("Failed to fetch inspection details: Invalid response format");
+          console.error(
+            "Failed to fetch inspection details: Invalid response format"
+          );
           Alert.alert("Error", "Failed to load inspection details");
         }
       } catch (error) {
@@ -127,21 +140,27 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     enabled: !!inspectionDetail?.inspected_by,
     staleTime: 5 * 60 * 1000, // Cache dữ liệu trong 5 phút
     retry: 3, // Thử lại 3 lần nếu request thất bại
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 
   // Query location information with proper error handling
-  const { 
-    data: locationData, 
+  const {
+    data: locationData,
     isLoading: locationsLoading,
-    error: locationsError
+    error: locationsError,
   } = useQuery<LocationDetail[]>({
     queryKey: ["locations", inspection.inspection_id],
     queryFn: async () => {
       try {
-        console.log(`Fetching locations for inspection ${inspection.inspection_id}`);
-        const response = await LocationService.getLocationsByInspectionId(inspection.inspection_id);
-        console.log(`Fetched ${response.data.length} locations for inspection ${inspection.inspection_id}`);
+        console.log(
+          `Fetching locations for inspection ${inspection.inspection_id}`
+        );
+        const response = await LocationService.getLocationsByInspectionId(
+          inspection.inspection_id
+        );
+        console.log(
+          `Fetched ${response.data.length} locations for inspection ${inspection.inspection_id}`
+        );
         return response.data || [];
       } catch (error) {
         console.error("Error fetching locations:", error);
@@ -150,21 +169,18 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     },
     staleTime: 5 * 60 * 1000, // Cache dữ liệu trong 5 phút thay vì 30 giây
     retry: 3, // Thử lại 3 lần nếu request thất bại
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 
   // Query crack records for selected location
-  const { 
-    data: crackRecordsMap,
-    refetch: refetchCrackRecords
-  } = useQuery({
+  const { data: crackRecordsMap, refetch: refetchCrackRecords } = useQuery({
     queryKey: ["crackRecords", inspection.inspection_id],
     queryFn: async () => {
       if (!locationData) return {};
 
       // Create a map to store whether each location has crack records
       const recordsMap: Record<string, boolean> = {};
-      
+
       // Process each location
       await Promise.all(
         locationData.map(async (location) => {
@@ -174,7 +190,7 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           recordsMap[location.locationDetailId] = records.length > 0;
         })
       );
-      
+
       return recordsMap;
     },
     enabled: !!locationData && locationData.length > 0,
@@ -190,22 +206,20 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       // Reset modal and form
       setCrackModalVisible(false);
       setCrackRecordData({
-        locationDetailId: '',
-        crackType: 'Vertical',
+        locationDetailId: "",
+        crackType: "Vertical",
         length: 0,
         width: 0,
         depth: 0,
-        description: ''
+        description: "",
       });
-      
+
       // Refetch crack records to update UI
       refetchCrackRecords();
-      
-      Alert.alert(
-        "Success",
-        "Crack record created successfully",
-        [{ text: "OK" }]
-      );
+
+      Alert.alert("Success", "Crack record created successfully", [
+        { text: "OK" },
+      ]);
     },
     onError: (error: any) => {
       Alert.alert(
@@ -218,10 +232,12 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   // Add a useEffect to refetch data when returning to this screen
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
+    const unsubscribe = navigation.addListener("focus", () => {
       // When the screen is focused (coming back to it)
       console.log("Screen focused, refetching data...");
-      queryClient.invalidateQueries({ queryKey: ["locations", inspection.inspection_id] });
+      queryClient.invalidateQueries({
+        queryKey: ["locations", inspection.inspection_id],
+      });
     });
 
     // Clean up the listener when component unmounts
@@ -246,8 +262,9 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const handleAddLocation = () => {
-    const buildingDetailId = inspectionDetail?.crackInfo?.data[0]?.buildingDetailId || "";
-    
+    const buildingDetailId =
+      inspectionDetail?.crackInfo?.data[0]?.buildingDetailId || "";
+
     navigation.navigate("CreateLocation", {
       initialData: {
         buildingDetailId: buildingDetailId,
@@ -296,7 +313,7 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     setCrackRecordData({
       ...crackRecordData,
       locationDetailId: location.locationDetailId,
-      description: `Crack in ${location.areaType} of Room ${location.roomNumber}, Floor ${location.floorNumber}`
+      description: `Crack in ${location.areaType} of Room ${location.roomNumber}, Floor ${location.floorNumber}`,
     });
     setCrackModalVisible(true);
   };
@@ -306,20 +323,27 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     setCrackModalVisible(false);
     setSelectedLocation(null);
     setCrackRecordData({
-      locationDetailId: '',
-      crackType: 'Vertical',
+      locationDetailId: "",
+      crackType: "Vertical",
       length: 0,
       width: 0,
       depth: 0,
-      description: ''
+      description: "",
     });
   };
 
   // Submit crack record form
   const handleSubmitCrackRecord = () => {
     // Validate fields
-    if (crackRecordData.length <= 0 || crackRecordData.width <= 0 || crackRecordData.depth <= 0) {
-      Alert.alert("Validation Error", "All measurements must be greater than 0");
+    if (
+      crackRecordData.length <= 0 ||
+      crackRecordData.width <= 0 ||
+      crackRecordData.depth <= 0
+    ) {
+      Alert.alert(
+        "Validation Error",
+        "All measurements must be greater than 0"
+      );
       return;
     }
 
@@ -336,7 +360,9 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const handleOpenCrackRecordDetailModal = async (location: LocationDetail) => {
     try {
       const [crackRecords, locationDetail] = await Promise.all([
-        CrackRecordService.getCrackRecordsByLocationId(location.locationDetailId),
+        CrackRecordService.getCrackRecordsByLocationId(
+          location.locationDetailId
+        ),
         LocationService.getLocationById(location.locationDetailId),
       ]);
 
@@ -349,7 +375,7 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       setSelectedLocation(locationDetail);
       setCrackRecordModalVisible(true);
     } catch (error) {
-      console.error('Error fetching details:', error);
+      console.error("Error fetching details:", error);
     }
   };
 
@@ -357,6 +383,11 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const handleCloseCrackRecordDetailModal = () => {
     setCrackRecordModalVisible(false);
     setSelectedCrackRecord(null);
+  };
+
+  // Update the function to navigate to the LocationDetailScreen
+  const handleOpenLocationDetail = (locationId: string) => {
+    navigation.navigate("LocationDetail", { locationDetailId: locationId });
   };
 
   if (loading) {
@@ -386,12 +417,14 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     inspectionDetail?.crackInfo?.data[0]?.buildingDetailId || "";
 
   const hasLocations = locationData && locationData.length > 0;
-  
+
   // Determine locations to display
-  const displayLocations = hasLocations 
-    ? (showAllLocations ? locationData : locationData.slice(0, 3))
+  const displayLocations = hasLocations
+    ? showAllLocations
+      ? locationData
+      : locationData.slice(0, 3)
     : [];
-  
+
   const hasMoreLocations = hasLocations && locationData.length > 3;
 
   return (
@@ -568,16 +601,20 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             </TouchableOpacity>
           </View>
           <View style={styles.divider} />
-          
+
           {locationsLoading ? (
             <View style={styles.locationLoadingContainer}>
               <ActivityIndicator size="small" color="#B77F2E" />
-              <Text style={styles.locationLoadingText}>Loading locations...</Text>
+              <Text style={styles.locationLoadingText}>
+                Loading locations...
+              </Text>
             </View>
           ) : locationsError ? (
             <View style={styles.locationErrorContainer}>
-              <Text style={styles.locationErrorText}>Failed to load locations</Text>
-              <TouchableOpacity 
+              <Text style={styles.locationErrorText}>
+                Failed to load locations
+              </Text>
+              <TouchableOpacity
                 style={styles.retryButton}
                 onPress={() => {
                   queryClient.invalidateQueries({
@@ -591,66 +628,92 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           ) : hasLocations ? (
             <>
               {displayLocations.map((location, index) => (
-                <View key={location.locationDetailId} style={styles.locationItem}>
+                <TouchableOpacity
+                  key={location.locationDetailId}
+                  style={styles.locationItem}
+                  onPress={() =>
+                    handleOpenLocationDetail(location.locationDetailId)
+                  }
+                >
                   <View style={styles.locationHeader}>
                     <Text style={styles.locationTitle}>
                       Room {location.roomNumber}, Floor {location.floorNumber}
                     </Text>
                     <View style={styles.locationActions}>
                       <View style={styles.areaTypeBadge}>
-                        <Text style={styles.areaTypeText}>{location.areaType}</Text>
+                        <Text style={styles.areaTypeText}>
+                          {location.areaType}
+                        </Text>
                       </View>
-                      
+
                       {/* Show badge if location has crack records */}
-                      {crackRecordsMap && crackRecordsMap[location.locationDetailId] && (
-                        <View style={styles.crackRecordBadge}>
-                          <Text style={styles.crackRecordText}>Crack Record</Text>
-                        </View>
-                      )}
-                      
-                      <TouchableOpacity 
+                      {crackRecordsMap &&
+                        crackRecordsMap[location.locationDetailId] && (
+                          <View style={styles.crackRecordBadge}>
+                            <Text style={styles.crackRecordText}>
+                              Crack Record
+                            </Text>
+                          </View>
+                        )}
+
+                      <TouchableOpacity
                         style={styles.editButton}
-                        onPress={() => handleEditLocation(location.locationDetailId)}
+                        onPress={() =>
+                          handleEditLocation(location.locationDetailId)
+                        }
                       >
-                        <Ionicons name="create-outline" size={18} color="#B77F2E" />
+                        <Ionicons
+                          name="create-outline"
+                          size={18}
+                          color="#B77F2E"
+                        />
                       </TouchableOpacity>
-                      
+
                       {/* Add crack record button */}
-                      {!(crackRecordsMap && crackRecordsMap[location.locationDetailId]) && (
-                        <TouchableOpacity 
+                      {!(
+                        crackRecordsMap &&
+                        crackRecordsMap[location.locationDetailId]
+                      ) && (
+                        <TouchableOpacity
                           style={styles.crackButton}
                           onPress={() => handleOpenCrackRecordModal(location)}
                         >
-                          <Ionicons name="construct-outline" size={18} color="#B77F2E" />
+                          <Ionicons
+                            name="construct-outline"
+                            size={18}
+                            color="#B77F2E"
+                          />
                         </TouchableOpacity>
                       )}
                     </View>
                   </View>
-                  
+
                   {location.description && (
                     <Text style={styles.locationDescription}>
                       {location.description}
                     </Text>
                   )}
-                  
+
                   {index < displayLocations.length - 1 && (
                     <View style={styles.locationDivider} />
                   )}
-                </View>
+                </TouchableOpacity>
               ))}
-              
+
               {hasMoreLocations && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.seeMoreButton}
                   onPress={toggleShowAllLocations}
                 >
                   <Text style={styles.seeMoreButtonText}>
-                    {showAllLocations ? "See less" : `See all ${locationData.length} locations`}
+                    {showAllLocations
+                      ? "See less"
+                      : `See all ${locationData.length} locations`}
                   </Text>
-                  <Ionicons 
-                    name={showAllLocations ? "chevron-up" : "chevron-down"} 
-                    size={16} 
-                    color="#B77F2E" 
+                  <Ionicons
+                    name={showAllLocations ? "chevron-up" : "chevron-down"}
+                    size={16}
+                    color="#B77F2E"
                   />
                 </TouchableOpacity>
               )}
@@ -660,15 +723,6 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               <Text style={styles.emptyLocationText}>
                 No location information available
               </Text>
-              <TouchableOpacity
-                style={styles.addLocationButton}
-                onPress={handleAddLocation}
-              >
-                <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
-                <Text style={styles.addLocationButtonText}>
-                  Add Location Information
-                </Text>
-              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -724,11 +778,11 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           style={styles.crackModalContent}
         >
           <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-
             <Text style={styles.crackModalTitle}>Create Crack Record</Text>
             {selectedLocation && (
               <Text style={styles.crackModalLocation}>
-                Room {selectedLocation.roomNumber}, Floor {selectedLocation.floorNumber}, {selectedLocation.areaType}
+                Room {selectedLocation.roomNumber}, Floor{" "}
+                {selectedLocation.floorNumber}, {selectedLocation.areaType}
               </Text>
             )}
 
@@ -738,8 +792,8 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               <View style={styles.pickerContainer}>
                 <Picker
                   selectedValue={crackRecordData.crackType}
-                  onValueChange={(value) => 
-                    setCrackRecordData({...crackRecordData, crackType: value})
+                  onValueChange={(value) =>
+                    setCrackRecordData({ ...crackRecordData, crackType: value })
                   }
                   style={styles.picker}
                 >
@@ -757,10 +811,10 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 style={styles.crackInput}
                 keyboardType="numeric"
                 value={crackRecordData.length.toString()}
-                onChangeText={(text) => 
+                onChangeText={(text) =>
                   setCrackRecordData({
-                    ...crackRecordData, 
-                    length: text ? parseFloat(text) : 0
+                    ...crackRecordData,
+                    length: text ? parseFloat(text) : 0,
                   })
                 }
               />
@@ -770,10 +824,10 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 style={styles.crackInput}
                 keyboardType="numeric"
                 value={crackRecordData.width.toString()}
-                onChangeText={(text) => 
+                onChangeText={(text) =>
                   setCrackRecordData({
-                    ...crackRecordData, 
-                    width: text ? parseFloat(text) : 0
+                    ...crackRecordData,
+                    width: text ? parseFloat(text) : 0,
                   })
                 }
               />
@@ -783,10 +837,10 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 style={styles.crackInput}
                 keyboardType="numeric"
                 value={crackRecordData.depth.toString()}
-                onChangeText={(text) => 
+                onChangeText={(text) =>
                   setCrackRecordData({
-                    ...crackRecordData, 
-                    depth: text ? parseFloat(text) : 0
+                    ...crackRecordData,
+                    depth: text ? parseFloat(text) : 0,
                   })
                 }
               />
@@ -797,11 +851,11 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 multiline
                 numberOfLines={4}
                 value={crackRecordData.description}
-                onChangeText={(text) => 
-                  setCrackRecordData({...crackRecordData, description: text})
+                onChangeText={(text) =>
+                  setCrackRecordData({ ...crackRecordData, description: text })
                 }
               />
-              
+
               <TouchableOpacity
                 style={styles.submitButton}
                 onPress={handleSubmitCrackRecord}
@@ -810,7 +864,9 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 {createRecordMutation.isPending ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.submitButtonText}>Create Crack Record</Text>
+                  <Text style={styles.submitButtonText}>
+                    Create Crack Record
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -826,17 +882,30 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         style={styles.modal}
       >
         <View style={styles.crackModalContent}>
-          <TouchableOpacity style={styles.closeButton} onPress={handleCloseCrackRecordDetailModal}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={handleCloseCrackRecordDetailModal}
+          >
             <Ionicons name="close" size={24} color="#000" />
           </TouchableOpacity>
           {selectedCrackRecord ? (
             <>
               <Text style={styles.crackModalTitle}>Crack Record Details</Text>
-              <Text style={styles.crackModalLocation}>Type: {selectedCrackRecord.crackType}</Text>
-              <Text style={styles.crackModalLocation}>Length: {selectedCrackRecord.length} m</Text>
-              <Text style={styles.crackModalLocation}>Width: {selectedCrackRecord.width} m</Text>
-              <Text style={styles.crackModalLocation}>Depth: {selectedCrackRecord.depth} m</Text>
-              <Text style={styles.crackModalLocation}>Description: {selectedCrackRecord.description}</Text>
+              <Text style={styles.crackModalLocation}>
+                Type: {selectedCrackRecord.crackType}
+              </Text>
+              <Text style={styles.crackModalLocation}>
+                Length: {selectedCrackRecord.length} m
+              </Text>
+              <Text style={styles.crackModalLocation}>
+                Width: {selectedCrackRecord.width} m
+              </Text>
+              <Text style={styles.crackModalLocation}>
+                Depth: {selectedCrackRecord.depth} m
+              </Text>
+              <Text style={styles.crackModalLocation}>
+                Description: {selectedCrackRecord.description}
+              </Text>
             </>
           ) : (
             <Text style={styles.crackModalTitle}>No Crack Record</Text>
@@ -844,10 +913,18 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           {selectedLocation && (
             <>
               <Text style={styles.crackModalTitle}>Location Details</Text>
-              <Text style={styles.crackModalLocation}>Room: {selectedLocation.roomNumber}</Text>
-              <Text style={styles.crackModalLocation}>Floor: {selectedLocation.floorNumber}</Text>
-              <Text style={styles.crackModalLocation}>Area Type: {selectedLocation.areaType}</Text>
-              <Text style={styles.crackModalLocation}>Description: {selectedLocation.description}</Text>
+              <Text style={styles.crackModalLocation}>
+                Room: {selectedLocation.roomNumber}
+              </Text>
+              <Text style={styles.crackModalLocation}>
+                Floor: {selectedLocation.floorNumber}
+              </Text>
+              <Text style={styles.crackModalLocation}>
+                Area Type: {selectedLocation.areaType}
+              </Text>
+              <Text style={styles.crackModalLocation}>
+                Description: {selectedLocation.description}
+              </Text>
             </>
           )}
         </View>

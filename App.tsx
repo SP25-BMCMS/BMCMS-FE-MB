@@ -29,6 +29,7 @@ import RepairOutsideScreen from './src/Resident/ui/RepairOutsideScreen';
 import ChatBotScreen from './src/screen/ChatBotScreen';
 import ChatHistoryScreen from './src/screen/ChatHistoryScreen';
 import EditLocationScreen from './src/staff/ui/EditLocationScreen';
+import LocationDetailScreen from './src/staff/ui/LocationDetailScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 const queryClient = new QueryClient();
@@ -64,6 +65,7 @@ const App = () => {
           <Stack.Screen name='StaffInspectionDetail' component={StaffInspectionDetailScreen} />
           <Stack.Screen name='ChatBot' component={ChatBotScreen} />
           <Stack.Screen name='ChatHistory' component={ChatHistoryScreen} />
+          <Stack.Screen name='LocationDetail' component={LocationDetailScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </QueryClientProvider>
