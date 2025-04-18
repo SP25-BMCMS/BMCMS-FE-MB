@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import { useQuery } from "@tanstack/react-query";
 import { RootStackParamList, LocationData } from "../../types";
 import { LocationService } from "../../service/Location";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Define route and navigation props
 interface LocationDetailScreenProps {
@@ -26,6 +28,7 @@ const LocationDetailScreen: React.FC<LocationDetailScreenProps> = ({
   navigation,
 }) => {
   const { locationDetailId } = route.params;
+  const queryClient = useQueryClient();
 
   // Fetch location details using tanstackQuery
   const {
@@ -42,6 +45,29 @@ const LocationDetailScreen: React.FC<LocationDetailScreenProps> = ({
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
+
+  // Add useFocusEffect to refetch data when the screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      // Refetch data when screen is focused
+      console.log("LocationDetailScreen focused, refetching data...");
+      const refetchData = async () => {
+        try {
+          await queryClient.invalidateQueries({
+            queryKey: ["locationDetail", locationDetailId],
+          });
+        } catch (error) {
+          console.error("Error refetching location details:", error);
+        }
+      };
+      
+      refetchData();
+      
+      return () => {
+        // Cleanup if needed
+      };
+    }, [locationDetailId, queryClient])
+  );
 
   if (isLoading) {
     return (

@@ -202,7 +202,7 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     mutationFn: (data: CrackRecordPayload) => {
       return CrackRecordService.createCrackRecord(data);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       // Reset modal and form
       setCrackModalVisible(false);
       setCrackRecordData({
@@ -213,13 +213,15 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         depth: 0,
         description: "",
       });
-
+      
       // Refetch crack records to update UI
-      refetchCrackRecords();
-
-      Alert.alert("Success", "Crack record created successfully", [
-        { text: "OK" },
-      ]);
+      await refetchCrackRecords();
+      
+      Alert.alert(
+        "Success",
+        "Crack record created successfully. You can add more records if needed.",
+        [{ text: "OK" }]
+      );
     },
     onError: (error: any) => {
       Alert.alert(
@@ -299,21 +301,11 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   // Handler for opening the crack record modal
   const handleOpenCrackRecordModal = (location: LocationDetail) => {
-    // Check if location already has a crack record
-    if (crackRecordsMap && crackRecordsMap[location.locationDetailId]) {
-      Alert.alert(
-        "Crack Record Exists",
-        "This location already has a crack record.",
-        [{ text: "OK" }]
-      );
-      return;
-    }
-
     setSelectedLocation(location);
     setCrackRecordData({
       ...crackRecordData,
       locationDetailId: location.locationDetailId,
-      description: `Crack in ${location.areaType} of Room ${location.roomNumber}, Floor ${location.floorNumber}`,
+      description: `Crack in ${location.areaType} of Room ${location.roomNumber}, Floor ${location.floorNumber}`
     });
     setCrackModalVisible(true);
   };
@@ -669,22 +661,17 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                         />
                       </TouchableOpacity>
 
-                      {/* Add crack record button */}
-                      {!(
-                        crackRecordsMap &&
-                        crackRecordsMap[location.locationDetailId]
-                      ) && (
-                        <TouchableOpacity
-                          style={styles.crackButton}
-                          onPress={() => handleOpenCrackRecordModal(location)}
-                        >
-                          <Ionicons
-                            name="construct-outline"
-                            size={18}
-                            color="#B77F2E"
-                          />
-                        </TouchableOpacity>
-                      )}
+                      {/* Add crack record button - always show it */}
+                      <TouchableOpacity
+                        style={styles.crackButton}
+                        onPress={() => handleOpenCrackRecordModal(location)}
+                      >
+                        <Ionicons
+                          name="construct-outline"
+                          size={18}
+                          color="#B77F2E"
+                        />
+                      </TouchableOpacity>
                     </View>
                   </View>
 
