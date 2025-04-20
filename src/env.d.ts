@@ -52,4 +52,5 @@ declare module '@env'{
   export const VITE_GET_DEVICE_LIST: string;
   export const VITE_GET_SELECT_DEVICE_BY_BUILDING_DETAIL_ID: string;
   export const VITE_GET_TECHNICAL_RECORD_BY_BUILDING_ID: string;
+  export const VITE_GET_AREA_LIST: string;
 }
