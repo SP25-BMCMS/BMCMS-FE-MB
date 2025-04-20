@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -6,8 +6,7 @@ import {
   TouchableOpacity, 
   FlatList, 
   ActivityIndicator, 
-  Image,
-  Alert
+  Image
 } from 'react-native';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -18,7 +17,9 @@ import { LocationData } from '../../types';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import Modal from 'react-native-modal';
+import { showMessage } from 'react-native-flash-message';
 
 type InspectionListScreenRouteProp = RouteProp<RootStackParamList, 'InspectionList'>;
 type InspectionListScreenNavigationProp = StackNavigationProp<RootStackParamList, 'InspectionList'>;
@@ -28,37 +29,46 @@ type Props = {
   navigation: InspectionListScreenNavigationProp;
 };
 
+// Enhanced Inspection type with the new fields
+interface EnhancedInspection extends Inspection {
+  isprivateasset?: boolean;
+  report_status?: string;
+  confirmed_by?: string | null;
+}
+
 const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
   const { taskAssignmentId, taskDescription } = route.params;
-  const [inspections, setInspections] = useState<Inspection[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [selectedInspection, setSelectedInspection] = useState<EnhancedInspection | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  
+  // Initialize Query Client
+  const queryClient = useQueryClient();
+  
+  // Define the query key
+  const inspectionsQueryKey = ['inspections', taskAssignmentId];
 
-  const fetchInspections = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Fetching inspections with React Query
+  const { 
+    data, 
+    isLoading, 
+    isError, 
+    error, 
+    refetch, 
+    isRefetching 
+  } = useQuery({
+    queryKey: inspectionsQueryKey,
+    queryFn: async () => {
       const response = await TaskService.getInspectionsByTaskAssignmentId(taskAssignmentId);
-      setInspections(response.data);
-    } catch (error) {
-      console.error('Error fetching inspections:', error);
-      setError('Unable to load inspections. Please try again.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchInspections();
-  }, [taskAssignmentId]);
+      return response.data;
+    },
+    enabled: !!taskAssignmentId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   const handleRefresh = () => {
-    setRefreshing(true);
-    fetchInspections();
+    refetch();
   };
-
 
   const formatDate = (dateString: string) => {
     try {
@@ -69,57 +79,167 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
 
-  const handleInspectionPress = (inspection: Inspection) => {
+  const handleInspectionPress = (inspection: EnhancedInspection) => {
     navigation.navigate('InspectionDetail', { inspection });
   };
 
-  const renderInspectionItem = ({ item }: { item: Inspection }) => (
-    <View style={styles.inspectionCard}>
-      <TouchableOpacity 
-        style={styles.inspectionContent}
-        onPress={() => handleInspectionPress(item)}
-      >
-        <View style={styles.inspectionHeader}>
-          <View style={styles.idContainer}>
-            <Ionicons name="document-text" size={16} color="#B77F2E" />
-            <Text style={styles.inspectionId}>
-              {item.inspection_id.substring(0, 8)}...
-            </Text>
-          </View>
-          <View style={styles.costContainer}>
-            <Ionicons name="cash" size={16} color="#4CD964" />
-            <Text style={styles.totalCost}>
-              {parseInt(item.total_cost) > 0 ? `${item.total_cost} VND` : 'No cost'}
-            </Text>
-          </View>
+  const handleMarkAsPrivateAsset = (inspection: EnhancedInspection) => {
+    setSelectedInspection(inspection);
+    setShowConfirmModal(true);
+  };
+
+  const confirmMarkAsPrivateAsset = async () => {
+    if (!selectedInspection) return;
+    
+    try {
+      setSubmitting(true);
+      
+      // First update as private asset
+      await TaskService.updateInspectionAsPrivateAsset(selectedInspection.inspection_id);
+      
+      // Then update the report status to Pending
+      await TaskService.updateInspectionReportStatus(selectedInspection.inspection_id, 'Pending');
+      
+      // Close modal 
+      setShowConfirmModal(false);
+      setSelectedInspection(null);
+      
+      // Show flash message instead of toast
+      showMessage({
+        message: "Success",
+        description: "Inspection marked as Private Asset and set to Pending status.",
+        type: "success",
+        duration: 3000,
+        floating: true,
+      });
+      
+      // Invalidate and refetch the query to refresh the data
+      queryClient.invalidateQueries({ queryKey: inspectionsQueryKey });
+      
+    } catch (error) {
+      console.error('Error updating inspection:', error);
+      
+      // Show error flash message
+      showMessage({
+        message: "Error",
+        description: "Failed to update inspection. Please try again.",
+        type: "danger",
+        duration: 3000,
+        floating: true,
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Check if an inspection is eligible for marking as private asset
+  const isEligibleForPrivateAsset = (inspection: EnhancedInspection): boolean => {
+    // Check if the inspection has no cost (or cost is 0)
+    const hasNoCost = !inspection.total_cost || parseInt(inspection.total_cost) === 0;
+    
+    // Only show the button if:
+    // 1. The inspection has no cost
+    // 2. It's not already marked as a private asset
+    // 3. It doesn't have a pending report status
+    return hasNoCost && 
+           !inspection.isprivateasset && 
+           inspection.report_status !== 'Pending';
+  };
+
+  const renderInspectionItem = ({ item }: { item: EnhancedInspection }) => {
+    const hasNoCost = !item.total_cost || parseInt(item.total_cost) === 0;
+    const isEligible = isEligibleForPrivateAsset(item);
+    
+    // Status indicator colors
+    let statusColor = '#4CD964'; // Default green for inspections with cost
+    let statusText = '';
+    
+    if (hasNoCost) {
+      if (item.isprivateasset) {
+        statusColor = '#007AFF'; // Blue for private assets
+        statusText = 'Private Asset';
+      } else {
+        statusColor = '#FF9500'; // Orange for no cost
+        statusText = 'No Cost';
+      }
+    } else {
+      statusText = `${item.total_cost} VND`;
+    }
+    
+    // Additional status for report status
+    let reportStatusBadge = null;
+    if (item.report_status === 'Pending') {
+      reportStatusBadge = (
+        <View style={styles.reportStatusBadge}>
+          <Text style={styles.reportStatusText}>Pending Review</Text>
         </View>
-        
-        <Text style={styles.inspectionDescription} numberOfLines={2}>
-          {item.description}
-        </Text>
-        
-        <View style={styles.inspectionInfo}>
-          <View style={styles.dateContainer}>
-            <Ionicons name="calendar" size={14} color="#666" />
-            <Text style={styles.infoText}>
-              {formatDate(item.created_at)}
-            </Text>
+      );
+    }
+    
+    return (
+      <View style={styles.inspectionCard}>
+        <TouchableOpacity 
+          style={styles.inspectionContent}
+          onPress={() => handleInspectionPress(item)}
+        >
+          <View style={styles.inspectionHeader}>
+            <View style={styles.idContainer}>
+              <Ionicons name="document-text" size={16} color="#B77F2E" />
+              <Text style={styles.inspectionId}>
+                {item.inspection_id.substring(0, 8)}...
+              </Text>
+            </View>
+            <View style={[styles.costContainer, { backgroundColor: hasNoCost ? (item.isprivateasset ? '#E1F5FE' : '#FFF3E0') : '#E8F5E9' }]}>
+              <Ionicons 
+                name={hasNoCost ? (item.isprivateasset ? "lock-closed" : "cash") : "cash"} 
+                size={16} 
+                color={statusColor} 
+              />
+              <Text style={[styles.totalCost, { color: statusColor }]}>
+                {statusText}
+              </Text>
+            </View>
           </View>
           
-          <View style={styles.imagesPreview}>
-            {item.image_urls.length > 0 ? (
-              <View style={styles.imageCountContainer}>
-                <Ionicons name="images" size={16} color="#666" />
-                <Text style={styles.imageCount}>{item.image_urls.length}</Text>
-              </View>
-            ) : (
-              <Text style={styles.noImagesText}>No images</Text>
-            )}
+          <Text style={styles.inspectionDescription} numberOfLines={2}>
+            {item.description}
+          </Text>
+          
+          <View style={styles.inspectionInfo}>
+            <View style={styles.dateContainer}>
+              <Ionicons name="calendar" size={14} color="#666" />
+              <Text style={styles.infoText}>
+                {formatDate(item.created_at)}
+              </Text>
+            </View>
+            
+            <View style={styles.imagesPreview}>
+              {item.image_urls.length > 0 ? (
+                <View style={styles.imageCountContainer}>
+                  <Ionicons name="images" size={16} color="#666" />
+                  <Text style={styles.imageCount}>{item.image_urls.length}</Text>
+                </View>
+              ) : (
+                <Text style={styles.noImagesText}>No images</Text>
+              )}
+            </View>
           </View>
-        </View>
-      </TouchableOpacity>
-    </View>
-  );
+          
+          {reportStatusBadge}
+          
+          {isEligible && (
+            <TouchableOpacity
+              style={styles.privateAssetButton}
+              onPress={() => handleMarkAsPrivateAsset(item)}
+            >
+              <Ionicons name="lock-closed" size={16} color="#FFFFFF" />
+              <Text style={styles.privateAssetButtonText}>Mark as Private Asset</Text>
+            </TouchableOpacity>
+          )}
+        </TouchableOpacity>
+      </View>
+    )
+  };
 
   const renderEmptyList = () => (
     <View style={styles.emptyContainer}>
@@ -156,32 +276,75 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
         </Text>
       </View>
 
-      {loading && !refreshing ? (
+      {isLoading && !isRefetching ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#B77F2E" />
         </View>
-      ) : error ? (
+      ) : isError ? (
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorText}>
+            {error instanceof Error ? error.message : 'Unable to load inspections. Please try again.'}
+          </Text>
           <TouchableOpacity 
             style={styles.retryButton}
-            onPress={fetchInspections}
+            onPress={() => refetch()}
           >
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <FlatList
-          data={inspections}
+          data={data}
           renderItem={renderInspectionItem}
           keyExtractor={(item) => item.inspection_id}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={renderEmptyList}
           onRefresh={handleRefresh}
-          refreshing={refreshing}
+          refreshing={isRefetching}
         />
       )}
+
+      {/* Confirmation Modal */}
+      <Modal
+        isVisible={showConfirmModal}
+        backdropOpacity={0.4}
+        onBackdropPress={() => !submitting && setShowConfirmModal(false)}
+        animationIn="fadeIn"
+        animationOut="fadeOut"
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Confirm Action</Text>
+            <Text style={styles.modalText}>
+              Are you sure you want to mark this inspection as a Private Asset? 
+              This will update the status to 'Pending'.
+            </Text>
+            
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setShowConfirmModal(false)}
+                disabled={submitting}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={confirmMarkAsPrivateAsset}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.confirmButtonText}>Confirm</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -296,7 +459,6 @@ const styles = StyleSheet.create({
   costContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E8F5E9',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -304,8 +466,23 @@ const styles = StyleSheet.create({
   totalCost: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#4CD964',
     marginLeft: 4,
+  },
+  reportStatusBadge: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: '#FFECB3',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  reportStatusText: {
+    fontSize: 12,
+    color: '#FF9800',
+    fontWeight: '600',
+  },
+  noCostText: {
+    color: '#FF9500',
   },
   inspectionDescription: {
     fontSize: 15,
@@ -349,6 +526,74 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999999',
     fontStyle: 'italic',
+  },
+  privateAssetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF9500',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  privateAssetButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalText: {
+    fontSize: 16,
+    color: '#333333',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 8,
+  },
+  cancelButton: {
+    backgroundColor: '#F0F0F0',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333333',
+  },
+  confirmButton: {
+    backgroundColor: '#FF9500',
+  },
+  confirmButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   cardActions: {
     flexDirection: 'row',

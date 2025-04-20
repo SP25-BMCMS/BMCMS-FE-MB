@@ -8,7 +8,6 @@ import {
   TextInput, 
   ScrollView,
   ActivityIndicator,
-  Alert,
   StatusBar,
   Platform,
   Modal,
@@ -23,6 +22,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery } from '@tanstack/react-query';
 import instance from '../service/Auth';
 import { VITE_GET_TASK_ASSIGNMENT } from '@env';
+import { showMessage } from 'react-native-flash-message';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -161,7 +161,13 @@ const CreateTaskAssignmentScreen = () => {
   
   const handleSubmit = async () => {
     if (!selectedTaskId || !selectedEmployeeId || !description) {
-      Alert.alert('Missing Fields', 'Please fill all the fields');
+      showMessage({
+        message: "Missing Fields",
+        description: "Please fill all the fields",
+        type: "warning",
+        duration: 3000,
+        icon: "warning",
+      });
       return;
     }
     
@@ -178,11 +184,13 @@ const CreateTaskAssignmentScreen = () => {
     }
     
     if (confirmedTaskIds.has(selectedTaskId)) {
-      Alert.alert(
-        'Task Unavailable', 
-        'This task has already been confirmed by another assignment. Please select a different task.',
-        [{ text: 'OK' }]
-      );
+      showMessage({
+        message: "Task Unavailable",
+        description: "This task has already been confirmed by another assignment. Please select a different task.",
+        type: "danger",
+        duration: 3000,
+        icon: "danger",
+      });
       return;
     }
     
@@ -200,25 +208,29 @@ const CreateTaskAssignmentScreen = () => {
       const assignmentId = response.data.assignment_id;
       await TaskService.updateStatusAndCreateWorklog(assignmentId, selectedStatus);
       
-      Alert.alert(
-        'Success', 
-        'Task assignment created successfully',
-        [
-          { 
-            text: 'OK', 
-            onPress: () => {
-              // Thêm độ trễ để đảm bảo API cập nhật dữ liệu
-              setTimeout(() => {
-                // Refresh both screens' data by navigating back
-                navigation.goBack();
-              }, 500); // Thêm 500ms độ trễ
-            } 
-          }
-        ]
-      );
+      showMessage({
+        message: "Success",
+        description: "Task assignment created successfully",
+        type: "success",
+        duration: 3000,
+        icon: "success",
+      });
+      
+      // Thêm độ trễ để đảm bảo API cập nhật dữ liệu
+      setTimeout(() => {
+        // Refresh both screens' data by navigating back
+        navigation.goBack();
+      }, 500); // Thêm 500ms độ trễ
+      
     } catch (error) {
       console.error('Error creating task assignment:', error);
-      Alert.alert('Error', 'Failed to create task assignment. Please try again.');
+      showMessage({
+        message: "Error",
+        description: "Failed to create task assignment. Please try again.",
+        type: "danger",
+        duration: 3000,
+        icon: "danger",
+      });
     } finally {
       setSubmitting(false);
     }

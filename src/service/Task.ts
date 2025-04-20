@@ -11,6 +11,7 @@ import {
   MaterialListResponse
 } from '../types';
 import {
+  VITE_API_SECRET,
   VITE_GET_TASK_LIST,
   VITE_GET_TASK_BY_ID,
   VITE_GET_TASK_ASSIGNMENT,
@@ -26,7 +27,9 @@ import {
   VITE_GET_TASK_ASSIGNMENT_BY_TASK_ID,
   VITE_GET_TASK_ASSIGNMENT_BY_EMPLOYEE_ID,
   VITE_REASSIGN_TASK_ASSIGNMENT,
-  VITE_PATCH_WORKLOG_BY_ASSIGNMENT_ID
+  VITE_PATCH_WORKLOG_BY_ASSIGNMENT_ID,
+  VITE_UPDATE_INSPECTION_STATUS_PRIVATE_ASSET,
+  VITE_REPORT_STATUS_INSPECTION,
 } from '@env';
 
 export const TaskService = {
@@ -290,6 +293,40 @@ export const TaskService = {
       return response.data;
     } catch (error) {
       console.error(`Error updating status and creating worklog for assignment ID ${assignmentId}:`, error);
+      throw error;
+    }
+  },
+
+  // Update inspection to mark as private asset
+  async updateInspectionAsPrivateAsset(inspectionId: string): Promise<any> {
+    try {
+      const response = await instance.patch(
+        `${VITE_UPDATE_INSPECTION_STATUS_PRIVATE_ASSET.replace(
+          '{inspection_id}',
+          inspectionId
+        )}`,
+        { isprivateasset: true }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error updating inspection as private asset:', error);
+      throw error;
+    }
+  },
+
+  // Update inspection report status
+  async updateInspectionReportStatus(inspectionId: string, status: string = 'Pending'): Promise<any> {
+    try {
+      const response = await instance.patch(
+        `${VITE_REPORT_STATUS_INSPECTION.replace(
+          '{inspection_id}',
+          inspectionId
+        )}`,
+        { report_status: status }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error updating inspection report status:', error);
       throw error;
     }
   }

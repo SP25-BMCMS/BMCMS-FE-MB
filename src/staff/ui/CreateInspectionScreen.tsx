@@ -20,6 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TaskService } from '../../service/Task';
+import { showMessage } from 'react-native-flash-message';
 
 type CreateInspectionScreenRouteProp = RouteProp<RootStackParamList, 'CreateInspection'>;
 type CreateInspectionScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CreateInspection'>;
@@ -55,6 +56,10 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
   const [materialsLoading, setMaterialsLoading] = useState<boolean>(false);
   const [selectedMaterialForEdit, setSelectedMaterialForEdit] = useState<SelectedMaterial | null>(null);
   const [materialQuantity, setMaterialQuantity] = useState<string>('1');
+  
+  // Confirmation modal state
+  const [confirmModalVisible, setConfirmModalVisible] = useState<boolean>(false);
+  const [materialIndexToRemove, setMaterialIndexToRemove] = useState<number | null>(null);
 
   // Load materials when verified is toggled to true
   useEffect(() => {
@@ -75,7 +80,12 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
       }
     } catch (error) {
       console.error('Error loading materials:', error);
-      Alert.alert('Error', 'Failed to load materials');
+      showMessage({
+        message: "Error",
+        description: "Failed to load materials",
+        type: "danger",
+        duration: 3000,
+      });
     } finally {
       setMaterialsLoading(false);
     }
@@ -100,12 +110,22 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
     const quantity = parseInt(materialQuantity, 10);
     
     if (isNaN(quantity) || quantity <= 0) {
-      Alert.alert('Invalid Quantity', 'Please enter a valid quantity');
+      showMessage({
+        message: "Invalid Quantity",
+        description: "Please enter a valid quantity",
+        type: "warning",
+        duration: 3000,
+      });
       return;
     }
 
     if (quantity > material.stock_quantity) {
-      Alert.alert('Insufficient Stock', `Only ${material.stock_quantity} available in stock`);
+      showMessage({
+        message: "Insufficient Stock",
+        description: `Only ${material.stock_quantity} available in stock`,
+        type: "warning",
+        duration: 3000,
+      });
       return;
     }
 
@@ -121,7 +141,12 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
       const newQuantity = currentQuantity + quantity;
       
       if (newQuantity > material.stock_quantity) {
-        Alert.alert('Insufficient Stock', `You already have ${currentQuantity} in your list. Cannot add ${quantity} more as only ${material.stock_quantity} available in stock`);
+        showMessage({
+          message: "Insufficient Stock",
+          description: `You already have ${currentQuantity} in your list. Cannot add ${quantity} more as only ${material.stock_quantity} available in stock`,
+          type: "warning",
+          duration: 3000,
+        });
         return;
       }
       
@@ -157,12 +182,22 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
     const quantity = parseInt(materialQuantity, 10);
     
     if (isNaN(quantity) || quantity <= 0) {
-      Alert.alert('Invalid Quantity', 'Please enter a valid quantity');
+      showMessage({
+        message: "Invalid Quantity",
+        description: "Please enter a valid quantity",
+        type: "warning",
+        duration: 3000,
+      });
       return;
     }
 
     if (quantity > selectedMaterialForEdit.material.stock_quantity) {
-      Alert.alert('Insufficient Stock', `Only ${selectedMaterialForEdit.material.stock_quantity} available in stock`);
+      showMessage({
+        message: "Insufficient Stock",
+        description: `Only ${selectedMaterialForEdit.material.stock_quantity} available in stock`,
+        type: "warning",
+        duration: 3000,
+      });
       return;
     }
 
@@ -191,24 +226,33 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
     closeMaterialModal();
   };
 
-  // Remove material from selection
+  // Remove material from selection - show confirmation dialog
   const removeMaterial = (index: number) => {
-    Alert.alert(
-      'Remove Material',
-      'Are you sure you want to remove this material?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => {
-            const updatedMaterials = [...selectedMaterials];
-            updatedMaterials.splice(index, 1);
-            setSelectedMaterials(updatedMaterials);
-          }
-        }
-      ]
-    );
+    setMaterialIndexToRemove(index);
+    setConfirmModalVisible(true);
+  };
+  
+  // Confirm and execute material removal
+  const confirmRemoveMaterial = () => {
+    if (materialIndexToRemove !== null) {
+      const updatedMaterials = [...selectedMaterials];
+      updatedMaterials.splice(materialIndexToRemove, 1);
+      setSelectedMaterials(updatedMaterials);
+      
+      showMessage({
+        message: "Material Removed",
+        description: "Material has been removed from the list",
+        type: "info",
+        duration: 2000,
+      });
+    }
+    setConfirmModalVisible(false);
+  };
+  
+  // Cancel material removal
+  const cancelRemoveMaterial = () => {
+    setConfirmModalVisible(false);
+    setMaterialIndexToRemove(null);
   };
 
   // Handle image selection
@@ -227,7 +271,12 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (!permissionResult.granted) {
-        Alert.alert('Permission Required', 'Please allow access to your photo library to select images.');
+        showMessage({
+          message: "Permission Required",
+          description: "Please allow access to your photo library to select images",
+          type: "warning",
+          duration: 3000,
+        });
         return;
       }
       
@@ -244,7 +293,12 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
       }
     } catch (error) {
       console.error('Error picking image from library:', error);
-      Alert.alert('Error', 'Failed to pick image from library');
+      showMessage({
+        message: "Error",
+        description: "Failed to pick image from library",
+        type: "danger",
+        duration: 3000,
+      });
     }
   };
 
@@ -255,7 +309,12 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
       const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
       
       if (!permissionResult.granted) {
-        Alert.alert('Permission Required', 'Please allow access to your camera to take photos.');
+        showMessage({
+          message: "Permission Required",
+          description: "Please allow access to your camera to take photos",
+          type: "warning",
+          duration: 3000,
+        });
         return;
       }
       
@@ -268,7 +327,12 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
       }
     } catch (error) {
       console.error('Error taking photo:', error);
-      Alert.alert('Error', 'Failed to take photo');
+      showMessage({
+        message: "Error",
+        description: "Failed to take photo",
+        type: "danger",
+        duration: 3000,
+      });
     }
   };
 
@@ -304,7 +368,12 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
       return true;
     } catch (error) {
       console.error('Error changing task status:', error);
-      Alert.alert('Error', 'Failed to update task status');
+      showMessage({
+        message: "Error",
+        description: "Failed to update task status",
+        type: "danger",
+        duration: 3000,
+      });
       return false;
     } finally {
       setLoading(false);
@@ -322,18 +391,33 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
   // Prepare for submission and show review screen
   const handleReviewInspection = () => {
     if (images.length === 0) {
-      Alert.alert('Missing Images', 'Please add at least one image to continue');
+      showMessage({
+        message: "Missing Images",
+        description: "Please add at least one image to continue",
+        type: "warning",
+        duration: 3000,
+      });
       return;
     }
 
     if (notes.trim() === '') {
-      Alert.alert('Missing Notes', 'Please add inspection notes to continue');
+      showMessage({
+        message: "Missing Notes",
+        description: "Please add inspection notes to continue",
+        type: "warning",
+        duration: 3000,
+      });
       return;
     }
 
     // For regular inspections that are verified, we need materials
     if (!isPrivateAsset && isVerified && selectedMaterials.length === 0) {
-      Alert.alert('Missing Materials', 'Please add at least one material for repair');
+      showMessage({
+        message: "Missing Materials",
+        description: "Please add at least one material for repair",
+        type: "warning",
+        duration: 3000,
+      });
       return;
     }
 
@@ -374,16 +458,26 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
       await TaskService.createInspection(inspectionData);
       
       setLoading(false);
-      Alert.alert('Success', 'Inspection created successfully', [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack()
-        }
-      ]);
+      showMessage({
+        message: "Success",
+        description: "Inspection created successfully",
+        type: "success",
+        duration: 3000,
+      });
+      
+      // Navigate back after a short delay
+      setTimeout(() => {
+        navigation.goBack();
+      }, 500);
     } catch (error) {
       console.error('Error submitting inspection:', error);
       setLoading(false);
-      Alert.alert('Error', 'Failed to create inspection. Please try again.');
+      showMessage({
+        message: "Error",
+        description: "Failed to create inspection. Please try again.",
+        type: "danger",
+        duration: 3000,
+      });
     }
   };
 
@@ -869,6 +963,41 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
           )}
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Confirmation Modal for Material Removal */}
+      <Modal
+        isVisible={confirmModalVisible}
+        backdropOpacity={0.4}
+        onBackdropPress={cancelRemoveMaterial}
+        animationIn="fadeIn"
+        animationOut="fadeOut"
+        style={styles.modal}
+      >
+        <View style={styles.removeModalContainer}>
+          <View style={styles.removeModalContent}>
+            <Text style={styles.removeModalTitle}>Remove Material</Text>
+            <Text style={styles.removeModalText}>
+              Are you sure you want to remove this material?
+            </Text>
+            
+            <View style={styles.removeModalActions}>
+              <TouchableOpacity
+                style={[styles.removeModalButton, styles.removeModalCancelButton]}
+                onPress={cancelRemoveMaterial}
+              >
+                <Text style={styles.removeModalCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.removeModalButton, styles.removeModalRemoveButton]}
+                onPress={confirmRemoveMaterial}
+              >
+                <Text style={styles.removeModalRemoveButtonText}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -1352,6 +1481,58 @@ const styles = StyleSheet.create({
   defaultLocationText: {
     fontSize: 14,
     color: '#333333',
+  },
+  removeModalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  removeModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+  },
+  removeModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  removeModalText: {
+    fontSize: 16,
+    color: '#333333',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  removeModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  removeModalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 8,
+  },
+  removeModalCancelButton: {
+    backgroundColor: '#F0F0F0',
+  },
+  removeModalCancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333333',
+  },
+  removeModalRemoveButton: {
+    backgroundColor: '#FF3B30',
+  },
+  removeModalRemoveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
 
