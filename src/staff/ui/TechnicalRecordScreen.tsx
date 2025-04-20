@@ -79,8 +79,7 @@ const TechnicalRecordScreen: React.FC<Props> = ({ route }) => {
     isError, 
     error,
     isFetching,
-    hasNextPage,
-    fetchNextPage
+   
   } = useQuery({
     queryKey: ['technicalRecords', buildingId, currentPage],
     queryFn: async () => {
