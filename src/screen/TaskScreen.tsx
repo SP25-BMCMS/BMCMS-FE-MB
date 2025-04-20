@@ -4,26 +4,115 @@ import { TaskService } from '../service/Task';
 import { TaskAssignment } from '../types';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showMessage } from 'react-native-flash-message';
 import instance from '../service/Auth';
-import { VITE_CHANGE_STATUS_CRACK } from '@env';
+import { VITE_CHANGE_STATUS_CRACK, VITE_GET_TASK_ASSIGNMENT } from '@env';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { validateToken } from '../service/Auth';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
+enum ViewMode {
+  MAINTENANCE_TASKS = 'MAINTENANCE_TASKS', // Tasks không có crack_id
+  CRACK_TASKS = 'CRACK_TASKS' // Tasks có crack_id
+}
+
 const TaskScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const [taskAssignments, setTaskAssignments] = useState<TaskAssignment[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.MAINTENANCE_TASKS);
   const [error, setError] = useState<string>('');
   const [isLeader, setIsLeader] = useState<boolean>(false);
   const [reviewingTasks, setReviewingTasks] = useState<string[]>([]);
   const [checkedTasks, setCheckedTasks] = useState<{[key: string]: boolean}>({});
+  const [tokenValid, setTokenValid] = useState<boolean>(true);
+  const queryClient = useQueryClient();
+
+  // Kiểm tra token
+  useFocusEffect(
+    React.useCallback(() => {
+      const checkToken = async () => {
+        const isValid = await validateToken();
+        setTokenValid(isValid);
+        if (!isValid) {
+          setError('Your session has expired. Please log in again.');
+        }
+      };
+      checkToken();
+    }, [])
+  );
+
+  // Sử dụng tanstack Query để fetch tất cả task assignments
+  const { 
+    data: allTaskAssignmentsData,
+    isLoading: isLoadingAllTasks,
+    isFetching: isFetchingAllTasks,
+    refetch: refetchAllTasks
+  } = useQuery({
+    queryKey: ['allTaskAssignments'],
+    queryFn: async () => {
+      try {
+        if (!tokenValid) return { data: [] };
+        
+        const response = await instance.get(VITE_GET_TASK_ASSIGNMENT);
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching all task assignments:', error);
+        setError('Không thể tải dữ liệu. Vui lòng thử lại sau.');
+        return { data: [] };
+      }
+    },
+    enabled: tokenValid,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Sử dụng tanstack Query để fetch task assignments của user hiện tại
+  const { 
+    data: userTasksData,
+    isLoading: isLoadingUserTasks,
+    isFetching: isFetchingUserTasks,
+    refetch: refetchUserTasks
+  } = useQuery({
+    queryKey: ['userTaskAssignments'],
+    queryFn: async () => {
+      try {
+        if (!tokenValid) return { data: [] };
+        
+        const response = await TaskService.getTaskAssignmentsByUserId();
+        return response;
+      } catch (error) {
+        console.error('Error fetching user task assignments:', error);
+        setError('Không thể tải dữ liệu nhiệm vụ. Vui lòng thử lại sau.');
+        return { data: [] };
+      }
+    },
+    enabled: tokenValid,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Tách các task assignments theo loại (có crack_id hoặc không)
+  const maintenanceTasks = userTasksData?.data?.filter(
+    (assignment: TaskAssignment) => !assignment.task?.crack_id || assignment.task?.crack_id === ""
+  ) || [];
+
+  const crackTasks = userTasksData?.data?.filter(
+    (assignment: TaskAssignment) => assignment.task?.crack_id && assignment.task?.crack_id !== ""
+  ) || [];
+
+  // Sử dụng taskAssignments dựa trên viewMode
+  const taskAssignments = viewMode === ViewMode.MAINTENANCE_TASKS
+    ? maintenanceTasks
+    : crackTasks;
+
+  // Check if loading
+  const isLoading = isLoadingUserTasks || isLoadingAllTasks;
+
+  // Check if fetching (for pull-to-refresh)
+  const isFetching = isFetchingUserTasks || isFetchingAllTasks;
 
   useEffect(() => {
     const checkUserPosition = async () => {
@@ -44,42 +133,23 @@ const TaskScreen = () => {
     checkUserPosition();
   }, []);
 
-  const fetchTaskAssignments = async () => {
-    try {
-      setLoading(true);
-      setError('');
+  useFocusEffect(
+    React.useCallback(() => {
+      // Khi màn hình được focus, refresh dữ liệu
+      refetchUserTasks();
+      refetchAllTasks();
       setCheckedTasks({});
       
-      // Thêm timeout nhỏ để đảm bảo API đã cập nhật dữ liệu
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const response = await TaskService.getTaskAssignmentsByUserId();
-      console.log('TaskScreen - Fetched task assignments:', response.data?.length || 0);
-      setTaskAssignments(response.data);
-    } catch (error) {
-      console.error('Error loading task list:', error);
-      setError('Unable to load tasks. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTaskAssignments();
-    
-    // Add listener for when screen comes into focus
-    const unsubscribe = navigation.addListener('focus', () => {
-      fetchTaskAssignments();
-    });
-
-    return unsubscribe;
-  }, [navigation]);
+      return () => {
+        // Cleanup khi unfocus
+      };
+    }, [refetchUserTasks, refetchAllTasks])
+  );
 
   const onRefresh = async () => {
-    setRefreshing(true);
     setCheckedTasks({});
-    await fetchTaskAssignments();
-    setRefreshing(false);
+    await refetchUserTasks();
+    await refetchAllTasks();
   };
 
   const formatDate = (dateString: string) => {
@@ -134,14 +204,24 @@ const TaskScreen = () => {
   };
 
   const handleTaskPress = (assignmentId: string) => {
+    if (!tokenValid) {
+      Alert.alert("Session Expired", "Your session has expired. Please log in again.");
+      return;
+    }
     navigation.navigate('TaskDetail', { assignmentId });
   };
 
   const handleCreateTaskAssignment = () => {
+    if (!tokenValid) {
+      Alert.alert("Session Expired", "Your session has expired. Please log in again.");
+      return;
+    }
     navigation.navigate('CreateTaskAssignment');
   };
 
   const shouldShowReviewingButton = async (assignment: TaskAssignment): Promise<boolean> => {
+    if (!tokenValid) return false;
+    
     try {
       // Kiểm tra nếu task đã được đánh dấu là đang reviewing trong session hiện tại
       if (reviewingTasks.includes(assignment.assignment_id)) {
@@ -153,7 +233,7 @@ const TaskScreen = () => {
       const crackReportId = taskDetailResponse.data.task.crack_id;
       
       if (!crackReportId) {
-        return true; // Không có crack report, có thể hiển thị button
+        return false; // Không có crack report, không hiển thị button
       }
       
       // Kiểm tra nếu có crack data và đã ở trạng thái reviewing
@@ -168,10 +248,10 @@ const TaskScreen = () => {
         }
       }
       
-      return true; // Mặc định là hiển thị button
+      return true; // Chỉ hiển thị button cho các task có crack_id và status là Confirmed
     } catch (error) {
       console.error('Error checking crack report status:', error);
-      return true; // Nếu có lỗi, mặc định hiển thị button
+      return false;
     }
   };
 
@@ -183,6 +263,11 @@ const TaskScreen = () => {
     
     // Nếu đã kiểm tra và là reviewing, không hiển thị button
     if (reviewingTasks.includes(assignment.assignment_id)) {
+      return null;
+    }
+    
+    // Chỉ hiển thị nút Reviewing cho các task có crack_id
+    if (!assignment.task?.crack_id) {
       return null;
     }
     
@@ -216,9 +301,12 @@ const TaskScreen = () => {
   };
 
   const handleChangeToReviewing = async (assignment: TaskAssignment) => {
+    if (!tokenValid) {
+      Alert.alert("Session Expired", "Your session has expired. Please log in again.");
+      return;
+    }
+    
     try {
-      setLoading(true);
-      
       // Lấy chi tiết của task assignment để lấy crack_id
       const taskDetailResponse = await TaskService.getTaskAssignmentDetail(assignment.assignment_id);
       const crackReportId = taskDetailResponse.data.task.crack_id;
@@ -230,7 +318,6 @@ const TaskScreen = () => {
           type: "danger",
           duration: 3000
         });
-        setLoading(false);
         return;
       }
       
@@ -241,8 +328,7 @@ const TaskScreen = () => {
         [
           {
             text: "Cancel",
-            style: "cancel",
-            onPress: () => setLoading(false)
+            style: "cancel"
           },
           {
             text: "Confirm",
@@ -275,7 +361,7 @@ const TaskScreen = () => {
                 });
                 
                 // Refresh lại danh sách
-                await fetchTaskAssignments();
+                onRefresh();
               } catch (error) {
                 console.error('Error changing crack report status:', error);
                 showMessage({
@@ -284,8 +370,6 @@ const TaskScreen = () => {
                   type: "danger",
                   duration: 3000
                 });
-              } finally {
-                setLoading(false);
               }
             }
           }
@@ -299,22 +383,89 @@ const TaskScreen = () => {
         type: "danger",
         duration: 3000
       });
-      setLoading(false);
     }
   };
 
+  const toggleViewMode = () => {
+    setViewMode(viewMode === ViewMode.MAINTENANCE_TASKS 
+      ? ViewMode.CRACK_TASKS 
+      : ViewMode.MAINTENANCE_TASKS
+    );
+    setCheckedTasks({});
+  };
+  
+  const renderTasksBadge = () => {
+    return (
+      <View style={styles.badgeContainer}>
+        <View style={[styles.badge, {marginRight: 5}]}>
+          <Text style={styles.badgeText}>
+            Maintenance: {maintenanceTasks.length}
+          </Text>
+        </View>
+        <View style={[styles.badge, {backgroundColor: '#FF6B4F'}]}>
+          <Text style={styles.badgeText}>
+            Cracks: {crackTasks.length}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
+  // Render error screen for token expiration
+  if (!tokenValid) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Icon name="error-outline" size={64} color="#FF3B30" />
+          <Text style={styles.errorText}>Your session has expired</Text>
+          <Text style={styles.errorSubText}>Please log in again to continue</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={() => navigation.navigate('SignIn')}
+          >
+            <Text style={styles.retryButtonText}>Go to Login</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.headerTitle}>TaskAssignment</Text>
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerTitle}>
+          {viewMode === ViewMode.MAINTENANCE_TASKS ? 'Maintenance Tasks' : 'Crack Tasks'}
+        </Text>
+        
+        <TouchableOpacity 
+          style={[
+            styles.toggleButton, 
+            viewMode === ViewMode.CRACK_TASKS && styles.toggleButtonActive
+          ]}
+          onPress={toggleViewMode}
+        >
+          <Icon 
+            name={viewMode === ViewMode.MAINTENANCE_TASKS ? "build" : "assignment"} 
+            size={20} 
+            color="#FFFFFF" 
+          />
+          <Text style={styles.toggleButtonText}>
+            {viewMode === ViewMode.MAINTENANCE_TASKS ? 'Cracks' : 'Maintenance'}
+          </Text>
+        </TouchableOpacity>
+      </View>
       
-      {loading && !refreshing ? (
+      {/* Display task counts */}
+      {renderTasksBadge()}
+      
+      {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#B77F2E" />
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchTaskAssignments}>
+          <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -322,55 +473,82 @@ const TaskScreen = () => {
         <ScrollView 
           style={styles.scrollView}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl refreshing={isFetching} onRefresh={onRefresh} />
           }
         >
           {taskAssignments.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>You haven't been assigned any tasks yet.</Text>
+              <Icon 
+                name={viewMode === ViewMode.MAINTENANCE_TASKS ? "build" : "assignment"} 
+                size={48} 
+                color="#CCC" 
+              />
+              <Text style={styles.emptyText}>
+                {viewMode === ViewMode.MAINTENANCE_TASKS 
+                  ? "No maintenance tasks available"
+                  : "No crack-related tasks available"}
+              </Text>
             </View>
           ) : (
-            taskAssignments.map((assignment) => {
-              return (
-                <TouchableOpacity 
-                  key={assignment.assignment_id} 
-                  style={styles.taskCard}
-                  onPress={() => handleTaskPress(assignment.assignment_id)}
-                >
-                  <View style={styles.taskHeader}>
-                    <Text style={styles.taskTitle} numberOfLines={2}>
-                      {assignment.description}
-                    </Text>
-                    <View style={styles.statusContainer}>
-                      <View style={[styles.statusBadge, { backgroundColor: getStatusColor(assignment.status) }]}>
-                        <Text style={styles.statusText}>{getStatusText(assignment.status)}</Text>
-                      </View>
-                      
-                      {/* Hiển thị chip Reviewing khi status là Confirmed và đã nhấn button */}
-                      {String(assignment.status) === 'Confirmed' && reviewingTasks.includes(assignment.assignment_id) && (
-                        <View style={[styles.statusBadge, styles.reviewingChip]}>
-                          <Text style={styles.statusText}>Reviewing</Text>
-                        </View>
-                      )}
+            taskAssignments.map((assignment) => (
+              <TouchableOpacity 
+                key={assignment.assignment_id} 
+                style={[
+                  styles.taskCard,
+                  viewMode === ViewMode.CRACK_TASKS && styles.crackTaskCard
+                ]}
+                onPress={() => handleTaskPress(assignment.assignment_id)}
+              >
+                <View style={styles.taskHeader}>
+                  <Text style={styles.taskTitle} numberOfLines={2}>
+                    {assignment.description}
+                  </Text>
+                  <View style={styles.statusContainer}>
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(assignment.status) }]}>
+                      <Text style={styles.statusText}>{getStatusText(assignment.status)}</Text>
                     </View>
+                    
+                    {/* Hiển thị chip Reviewing khi status là Confirmed và đã nhấn button */}
+                    {String(assignment.status) === 'Confirmed' && reviewingTasks.includes(assignment.assignment_id) && (
+                      <View style={[styles.statusBadge, styles.reviewingChip]}>
+                        <Text style={styles.statusText}>Reviewing</Text>
+                      </View>
+                    )}
                   </View>
+                </View>
+                
+                <View style={styles.taskInfo}>
+                  <Text style={styles.taskInfoText}>
+                    <Text style={styles.taskInfoLabel}>Task ID: </Text>
+                    {assignment.task_id.substring(0, 8)}...
+                  </Text>
+                  <Text style={styles.taskInfoText}>
+                    <Text style={styles.taskInfoLabel}>Created: </Text>
+                    {formatDate(assignment.created_at)}
+                  </Text>
                   
-                  <View style={styles.taskInfo}>
-                    <Text style={styles.taskInfoText}>
-                      <Text style={styles.taskInfoLabel}>Task ID: </Text>
-                      {assignment.task_id.substring(0, 8)}...
-                    </Text>
-                    <Text style={styles.taskInfoText}>
-                      <Text style={styles.taskInfoLabel}>Created: </Text>
-                      {formatDate(assignment.created_at)}
+                  {/* Hiển thị loại task */}
+                  <View style={styles.taskTypeBadge}>
+                    <Icon 
+                      name={viewMode === ViewMode.MAINTENANCE_TASKS ? "build" : "report-problem"} 
+                      size={14} 
+                      color={viewMode === ViewMode.MAINTENANCE_TASKS ? "#5856D6" : "#FF4500"} 
+                    />
+                    <Text 
+                      style={[
+                        styles.taskTypeText,
+                        {color: viewMode === ViewMode.MAINTENANCE_TASKS ? "#5856D6" : "#FF4500"}
+                      ]}
+                    >
+                      {viewMode === ViewMode.MAINTENANCE_TASKS ? "Maintenance" : "Crack"}
                     </Text>
                   </View>
+                </View>
 
-                  {/* Sử dụng renderReviewingButton thay vì điều kiện trực tiếp */}
-                  {renderReviewingButton(assignment)}
-                </TouchableOpacity>
-              );
-            })
+                {/* Chỉ hiển thị nút Reviewing cho các task có crack_id và ở tab Crack Tasks */}
+                {viewMode === ViewMode.CRACK_TASKS && renderReviewingButton(assignment)}
+              </TouchableOpacity>
+            ))
           )}
         </ScrollView>
       )}
@@ -393,11 +571,48 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     padding: 16,
   },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 10,
+  },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 20,
+  },
+  toggleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#B77F2E',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  toggleButtonActive: {
+    backgroundColor: '#FF4500',
+  },
+  toggleButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    marginLeft: 4,
+    fontSize: 14,
+  },
+  badgeContainer: {
+    flexDirection: 'row',
+    marginBottom: 15,
+  },
+  badge: {
+    backgroundColor: '#5856D6',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,
@@ -414,8 +629,15 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   errorText: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: 'bold',
     color: '#FF3B30',
+    textAlign: 'center',
+    marginVertical: 10,
+  },
+  errorSubText: {
+    fontSize: 16,
+    color: '#666',
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -439,6 +661,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666666',
     textAlign: 'center',
+    marginTop: 12,
   },
   taskCard: {
     backgroundColor: '#F5F5F5',
@@ -450,6 +673,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
+    borderLeftWidth: 4,
+    borderLeftColor: '#5856D6',
+  },
+  crackTaskCard: {
+    borderLeftColor: '#FF4500',
   },
   taskHeader: {
     flexDirection: 'row',
@@ -520,6 +748,16 @@ const styles = StyleSheet.create({
   reviewingChip: {
     backgroundColor: '#5856D6',
     marginLeft: 4,
+  },
+  taskTypeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  taskTypeText: {
+    fontSize: 14,
+    marginLeft: 4,
+    fontWeight: '500',
   },
 });
 

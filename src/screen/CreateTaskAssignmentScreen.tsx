@@ -20,6 +20,9 @@ import { RootStackParamList, Task, TaskAssignment } from '../types';
 import { TaskService } from '../service/Task';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useQuery } from '@tanstack/react-query';
+import instance from '../service/Auth';
+import { VITE_GET_TASK_ASSIGNMENT } from '@env';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -33,12 +36,17 @@ interface StaffMember {
   };
 }
 
+interface AvailableTask {
+  task_id: string;
+  description: string;
+}
+
 const CreateTaskAssignmentScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [leaderTasks, setLeaderTasks] = useState<TaskAssignment[]>([]);
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
+  const [availableTasks, setAvailableTasks] = useState<AvailableTask[]>([]);
   
   const [selectedTaskId, setSelectedTaskId] = useState('');
   const [selectedTaskLabel, setSelectedTaskLabel] = useState('');
@@ -57,51 +65,124 @@ const CreateTaskAssignmentScreen = () => {
     { label: 'InFixing', value: 'InFixing' as const },
     { label: 'Reassigned', value: 'Reassigned' as const }
   ];
-  
-  const fetchInitialData = async () => {
-    setLoading(true);
-    try {
-      // Lấy userId của leader
-      const userId = await AsyncStorage.getItem('userId');
-      if (!userId) {
-        throw new Error('Leader ID not found');
+
+  // Sử dụng tanstack Query để lấy tất cả task và task assignments
+  const { data: allTaskAssignments, isLoading: loadingAllAssignments } = useQuery({
+    queryKey: ['allTaskAssignments'],
+    queryFn: async () => {
+      try {
+        const response = await instance.get(VITE_GET_TASK_ASSIGNMENT);
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching all task assignments:', error);
+        return { data: [] };
       }
-      
-      // Lấy task assignments của leader
-      const tasksResponse = await TaskService.getTaskAssignmentsByUserId();
-      console.log('Leader tasks:', tasksResponse.data);
-      setLeaderTasks(tasksResponse.data);
-      
-      if (tasksResponse.data.length > 0) {
-        setSelectedTaskId(tasksResponse.data[0].task_id);
-        setSelectedTaskLabel(tasksResponse.data[0].task_id);
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Sử dụng tanstack Query để lấy task của người dùng (leader)
+  const { data: userTasksData, isLoading: loadingUserTasks } = useQuery({
+    queryKey: ['userTaskAssignments'],
+    queryFn: async () => {
+      try {
+        const response = await TaskService.getTaskAssignmentsByUserId();
+        return response;
+      } catch (error) {
+        console.error('Error fetching user task assignments:', error);
+        return { data: [] };
       }
-      
-      // Lấy danh sách nhân viên dưới quyền leader
-      const staffResponse = await TaskService.getStaffByLeader();
-      console.log('Staff members:', staffResponse.data);
-      setStaffMembers(staffResponse.data);
-      
-      if (staffResponse.data.length > 0) {
-        setSelectedEmployeeId(staffResponse.data[0].userId);
-        const staffLabel = `${staffResponse.data[0].username} (${staffResponse.data[0].userDetails?.position?.positionName || 'Staff'})`;
-        setSelectedEmployeeLabel(staffLabel);
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Sử dụng tanstack Query để lấy danh sách nhân viên
+  const { data: staffData, isLoading: loadingStaff } = useQuery({
+    queryKey: ['staffByLeader'],
+    queryFn: async () => {
+      try {
+        const response = await TaskService.getStaffByLeader();
+        return response;
+      } catch (error) {
+        console.error('Error fetching staff by leader:', error);
+        return { data: [] };
       }
-    } catch (error) {
-      console.error('Error fetching initial data:', error);
-      Alert.alert('Error', 'Failed to load data. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
   
   useEffect(() => {
-    fetchInitialData();
-  }, []);
+    // Sử dụng cả 3 data khi đã sẵn sàng
+    if (!loadingAllAssignments && !loadingUserTasks && !loadingStaff && 
+        allTaskAssignments && userTasksData && staffData) {
+      
+      // Xử lý danh sách nhân viên
+      setStaffMembers(staffData.data || []);
+      if (staffData.data && staffData.data.length > 0) {
+        setSelectedEmployeeId(staffData.data[0]?.userId || '');
+        const staffLabel = `${staffData.data[0]?.username || 'Unknown'} (${staffData.data[0]?.userDetails?.position?.positionName || 'Staff'})`;
+        setSelectedEmployeeLabel(staffLabel);
+      }
+      
+      // Tạo tập hợp các task_id đã được confirmed hoặc completed
+      const confirmedTaskIds = new Set();
+      
+      // Lọc tất cả các task assignments để tìm những task_id đã confirmed
+      if (allTaskAssignments && allTaskAssignments.data) {
+        allTaskAssignments.data.forEach((assignment: TaskAssignment) => {
+          const status = assignment.status as string;
+          if (status === 'Confirmed' || status === 'Completed' || status === 'Fixed') {
+            confirmedTaskIds.add(assignment.task_id);
+          }
+        });
+      }
+      
+      // Lọc các task từ user tasks để tìm những task chưa confirmed
+      if (userTasksData && userTasksData.data) {
+        const availableTasksList = userTasksData.data
+          // Lọc các task của leader không có trong danh sách đã confirmed
+          .filter((task: TaskAssignment) => !confirmedTaskIds.has(task.task_id))
+          // Chuyển đổi sang định dạng AvailableTask
+          .map((task: TaskAssignment) => ({
+            task_id: task.task_id,
+            description: task.description
+          }));
+        
+        setAvailableTasks(availableTasksList);
+        
+        // Nếu có task khả dụng, set task mặc định đầu tiên
+        if (availableTasksList.length > 0) {
+          setSelectedTaskId(availableTasksList[0].task_id);
+          setSelectedTaskLabel(availableTasksList[0].task_id);
+        }
+      }
+    }
+  }, [allTaskAssignments, userTasksData, staffData, loadingAllAssignments, loadingUserTasks, loadingStaff]);
   
   const handleSubmit = async () => {
     if (!selectedTaskId || !selectedEmployeeId || !description) {
       Alert.alert('Missing Fields', 'Please fill all the fields');
+      return;
+    }
+    
+    // Kiểm tra lại xem task đã được confirmed hay chưa
+    // Tạo tập hợp các task_id đã được confirmed hoặc completed từ dữ liệu mới nhất
+    const confirmedTaskIds = new Set();
+    if (allTaskAssignments && allTaskAssignments.data) {
+      allTaskAssignments.data.forEach((assignment: TaskAssignment) => {
+        const status = assignment.status as string;
+        if (status === 'Confirmed' || status === 'Completed' || status === 'Fixed') {
+          confirmedTaskIds.add(assignment.task_id);
+        }
+      });
+    }
+    
+    if (confirmedTaskIds.has(selectedTaskId)) {
+      Alert.alert(
+        'Task Unavailable', 
+        'This task has already been confirmed by another assignment. Please select a different task.',
+        [{ text: 'OK' }]
+      );
       return;
     }
     
@@ -165,7 +246,10 @@ const CreateTaskAssignmentScreen = () => {
     setStatusDropdownVisible(false);
   };
   
-  if (loading) {
+  // Kiểm tra trạng thái loading
+  const isLoading = loadingAllAssignments || loadingUserTasks || loadingStaff || loading;
+  
+  if (isLoading) {
     return (
       <SafeAreaView style={styles.containerLoading}>
         <StatusBar backgroundColor="#B77F2E" barStyle="light-content" />
@@ -209,10 +293,10 @@ const CreateTaskAssignmentScreen = () => {
               <Icon name="task" size={18} color="#B77F2E" style={styles.labelIcon} />
               Task ID
             </Text>
-            {leaderTasks.length === 0 ? (
+            {availableTasks.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Icon name="error-outline" size={20} color="#FF9500" />
-                <Text style={styles.emptyText}>No tasks available</Text>
+                <Text style={styles.emptyText}>No available tasks found or all tasks are already confirmed</Text>
               </View>
             ) : (
               <View>
@@ -245,7 +329,7 @@ const CreateTaskAssignmentScreen = () => {
                         </TouchableOpacity>
                       </View>
                       <FlatList
-                        data={leaderTasks}
+                        data={availableTasks}
                         keyExtractor={(item) => item.task_id}
                         renderItem={({ item }) => (
                           <TouchableOpacity 
@@ -441,10 +525,10 @@ const CreateTaskAssignmentScreen = () => {
           <TouchableOpacity 
             style={[
               styles.submitButton, 
-              (!selectedTaskId || !selectedEmployeeId || !description) ? styles.disabledButton : null
+              (!selectedTaskId || !selectedEmployeeId || !description || availableTasks.length === 0) ? styles.disabledButton : null
             ]} 
             onPress={handleSubmit}
-            disabled={!selectedTaskId || !selectedEmployeeId || !description || submitting}
+            disabled={!selectedTaskId || !selectedEmployeeId || !description || submitting || availableTasks.length === 0}
           >
             {submitting ? (
               <View style={styles.submitButtonContent}>
