@@ -45,6 +45,9 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
   const [isImageSourceModalVisible, setImageSourceModalVisible] = useState<boolean>(false);
   const [showReviewScreen, setShowReviewScreen] = useState<boolean>(false);
   
+  // Private asset state
+  const [isPrivateAsset, setIsPrivateAsset] = useState<boolean>(false);
+  
   // Material states
   const [materials, setMaterials] = useState<Material[]>([]);
   const [selectedMaterials, setSelectedMaterials] = useState<SelectedMaterial[]>([]);
@@ -278,10 +281,24 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
     setIsVerified(!isVerified);
   };
 
+  // Toggle private asset status
+  const togglePrivateAssetStatus = () => {
+    setIsPrivateAsset(!isPrivateAsset);
+    // If toggling to private asset, disable verification
+    if (!isPrivateAsset) {
+      setIsVerified(false);
+    }
+  };
+
   // Change task assignment status based on verification
   const changeTaskStatus = async () => {
     try {
       setLoading(true);
+      // For private assets, we don't change status based on verification
+      if (isPrivateAsset) {
+        return true;
+      }
+      
       const status = isVerified ? 'Verified' : 'Unverified';
       await TaskService.updateStatusAndCreateWorklog(taskDetail.assignment_id, status);
       return true;
@@ -314,7 +331,8 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
       return;
     }
 
-    if (isVerified && selectedMaterials.length === 0) {
+    // For regular inspections that are verified, we need materials
+    if (!isPrivateAsset && isVerified && selectedMaterials.length === 0) {
       Alert.alert('Missing Materials', 'Please add at least one material for repair');
       return;
     }
@@ -339,8 +357,8 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
         return;
       }
       
-      // Prepare repair materials data if verified
-      const repairMaterials = isVerified ? selectedMaterials.map(item => ({
+      // Prepare repair materials data if verified and not a private asset
+      const repairMaterials = !isPrivateAsset && isVerified ? selectedMaterials.map(item => ({
         materialId: item.material.material_id,
         quantity: item.quantity
       })) : undefined;
@@ -349,7 +367,8 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
         task_assignment_id: taskDetail.assignment_id,
         description: notes,
         files: images, // Truyền trực tiếp URI ảnh - API sẽ xử lý việc upload
-        repairMaterials
+        repairMaterials,
+        isPrivateAsset: isPrivateAsset
       };
       
       await TaskService.createInspection(inspectionData);
@@ -394,18 +413,27 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
             </View>
             
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Status:</Text>
-              <View style={[styles.statusBadge, { backgroundColor: isVerified ? '#4CD964' : '#FF9500' }]}>
-                <Text style={styles.statusText}>{isVerified ? 'Verified' : 'Unverified'}</Text>
+              <Text style={styles.infoLabel}>Type:</Text>
+              <View style={[styles.statusBadge, { backgroundColor: isPrivateAsset ? '#007AFF' : '#B77F2E' }]}>
+                <Text style={styles.statusText}>{isPrivateAsset ? 'Private Asset' : 'Regular Inspection'}</Text>
               </View>
             </View>
+            
+            {!isPrivateAsset && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Status:</Text>
+                <View style={[styles.statusBadge, { backgroundColor: isVerified ? '#4CD964' : '#FF9500' }]}>
+                  <Text style={styles.statusText}>{isVerified ? 'Verified' : 'Unverified'}</Text>
+                </View>
+              </View>
+            )}
             
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Images:</Text>
               <Text style={styles.infoValue}>{images.length} added</Text>
             </View>
             
-            {isVerified && (
+            {!isPrivateAsset && isVerified && (
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Total Cost:</Text>
                 <Text style={[styles.infoValue, styles.costText]}>
@@ -431,7 +459,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
             </ScrollView>
           </View>
           
-          {isVerified && selectedMaterials.length > 0 && (
+          {!isPrivateAsset && isVerified && selectedMaterials.length > 0 && (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Materials for Repair</Text>
               <View style={styles.divider} />
@@ -516,6 +544,31 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
         </View>
 
+        {/* Inspection Type Selection */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Inspection Type</Text>
+          <View style={styles.divider} />
+          
+          <View style={styles.switchRow}>
+            <Text style={styles.switchLabel}>
+              {isPrivateAsset ? 'Private Asset' : 'Regular Inspection'}
+            </Text>
+            <Switch
+              trackColor={{ false: '#767577', true: '#B77F2E' }}
+              thumbColor={isPrivateAsset ? '#f5dd4b' : '#f4f3f4'}
+              ios_backgroundColor="#3e3e3e"
+              onValueChange={togglePrivateAssetStatus}
+              value={isPrivateAsset}
+            />
+          </View>
+          
+          <Text style={styles.infoText}>
+            {isPrivateAsset 
+              ? 'Private assets do not require verification or materials selection.' 
+              : 'Regular inspections can be marked as verified and may require repair materials.'}
+          </Text>
+        </View>
+
         {/* Images Section */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Inspection Images</Text>
@@ -596,33 +649,35 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
           )}
         </View>
 
-        {/* Verification Status */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Verification Status</Text>
-          <View style={styles.divider} />
-          
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>
-              {isVerified ? 'Verified' : 'Unverified'}
+        {/* Verification Status - Only shown for regular inspections */}
+        {!isPrivateAsset && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Verification Status</Text>
+            <View style={styles.divider} />
+            
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>
+                {isVerified ? 'Verified' : 'Unverified'}
+              </Text>
+              <Switch
+                trackColor={{ false: '#767577', true: '#B77F2E' }}
+                thumbColor={isVerified ? '#f5dd4b' : '#f4f3f4'}
+                ios_backgroundColor="#3e3e3e"
+                onValueChange={toggleVerificationStatus}
+                value={isVerified}
+              />
+            </View>
+            
+            <Text style={styles.infoText}>
+              {isVerified 
+                ? 'This crack has been verified and requires repair. Status will be set to Verified.' 
+                : 'Status will be set to Unverified if this crack doesn\'t need immediate repair.'}
             </Text>
-            <Switch
-              trackColor={{ false: '#767577', true: '#B77F2E' }}
-              thumbColor={isVerified ? '#f5dd4b' : '#f4f3f4'}
-              ios_backgroundColor="#3e3e3e"
-              onValueChange={toggleVerificationStatus}
-              value={isVerified}
-            />
           </View>
-          
-          <Text style={styles.infoText}>
-            {isVerified 
-              ? 'This crack has been verified and requires repair. Status will be set to Verified.' 
-              : 'Status will be set to Unverified if this crack doesn\'t need immediate repair.'}
-          </Text>
-        </View>
+        )}
 
-        {/* Materials Section - Only shown when Verified */}
-        {isVerified && (
+        {/* Materials Section - Only shown when Verified and not a private asset */}
+        {!isPrivateAsset && isVerified && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Materials for Repair</Text>
             <View style={styles.divider} />
@@ -794,7 +849,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
               backgroundColor: 
                 images.length > 0 && 
                 notes.trim() !== '' && 
-                (!isVerified || (isVerified && selectedMaterials.length > 0))
+                (isPrivateAsset || !isVerified || (isVerified && selectedMaterials.length > 0))
                   ? '#B77F2E'
                   : '#CCC'
             }
@@ -802,7 +857,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
           disabled={
             images.length === 0 || 
             notes.trim() === '' || 
-            (isVerified && selectedMaterials.length === 0) ||
+            (!isPrivateAsset && isVerified && selectedMaterials.length === 0) ||
             loading
           }
           onPress={handleReviewInspection}
@@ -978,6 +1033,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 8,
   },
   switchLabel: {
     fontSize: 16,
@@ -987,6 +1043,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666666',
     marginTop: 8,
+    lineHeight: 20,
   },
   addButton: {
     flexDirection: 'row',
