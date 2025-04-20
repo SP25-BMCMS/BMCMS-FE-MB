@@ -31,6 +31,7 @@ import {
   VITE_UPDATE_INSPECTION_STATUS_PRIVATE_ASSET,
   VITE_REPORT_STATUS_INSPECTION,
   VITE_GET_SCHEDULES_JOB,
+  VITE_GET_MAINTENANCE_HISTORY_DEVICE_ID,
 } from '@env';
 
 export const TaskService = {
@@ -340,6 +341,18 @@ export const TaskService = {
       return response.data;
     } catch (error) {
       console.error(`Error fetching schedule job with ID ${scheduleJobId}:`, error);
+      throw error;
+    }
+  },
+
+  // Add function to get maintenance history by device ID
+  async getMaintenanceHistoryByDeviceId(deviceId: string): Promise<any> {
+    try {
+      const url = VITE_GET_MAINTENANCE_HISTORY_DEVICE_ID.replace('{deviceId}', deviceId);
+      const response = await instance.get(url);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching maintenance history for device with ID ${deviceId}:`, error);
       throw error;
     }
   },

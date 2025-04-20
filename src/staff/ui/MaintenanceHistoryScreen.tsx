@@ -41,16 +41,61 @@ interface Device {
 // Define ScheduleJob type for better type checking
 interface ScheduleJob {
   schedule_job_id: string;
-  status: string;
+  schedule_id: string;
+  start_date: string | null;
+  end_date: string | null;
   run_date: string;
-  building_id: {
+  status: string;
+  created_at: string;
+  updated_at: string;
+  buildingDetailId: string;
+  inspection_id: string | null;
+  schedule: {
+    schedule_id: string;
+    schedule_name: string;
+    description: string;
+    start_date: string;
+    end_date: string;
+    created_at: string;
+    updated_at: string;
+    schedule_status: string;
+    cycle_id: string;
+    cycle: {
+      cycle_id: string;
+      frequency: string;
+      basis: string;
+      device_type: string;
+    }
+  };
+  building_id: string;
+  buildingDetail: {
+    buildingDetailId: string;
+    buildingId: string;
     name: string;
+    total_apartments: number;
+    createdAt: string;
+    updatedAt: string;
     building: {
+      buildingId: string;
       name: string;
+      description: string;
       numberFloor: number;
+      imageCover: string;
+      manager_id: string;
+      areaId: string;
+      createdAt: string;
+      updatedAt: string;
+      Status: string;
+      construction_date: string;
+      completion_date: string;
+      Warranty_date: string;
       area: {
+        areaId: string;
         name: string;
-      };
+        description: string;
+        createdAt: string;
+        updatedAt: string;
+      }
     };
     device: Device[];
   };
@@ -91,7 +136,7 @@ interface MaintenanceHistoryResponse {
 
 // Define response type
 interface ScheduleJobResponse {
-  success: boolean;
+  isSuccess: boolean;
   message: string;
   data: ScheduleJob;
 }
@@ -138,8 +183,7 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
       if (!selectedDeviceId) return null;
       
       try {
-        const url = `/maintenance-history/device/${selectedDeviceId}`;
-        const response = await TaskService.fetchFromAPI(url);
+        const response = await TaskService.getMaintenanceHistoryByDeviceId(selectedDeviceId);
         return response as MaintenanceHistoryResponse;
       } catch (err) {
         console.error('Error fetching maintenance history:', err);
@@ -256,28 +300,28 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Building Name:</Text>
                 <Text style={styles.infoValue}>
-                  {scheduleJobData.data.building_id?.building?.name || buildingName || 'N/A'}
+                  {scheduleJobData.data.buildingDetail?.building?.name || buildingName || 'N/A'}
                 </Text>
               </View>
               
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Building Detail:</Text>
                 <Text style={styles.infoValue}>
-                  {scheduleJobData.data.building_id?.name || 'N/A'}
+                  {scheduleJobData.data.buildingDetail?.name || 'N/A'}
                 </Text>
               </View>
               
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Area:</Text>
                 <Text style={styles.infoValue}>
-                  {scheduleJobData.data.building_id?.building?.area?.name || 'N/A'}
+                  {scheduleJobData.data.buildingDetail?.building?.area?.name || 'N/A'}
                 </Text>
               </View>
               
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Floors:</Text>
                 <Text style={styles.infoValue}>
-                  {scheduleJobData.data.building_id?.building?.numberFloor || 'N/A'}
+                  {scheduleJobData.data.buildingDetail?.building?.numberFloor || 'N/A'}
                 </Text>
               </View>
               
@@ -304,10 +348,10 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
             <Text style={styles.sectionTitle}>Devices for Maintenance</Text>
             <Text style={styles.sectionSubtitle}>Tap on a device to view its maintenance history</Text>
             
-            {scheduleJobData.data.building_id?.device && 
-             scheduleJobData.data.building_id.device.length > 0 ? (
+            {scheduleJobData.data.buildingDetail?.device && 
+             scheduleJobData.data.buildingDetail.device.length > 0 ? (
               <FlatList
-                data={scheduleJobData.data.building_id.device}
+                data={scheduleJobData.data.buildingDetail.device}
                 renderItem={renderDeviceItem}
                 keyExtractor={(item) => item.device_id}
                 scrollEnabled={false}

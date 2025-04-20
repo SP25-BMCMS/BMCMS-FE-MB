@@ -47,4 +47,5 @@ declare module '@env'{
   export const VITE_GET_MAINTENANCE_CYCLE: string;
   export const VITE_GET_SCHEDULES_JOB: string;
   export const VITE_GET_DEVICE: string;
+  export const VITE_GET_MAINTENANCE_HISTORY_DEVICE_ID: string;
 }
