@@ -37,6 +37,15 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
     fetchTaskDetail();
   }, [assignmentId]);
 
+  // Add debug logs in a separate useEffect to avoid JSX ReactNode errors
+  useEffect(() => {
+    if (taskDetail) {
+      console.log('Task detail crack_id:', taskDetail.task.crack_id);
+      console.log('Task detail schedule_job_id:', taskDetail.task.schedule_job_id);
+      console.log('Should show maintenance button:', taskDetail.task.crack_id === "" && taskDetail.task.schedule_job_id);
+    }
+  }, [taskDetail]);
+
   const fetchTaskDetail = async () => {
     try {
       setLoading(true);
@@ -345,14 +354,30 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
           )}
           
           <View style={styles.buttonContainer}>
+            {/* Chỉ hiển thị nút maintenance history cho các công việc bảo trì định kỳ */}
+            {taskDetail.task && taskDetail.task.crack_id === "" && taskDetail.task.schedule_job_id && (
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.maintenanceButton]}
+                onPress={() => {
+                  console.log('Navigating to maintenance history with ID:', taskDetail.task.schedule_job_id);
+                  navigation.navigate('MaintenanceHistory', { 
+                    scheduleJobId: taskDetail.task.schedule_job_id,
+                    buildingName: taskDetail.description.split(' ').pop() // Extract building name from description
+                  });
+                }}
+              >
+                <Text style={styles.buttonText}>
+                  View Maintenance History
+                </Text>
+              </TouchableOpacity>
+            )}
+
             {/* Chỉ hiển thị button này khi status không phải là Confirmed */}
             {taskDetail.status !== 'Confirmed' && (
               <TouchableOpacity 
                 style={[styles.actionButton, styles.completeButton]}
                 onPress={() => {
-                  if (taskDetail) {
-                    navigation.navigate('CreateInspection', { taskDetail: taskDetail });
-                  }
+                  navigation.navigate('CreateInspection', { taskDetail: taskDetail });
                 }}
               >
                 <Text style={styles.buttonText}>
@@ -367,12 +392,10 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
             <TouchableOpacity 
               style={[styles.actionButton, styles.viewInspectionsButton]}
               onPress={() => {
-                if (taskDetail) {
-                  navigation.navigate('InspectionList', { 
-                    taskAssignmentId: taskDetail.assignment_id,
-                    taskDescription: taskDetail.description
-                  });
-                }
+                navigation.navigate('InspectionList', { 
+                  taskAssignmentId: taskDetail.assignment_id,
+                  taskDescription: taskDetail.description
+                });
               }}
             >
               <Text style={styles.buttonText}>
@@ -606,6 +629,10 @@ const styles = StyleSheet.create({
   },
   viewInspectionsButton: {
     backgroundColor: '#007AFF',
+  },
+  maintenanceButton: {
+    backgroundColor: '#5AC8FA',
+    marginBottom: 12,
   },
   buttonText: {
     color: '#FFFFFF',

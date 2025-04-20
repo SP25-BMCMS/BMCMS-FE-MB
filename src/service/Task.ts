@@ -30,6 +30,7 @@ import {
   VITE_PATCH_WORKLOG_BY_ASSIGNMENT_ID,
   VITE_UPDATE_INSPECTION_STATUS_PRIVATE_ASSET,
   VITE_REPORT_STATUS_INSPECTION,
+  VITE_GET_SCHEDULES_JOB,
 } from '@env';
 
 export const TaskService = {
@@ -329,5 +330,28 @@ export const TaskService = {
       console.error('Error updating inspection report status:', error);
       throw error;
     }
-  }
+  },
+
+  // Add this new function to get schedule job details
+  async getScheduleJobById(scheduleJobId: string): Promise<any> {
+    try {
+      const url = VITE_GET_SCHEDULES_JOB.replace('{schedule_job_id}', scheduleJobId);
+      const response = await instance.get(url);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching schedule job with ID ${scheduleJobId}:`, error);
+      throw error;
+    }
+  },
+
+  // Add this general-purpose API call method
+  async fetchFromAPI(endpoint: string): Promise<any> {
+    try {
+      const response = await instance.get(endpoint);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching from ${endpoint}:`, error);
+      throw error;
+    }
+  },
 }; 

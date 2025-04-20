@@ -30,6 +30,7 @@ import ChatBotScreen from './src/screen/ChatBotScreen';
 import ChatHistoryScreen from './src/screen/ChatHistoryScreen';
 import EditLocationScreen from './src/staff/ui/EditLocationScreen';
 import LocationDetailScreen from './src/staff/ui/LocationDetailScreen';
+import MaintenanceHistoryScreen from './src/staff/ui/MaintenanceHistoryScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 const queryClient = new QueryClient();
@@ -66,6 +67,7 @@ const App = () => {
           <Stack.Screen name='ChatBot' component={ChatBotScreen} />
           <Stack.Screen name='ChatHistory' component={ChatHistoryScreen} />
           <Stack.Screen name='LocationDetail' component={LocationDetailScreen} />
+          <Stack.Screen name='MaintenanceHistory' component={MaintenanceHistoryScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </QueryClientProvider>

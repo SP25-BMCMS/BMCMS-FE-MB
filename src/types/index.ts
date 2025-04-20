@@ -81,6 +81,10 @@ export type RootStackParamList = {
   LocationDetail: {
     locationDetailId: string;
   };
+  MaintenanceHistory: {
+    scheduleJobId: string;
+    buildingName?: string;
+  };
 };
 //residents
 export interface Resident {
