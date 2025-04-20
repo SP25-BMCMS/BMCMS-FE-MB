@@ -577,6 +577,18 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
                 </Text>
               </View>
             </View>
+            
+            {/* Add button to navigate to Technical Records */}
+            <TouchableOpacity 
+              style={styles.viewTechnicalRecordsButton}
+              onPress={() => navigation.navigate('TechnicalRecord', {
+                buildingId: scheduleJobData.data.buildingDetail?.building?.buildingId || '',
+                buildingName: scheduleJobData.data.buildingDetail?.building?.name || buildingName
+              })}
+            >
+              <Ionicons name="document-text-outline" size={18} color="#FFFFFF" style={styles.buttonIcon} />
+              <Text style={styles.viewTechnicalRecordsText}>View Technical Records</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.section}>
@@ -979,6 +991,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
     flex: 1,
+  },
+  viewTechnicalRecordsButton: {
+    marginTop: 16,
+    backgroundColor: '#007AFF',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  viewTechnicalRecordsText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   maintenanceHistoryHeader: {
     flexDirection: 'row',

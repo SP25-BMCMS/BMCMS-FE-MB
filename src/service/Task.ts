@@ -35,6 +35,7 @@ import {
   VITE_CREATE_MAINTENANCE_HISTORY,
   VITE_GET_DEVICE_LIST,
   VITE_GET_SELECT_DEVICE_BY_BUILDING_DETAIL_ID,
+  VITE_GET_TECHNICAL_RECORD_BY_BUILDING_ID,
 } from '@env';
 
 export const TaskService = {
@@ -414,6 +415,27 @@ export const TaskService = {
       return response.data;
     } catch (error) {
       console.error(`Error fetching from ${endpoint}:`, error);
+      throw error;
+    }
+  },
+
+  // Add new function to get technical records by building ID
+  async getTechnicalRecordsByBuildingId(buildingId: string, page = 1, limit = 10) {
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      
+      const response = await instance.get(
+        `${VITE_GET_TECHNICAL_RECORD_BY_BUILDING_ID.replace('{buildingId}', buildingId)}?page=${page}&limit=${limit}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token || ''}`
+          }
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching technical records:', error);
       throw error;
     }
   },

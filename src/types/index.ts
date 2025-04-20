@@ -85,6 +85,10 @@ export type RootStackParamList = {
     scheduleJobId: string;
     buildingName?: string;
   };
+  TechnicalRecord: {
+    buildingId: string;
+    buildingName?: string;
+  };
 };
 //residents
 export interface Resident {
