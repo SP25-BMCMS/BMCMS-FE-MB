@@ -226,15 +226,6 @@ const HomeScreen = () => {
   return (
     <View style={styles.container}>
       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.welcomeText}>Building Management</Text>
-          <Text style={styles.subtitle}>Explore buildings and technical records</Text>
-        </View>
-        <TouchableOpacity style={styles.notificationButton}>
-          <Ionicons name="notifications-outline" size={24} color="#333" />
-        </TouchableOpacity>
-      </View>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -254,6 +245,7 @@ const HomeScreen = () => {
         <ScrollView 
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollViewContent}
         >
           {renderFeaturedBuilding()}
           
@@ -307,43 +299,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F7FA',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingTop: 60,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-    elevation: 2,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-  welcomeText: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333333',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#888888',
-    marginTop: 4,
-  },
-  notificationButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F0F0F0',
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingTop: 50,
   },
   scrollView: {
     flex: 1,
+  },
+  scrollViewContent: {
+    paddingTop: 10,
   },
   featuredBuilding: {
     margin: 16,
