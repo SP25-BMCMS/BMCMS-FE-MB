@@ -7,7 +7,9 @@ import {
   ScrollView, 
   TouchableOpacity, 
   ActivityIndicator,
-  FlatList
+  FlatList,
+  TextInput,
+  Platform
 } from 'react-native';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -16,8 +18,10 @@ import { TaskService } from '../../service/Task';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { showMessage } from 'react-native-flash-message';
+import Modal from 'react-native-modal';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 type MaintenanceHistoryScreenRouteProp = RouteProp<RootStackParamList, 'MaintenanceHistory'>;
 type MaintenanceHistoryScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MaintenanceHistory'>;
@@ -141,10 +145,54 @@ interface ScheduleJobResponse {
   data: ScheduleJob;
 }
 
+// Define new types for device selection
+interface DeviceOption {
+  device_id: string;
+  name: string;
+  type: string;
+  manufacturer: string;
+  model: string;
+}
+
+interface DeviceListResponse {
+  statusCode: number;
+  message: string;
+  data: DeviceOption[];
+  meta: {
+    total: number;
+    page: number; 
+    limit: number;
+    totalPages: number;
+  }
+}
+
+interface MaintenanceFormData {
+  device_id: string;
+  device_name: string;
+  date_performed: Date;
+  description: string;
+  cost: string;
+}
+
 const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { scheduleJobId, buildingName } = route.params;
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  // Add states for create maintenance form
+  const [isCreateModalVisible, setCreateModalVisible] = useState<boolean>(false);
+  const [isDeviceSelectModalVisible, setDeviceSelectModalVisible] = useState<boolean>(false);
+  const [formData, setFormData] = useState<MaintenanceFormData>({
+    device_id: '',
+    device_name: '',
+    date_performed: new Date(),
+    description: '',
+    cost: ''
+  });
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Use TanStack Query to fetch schedule job details
   const { 
@@ -199,6 +247,44 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
     enabled: !!selectedDeviceId
   });
 
+  // New query to get devices list
+  const {
+    data: deviceListData,
+    isLoading: isDeviceListLoading,
+    isError: isDeviceListError,
+    isFetching: isDeviceListFetching
+  } = useQuery({
+    queryKey: ['devicesList', currentPage, scheduleJobData?.data?.buildingDetailId],
+    queryFn: async () => {
+      try {
+        // Only fetch devices for the specific buildingDetailId
+        // This ensures we only show devices that belong to the current building
+        if (!scheduleJobData?.data?.buildingDetailId) {
+          throw new Error('Building detail ID not available');
+        }
+        
+        console.log(`Fetching devices for building detail ID: ${scheduleJobData.data.buildingDetailId}`);
+        const response = await TaskService.getDevicesListByBuildingDetailId(
+          scheduleJobData.data.buildingDetailId,
+          currentPage, 
+          10
+        );
+        console.log('Response:', response);
+        return response as DeviceListResponse;
+      } catch (err) {
+        console.error('Error fetching devices:', err);
+        showMessage({
+          message: "Error",
+          description: "Failed to load devices list",
+          type: "danger",
+          duration: 3000,
+        });
+        throw err;
+      }
+    },
+    enabled: isDeviceSelectModalVisible && !!scheduleJobData?.data?.buildingDetailId
+  });
+
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'N/A';
     
@@ -236,11 +322,6 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
           <Text style={styles.detailLabel}>Model:</Text>
           <Text style={styles.detailValue}>{item.model}</Text>
         </View>
-        
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Device ID:</Text>
-          <Text style={styles.detailValue}>{item.device_id.substring(0, 8)}...</Text>
-        </View>
       </View>
     </TouchableOpacity>
   );
@@ -256,11 +337,165 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
       </View>
       
       <Text style={styles.maintenanceDescription}>{item.description}</Text>
-      
-      <View style={styles.maintenanceFooter}>
-        <Text style={styles.maintenanceId}>ID: {item.maintenance_id.substring(0, 8)}...</Text>
-      </View>
     </View>
+  );
+
+  // Function to open create modal
+  const openCreateModal = () => {
+    setFormData({
+      device_id: '',
+      device_name: '',
+      date_performed: new Date(),
+      description: '',
+      cost: ''
+    });
+    setCreateModalVisible(true);
+  };
+
+  // Function to close create modal
+  const closeCreateModal = () => {
+    setCreateModalVisible(false);
+  };
+
+  // Function to open device select modal
+  const openDeviceSelectModal = () => {
+    setCurrentPage(1);
+    setDeviceSelectModalVisible(true);
+  };
+
+  // Function to close device select modal
+  const closeDeviceSelectModal = () => {
+    setDeviceSelectModalVisible(false);
+  };
+
+  // Function to select a device
+  const selectDevice = (device: DeviceOption) => {
+    setFormData({
+      ...formData,
+      device_id: device.device_id,
+      device_name: device.name
+    });
+    
+    // Nếu đang mở modal để thêm mới maintenance record, đóng modal chọn thiết bị
+    closeDeviceSelectModal();
+  };
+
+  // Function to handle date change
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setFormData({
+        ...formData,
+        date_performed: selectedDate
+      });
+    }
+  };
+
+  // Function to handle form submission
+  const handleSubmit = async () => {
+    // Validate form
+    if (!formData.device_id) {
+      showMessage({
+        message: "Missing Device",
+        description: "Please select a device for maintenance",
+        type: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
+    if (!formData.description) {
+      showMessage({
+        message: "Missing Description",
+        description: "Please enter maintenance description",
+        type: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
+    if (!formData.cost || isNaN(Number(formData.cost)) || Number(formData.cost) <= 0) {
+      showMessage({
+        message: "Invalid Cost",
+        description: "Please enter a valid cost amount",
+        type: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      
+      // Format date to YYYY-MM-DD
+      const formattedDate = format(formData.date_performed, 'yyyy-MM-dd');
+      
+      // Log request data to debug
+      console.log('Submitting maintenance history:', {
+        device_id: formData.device_id,
+        date_performed: formattedDate,
+        description: formData.description,
+        cost: parseInt(formData.cost)
+      });
+      
+      // Submit data with numeric cost value
+      await TaskService.createMaintenanceHistory({
+        device_id: formData.device_id,
+        date_performed: formattedDate,
+        description: formData.description,
+        cost: parseInt(formData.cost) // Convert to number, API may expect numeric value
+      });
+      
+      // Show success message
+      showMessage({
+        message: "Success",
+        description: "Maintenance history created successfully",
+        type: "success",
+        duration: 3000,
+      });
+      
+      // Refresh data if device is selected
+      if (selectedDeviceId) {
+        queryClient.invalidateQueries({ queryKey: ['maintenanceHistory', selectedDeviceId] });
+      }
+      
+      // Close modal
+      closeCreateModal();
+
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ['scheduleJob', scheduleJobId] });
+    } catch (error) {
+      console.error('Error creating maintenance history:', error);
+      showMessage({
+        message: "Error",
+        description: "Failed to create maintenance history. Please check your input data.",
+        type: "danger",
+        duration: 3000,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Function to load more devices
+  const loadMoreDevices = () => {
+    if (deviceListData && deviceListData.meta && currentPage < deviceListData.meta.totalPages) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  // Render device option item
+  const renderDeviceOptionItem = ({ item }: { item: DeviceOption }) => (
+    <TouchableOpacity 
+      style={styles.deviceOptionItem}
+      onPress={() => selectDevice(item)}
+    >
+      <Text style={styles.deviceOptionName}>{item.name}</Text>
+      <View style={styles.deviceOptionDetails}>
+        <Text style={styles.deviceOptionType}>{item.type}</Text>
+        <Text style={styles.deviceOptionModel}>{item.manufacturer} - {item.model}</Text>
+      </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -398,6 +633,14 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
                   <Text style={styles.emptyText}>No maintenance history found for this device</Text>
                 </View>
               )}
+              
+              <TouchableOpacity 
+                style={styles.addMaintenanceButton}
+                onPress={openCreateModal}
+              >
+                <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" style={styles.addIcon} />
+                <Text style={styles.addMaintenanceText}>Add Maintenance Record</Text>
+              </TouchableOpacity>
             </View>
           )}
         </ScrollView>
@@ -407,6 +650,154 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
           <Text style={styles.emptyText}>No maintenance history available</Text>
         </View>
       )}
+      
+      {/* Create Maintenance History Modal */}
+      <Modal
+        isVisible={isCreateModalVisible}
+        onBackdropPress={closeCreateModal}
+        style={styles.modal}
+        avoidKeyboard
+      >
+        <View style={styles.createModalContent}>
+          <Text style={styles.createModalTitle}>Add Maintenance Record</Text>
+          
+          {/* Device Selection */}
+          <TouchableOpacity 
+            style={styles.deviceSelectButton}
+            onPress={openDeviceSelectModal}
+          >
+            <Text style={styles.deviceSelectLabel}>
+              {formData.device_name ? formData.device_name : 'Select Device'}
+            </Text>
+            <Ionicons name="chevron-down" size={20} color="#555" />
+          </TouchableOpacity>
+          
+          {/* Date Selection */}
+          <Text style={styles.inputLabel}>Maintenance Date</Text>
+          <TouchableOpacity 
+            style={styles.datePickerButton}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Text style={styles.dateText}>
+              {format(formData.date_performed, 'MM/dd/yyyy')}
+            </Text>
+            <Ionicons name="calendar" size={20} color="#555" />
+          </TouchableOpacity>
+          
+          {showDatePicker && (
+            <DateTimePicker
+              value={formData.date_performed}
+              mode="date"
+              display="default"
+              onChange={onDateChange}
+              maximumDate={new Date()}
+            />
+          )}
+          
+          {/* Description */}
+          <Text style={styles.inputLabel}>Description</Text>
+          <TextInput
+            style={styles.descriptionInput}
+            placeholder="Enter maintenance description"
+            value={formData.description}
+            onChangeText={(text) => setFormData({...formData, description: text})}
+            multiline
+          />
+          
+          {/* Cost */}
+          <Text style={styles.inputLabel}>Cost (VND)</Text>
+          <TextInput
+            style={styles.costInput}
+            placeholder="Enter cost amount"
+            value={formData.cost}
+            onChangeText={(text) => setFormData({...formData, cost: text})}
+            keyboardType="numeric"
+          />
+          
+          {/* Action Buttons */}
+          <View style={styles.actionButtonsContainer}>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.cancelButton]}
+              onPress={closeCreateModal}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[
+                styles.actionButton, 
+                styles.submitButton,
+                (!formData.device_id || !formData.description || !formData.cost) && styles.disabledButton
+              ]}
+              onPress={handleSubmit}
+              disabled={isSubmitting || !formData.device_id || !formData.description || !formData.cost}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.submitButtonText}>Submit</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      
+      {/* Device Selection Modal */}
+      <Modal
+        isVisible={isDeviceSelectModalVisible}
+        onBackdropPress={closeDeviceSelectModal}
+        style={styles.modal}
+      >
+        <View style={styles.deviceModalContent}>
+          <Text style={styles.deviceModalTitle}>Select Device</Text>
+          
+          {isDeviceListLoading ? (
+            <ActivityIndicator size="large" color="#B77F2E" style={styles.deviceListLoading} />
+          ) : isDeviceListError ? (
+            <View style={styles.deviceListError}>
+              <Text style={styles.deviceListErrorText}>Failed to load devices</Text>
+              <TouchableOpacity 
+                style={styles.retryButton}
+                onPress={() => queryClient.invalidateQueries({ queryKey: ['devicesList'] })}
+              >
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : deviceListData && deviceListData.data ? (
+            <FlatList
+              data={deviceListData.data}
+              renderItem={renderDeviceOptionItem}
+              keyExtractor={(item) => item.device_id}
+              ItemSeparatorComponent={() => <View style={styles.deviceOptionSeparator} />}
+              contentContainerStyle={styles.deviceOptionsList}
+              onEndReached={loadMoreDevices}
+              onEndReachedThreshold={0.5}
+              ListEmptyComponent={
+                <View style={styles.emptyDeviceList}>
+                  <Ionicons name="alert-circle-outline" size={40} color="#CCCCCC" />
+                  <Text style={styles.emptyDeviceListText}>
+                    No devices found for this building
+                  </Text>
+                </View>
+              }
+              ListFooterComponent={
+                isDeviceListFetching ? (
+                  <ActivityIndicator size="small" color="#B77F2E" style={styles.loadMoreIndicator} />
+                ) : null
+              }
+            />
+          ) : (
+            <Text style={styles.emptyDeviceListText}>No devices available</Text>
+          )}
+          
+          <TouchableOpacity 
+            style={styles.closeModalButton}
+            onPress={closeDeviceSelectModal}
+          >
+            <Text style={styles.closeModalText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -650,16 +1041,203 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     lineHeight: 20,
   },
-  maintenanceFooter: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+  modal: {
+    justifyContent: 'flex-end',
+    margin: 0,
   },
-  maintenanceId: {
-    fontSize: 12,
-    color: '#888',
-  }
+  createModalContent: {
+    backgroundColor: 'white',
+    padding: 22,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+  },
+  createModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  deviceSelectButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  deviceSelectLabel: {
+    fontSize: 16,
+    color: '#333',
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 8,
+    color: '#555',
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  dateText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  descriptionInput: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  costInput: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  cancelButton: {
+    backgroundColor: '#F0F0F0',
+  },
+  cancelButtonText: {
+    color: '#333',
+    fontWeight: '600',
+  },
+  submitButton: {
+    backgroundColor: '#B77F2E',
+  },
+  submitButtonText: {
+    color: '#FFF',
+    fontWeight: '600',
+  },
+  disabledButton: {
+    backgroundColor: '#D0D0D0',
+  },
+  deviceModalContent: {
+    backgroundColor: 'white',
+    padding: 22,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+  },
+  deviceModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  deviceListLoading: {
+    marginVertical: 20,
+  },
+  deviceListError: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  deviceListErrorText: {
+    color: '#FF3B30',
+    marginBottom: 10,
+  },
+  emptyDeviceListText: {
+    textAlign: 'center',
+    marginVertical: 20,
+    color: '#666',
+  },
+  deviceOptionsList: {
+    paddingVertical: 8,
+  },
+  deviceOptionItem: {
+    padding: 12,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 8,
+  },
+  deviceOptionName: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  deviceOptionDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  deviceOptionType: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  deviceOptionModel: {
+    color: '#666',
+    fontSize: 14,
+  },
+  deviceOptionSeparator: {
+    height: 8,
+  },
+  closeModalButton: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  closeModalText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '600',
+  },
+  loadMoreIndicator: {
+    marginVertical: 16,
+  },
+  emptyDeviceList: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  addMaintenanceButton: {
+    marginTop: 20,
+    backgroundColor: '#B77F2E',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  addIcon: {
+    marginRight: 8,
+  },
+  addMaintenanceText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });
 
 export default MaintenanceHistoryScreen;

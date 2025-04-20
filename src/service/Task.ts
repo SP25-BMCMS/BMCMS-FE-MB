@@ -32,6 +32,9 @@ import {
   VITE_REPORT_STATUS_INSPECTION,
   VITE_GET_SCHEDULES_JOB,
   VITE_GET_MAINTENANCE_HISTORY_DEVICE_ID,
+  VITE_CREATE_MAINTENANCE_HISTORY,
+  VITE_GET_DEVICE_LIST,
+  VITE_GET_SELECT_DEVICE_BY_BUILDING_DETAIL_ID,
 } from '@env';
 
 export const TaskService = {
@@ -353,6 +356,53 @@ export const TaskService = {
       return response.data;
     } catch (error) {
       console.error(`Error fetching maintenance history for device with ID ${deviceId}:`, error);
+      throw error;
+    }
+  },
+
+  // Add function to get devices list with pagination support
+  async getDevicesList(page = 1, limit = 10): Promise<any> {
+    try {
+      const response = await instance.get(`${VITE_GET_DEVICE_LIST}?page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching devices list:', error);
+      throw error;
+    }
+  },
+  
+  // Add function to get devices list by buildingDetailId
+  async getDevicesListByBuildingDetailId(buildingDetailId: string, page = 1, limit = 10): Promise<any> {
+    try {
+      const url = VITE_GET_SELECT_DEVICE_BY_BUILDING_DETAIL_ID.replace('{buildingDetailId}', buildingDetailId);
+      const response = await instance.get(`${url}?page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching devices for building detail ID ${buildingDetailId}:`, error);
+      throw error;
+    }
+  },
+  
+  // Add function to create maintenance history
+  async createMaintenanceHistory(data: {
+    device_id: string;
+    date_performed: string;
+    description: string;
+    cost: number | string;
+  }): Promise<any> {
+    try {
+      // Ensure cost is a number
+      const payload = {
+        ...data,
+        cost: typeof data.cost === 'string' ? parseInt(data.cost) : data.cost
+      };
+      
+      console.log('Sending maintenance history data:', payload);
+      
+      const response = await instance.post(VITE_CREATE_MAINTENANCE_HISTORY, payload);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating maintenance history:', error);
       throw error;
     }
   },
