@@ -61,6 +61,15 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
   const [confirmModalVisible, setConfirmModalVisible] = useState<boolean>(false);
   const [materialIndexToRemove, setMaterialIndexToRemove] = useState<number | null>(null);
 
+  // Thêm state cho search text
+  const [searchText, setSearchText] = useState<string>('');
+
+  // Thêm hàm lọc materials dựa trên từ khóa tìm kiếm
+  const filteredMaterials = materials.filter(material => 
+    material.name.toLowerCase().includes(searchText.toLowerCase()) || 
+    material.description.toLowerCase().includes(searchText.toLowerCase())
+  );
+
   // Load materials when verified is toggled to true
   useEffect(() => {
     if (isVerified) {
@@ -465,9 +474,9 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
         duration: 3000,
       });
       
-      // Navigate back after a short delay
+      // Thay đổi: Điều hướng đến TaskDetail với assignment_id tương ứng thay vì quay lại
       setTimeout(() => {
-        navigation.goBack();
+        navigation.navigate('TaskDetail', { assignmentId: taskDetail.assignment_id });
       }, 500);
     } catch (error) {
       console.error('Error submitting inspection:', error);
@@ -887,38 +896,62 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
                       </View>
                     ) : (
                       <View style={styles.materialSelectContainer}>
-                        <FlatList
-                          data={materials}
-                          keyExtractor={(item) => item.material_id}
-                          renderItem={({ item }) => (
-                            <TouchableOpacity
-                              style={styles.materialSelectItem}
-                              onPress={() => {
-                                // Khi người dùng chọn vật liệu, cập nhật form 
-                                // và hiển thị giao diện nhập số lượng
-                                setSelectedMaterialForEdit({ material: item, quantity: 1 });
-                                setMaterialQuantity('1');
-                              }}
-                            >
-                              <View style={styles.materialSelectContent}>
-                                <Text style={styles.materialSelectName}>{item.name}</Text>
-                                <Text style={styles.materialSelectDescription} numberOfLines={2}>
-                                  {item.description}
-                                </Text>
-                                <View style={styles.materialSelectFooter}>
-                                  <Text style={styles.materialSelectPrice}>
-                                    {parseInt(item.unit_price, 10).toLocaleString()} VND/unit
-                                  </Text>
-                                  <Text style={styles.materialSelectStock}>
-                                    Available: {item.stock_quantity}
-                                  </Text>
-                                </View>
-                              </View>
+                        {/* Add search bar */}
+                        <View style={styles.searchContainer}>
+                          <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+                          <TextInput
+                            style={styles.searchInput}
+                            placeholder="Search materials..."
+                            value={searchText}
+                            onChangeText={setSearchText}
+                            clearButtonMode="while-editing"
+                          />
+                          {searchText.length > 0 && (
+                            <TouchableOpacity onPress={() => setSearchText('')} style={styles.clearSearchButton}>
+                              <Ionicons name="close-circle" size={18} color="#999" />
                             </TouchableOpacity>
                           )}
-                          ItemSeparatorComponent={() => <View style={styles.materialSeparator} />}
-                          style={styles.materialSelectList}
-                        />
+                        </View>
+                        
+                        {filteredMaterials.length > 0 ? (
+                          <FlatList
+                            data={filteredMaterials}
+                            keyExtractor={(item) => item.material_id}
+                            renderItem={({ item }) => (
+                              <TouchableOpacity
+                                style={styles.materialSelectItem}
+                                onPress={() => {
+                                  // Khi người dùng chọn vật liệu, cập nhật form 
+                                  // và hiển thị giao diện nhập số lượng
+                                  setSelectedMaterialForEdit({ material: item, quantity: 1 });
+                                  setMaterialQuantity('1');
+                                }}
+                              >
+                                <View style={styles.materialSelectContent}>
+                                  <Text style={styles.materialSelectName}>{item.name}</Text>
+                                  <Text style={styles.materialSelectDescription} numberOfLines={2}>
+                                    {item.description}
+                                  </Text>
+                                  <View style={styles.materialSelectFooter}>
+                                    <Text style={styles.materialSelectPrice}>
+                                      {parseInt(item.unit_price, 10).toLocaleString()} VND/unit
+                                    </Text>
+                                    <Text style={styles.materialSelectStock}>
+                                      Available: {item.stock_quantity}
+                                    </Text>
+                                  </View>
+                                </View>
+                              </TouchableOpacity>
+                            )}
+                            ItemSeparatorComponent={() => <View style={styles.materialSeparator} />}
+                            style={styles.materialSelectList}
+                          />
+                        ) : (
+                          <View style={styles.noSearchResultsContainer}>
+                            <Ionicons name="search-outline" size={48} color="#CCC" />
+                            <Text style={styles.noSearchResultsText}>No materials found matching "{searchText}"</Text>
+                          </View>
+                        )}
                         
                         <TouchableOpacity
                           style={styles.closeMaterialModalButton}
@@ -1534,6 +1567,38 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F1F1',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    marginBottom: 16,
+    height: 44,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    height: 44,
+    fontSize: 16,
+  },
+  clearSearchButton: {
+    padding: 4,
+  },
+  noSearchResultsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    height: 200,
+  },
+  noSearchResultsText: {
+    marginTop: 16,
+    color: '#999',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
 

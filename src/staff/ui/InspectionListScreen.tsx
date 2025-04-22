@@ -6,7 +6,8 @@ import {
   TouchableOpacity, 
   FlatList, 
   ActivityIndicator, 
-  Image
+  Image,
+  TextInput
 } from 'react-native';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -41,6 +42,7 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
   const [submitting, setSubmitting] = useState(false);
   const [selectedInspection, setSelectedInspection] = useState<EnhancedInspection | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [reason, setReason] = useState<string>('');
   
   // Initialize Query Client
   const queryClient = useQueryClient();
@@ -97,12 +99,17 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
       // First update as private asset
       await TaskService.updateInspectionAsPrivateAsset(selectedInspection.inspection_id);
       
-      // Then update the report status to Pending
-      await TaskService.updateInspectionReportStatus(selectedInspection.inspection_id, 'Pending');
+      // Then update the report status to Pending with reason
+      await TaskService.updateInspectionReportStatus(
+        selectedInspection.inspection_id, 
+        'Pending',
+        reason
+      );
       
-      // Close modal 
+      // Close modal and reset reason
       setShowConfirmModal(false);
       setSelectedInspection(null);
+      setReason('');
       
       // Show flash message instead of toast
       showMessage({
@@ -321,19 +328,38 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
               This will update the status to 'Pending'.
             </Text>
             
+            <View style={styles.reasonContainer}>
+              <Text style={styles.reasonLabel}>Reason:</Text>
+              <TextInput
+                style={styles.reasonInput}
+                placeholder="Enter reason for this change"
+                value={reason}
+                onChangeText={setReason}
+                multiline
+                numberOfLines={2}
+              />
+            </View>
+            
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setShowConfirmModal(false)}
+                onPress={() => {
+                  setShowConfirmModal(false);
+                  setReason('');
+                }}
                 disabled={submitting}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton]}
+                style={[
+                  styles.modalButton, 
+                  styles.confirmButton,
+                  !reason.trim() ? styles.disabledButton : null
+                ]}
                 onPress={confirmMarkAsPrivateAsset}
-                disabled={submitting}
+                disabled={submitting || !reason.trim()}
               >
                 {submitting ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
@@ -650,6 +676,26 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  reasonContainer: {
+    marginBottom: 16,
+  },
+  reasonLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  reasonInput: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 14,
+    minHeight: 60,
+    textAlignVertical: 'top',
+  },
+  disabledButton: {
+    backgroundColor: '#CCCCCC',
   },
 });
 

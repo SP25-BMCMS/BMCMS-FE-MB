@@ -321,18 +321,20 @@ export const TaskService = {
   },
 
   // Update inspection report status
-  async updateInspectionReportStatus(inspectionId: string, status: string = 'Pending'): Promise<any> {
+  async updateInspectionReportStatus(inspectionId: string, status: string = 'Pending', reason: string = ''): Promise<any> {
     try {
-      const response = await instance.patch(
-        `${VITE_REPORT_STATUS_INSPECTION.replace(
-          '{inspection_id}',
-          inspectionId
-        )}`,
-        { report_status: status }
-      );
+      const userId = await AsyncStorage.getItem('userId') || '';
+      const url = VITE_REPORT_STATUS_INSPECTION.replace('{inspection_id}', inspectionId);
+      const data = {
+        inspection_id: inspectionId,
+        report_status: status,
+        userId: userId,
+        reason: reason
+      };
+      const response = await instance.patch(url, data);
       return response.data;
     } catch (error) {
-      console.error('Error updating inspection report status:', error);
+      console.error(`Error updating inspection report status for ID ${inspectionId}:`, error);
       throw error;
     }
   },

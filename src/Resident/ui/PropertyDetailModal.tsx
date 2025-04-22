@@ -72,10 +72,10 @@ const PropertyDetailScreen = () => {
 
   // Giữ nguyên các dịch vụ nhưng thêm màu sắc
   const services = [
-    { id: "1", name: "Cư dân", icon: "people", color: "#4CAF50" },
-    { id: "2", name: "Sửa chữa trong nhà", icon: "build", color: "#FF5722" },
-    { id: "3", name: "Sửa chữa ngoài nhà", icon: "apartment", color: "#2196F3" },
-    { id: "4", name: "Dịch vụ khác", icon: "more-horiz", color: "#9C27B0" },
+    { id: "1", name: "Resident Information", icon: "people", color: "#4CAF50" },
+    { id: "2", name: "Repair inside", icon: "build", color: "#FF5722" },
+    { id: "3", name: "Repair outside", icon: "apartment", color: "#2196F3" },
+    { id: "4", name: "Other services", icon: "more-horiz", color: "#9C27B0" },
   ];
 
   const handleRepairInside = () => {

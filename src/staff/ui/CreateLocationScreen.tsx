@@ -7,6 +7,7 @@ import {
   TextInput,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RouteProp } from '@react-navigation/native';
@@ -15,6 +16,7 @@ import { RootStackParamList } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { LocationService } from '../../service/Location';
 import { LocationData } from '../../types';
+import { showMessage } from "react-native-flash-message";
 
 type CreateLocationScreenRouteProp = RouteProp<RootStackParamList, 'CreateLocation'>;
 type CreateLocationScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CreateLocation'>;
@@ -32,14 +34,21 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
   const [floorNumber, setFloorNumber] = useState<string>('');
   const [areaType, setAreaType] = useState<'Floor' | 'Wall' | 'Ceiling' | 'column' | 'Other'>('Floor');
   const [description, setDescription] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const handleSaveLocation = async () => {
     if (!roomNumber.trim() || !floorNumber.trim()) {
-      Alert.alert('Missing Information', 'Please fill in the required fields (Room and Floor)');
+      showMessage({
+        message: "Missing Information",
+        description: "Please fill in the required fields (Room and Floor)",
+        type: "warning",
+        position: "top",
+      });
       return;
     }
 
     try {
+      setIsSubmitting(true);
       const locationData: LocationData = {
         buildingDetailId: initialData.buildingDetailId,
         inspection_id: initialData.inspection_id,
@@ -52,13 +61,47 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
 
       await LocationService.createLocation(locationData);
 
-      if (onGoBack) {
-        onGoBack();
-      }
-      navigation.goBack();
+      showMessage({
+        message: "Success",
+        description: "Location created successfully",
+        type: "success",
+        position: "top",
+        duration: 2000,
+      });
+
+      setTimeout(() => {
+        if (onGoBack) {
+          onGoBack();
+        }
+        navigation.goBack();
+      }, 500);
     } catch (error) {
       console.error('Error saving location data:', error);
-      Alert.alert('Error', 'Failed to save location information');
+      showMessage({
+        message: "Error",
+        description: "Failed to save location information",
+        type: "danger",
+        position: "top",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getAreaTypeIcon = (type: string) => {
+    switch(type) {
+      case 'Wall':
+        return 'grid-outline';
+      case 'Floor':
+        return 'grid';
+      case 'Ceiling':
+        return 'layers-outline';
+      case 'column':
+        return 'rectangle-outline';
+      case 'Other':
+        return 'ellipsis-horizontal';
+      default:
+        return 'grid';
     }
   };
 
@@ -75,79 +118,104 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.card}>
-          <Text style={styles.label}>Room Number <Text style={styles.required}>*</Text></Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter room number/name"
-            value={roomNumber}
-            onChangeText={setRoomNumber}
-          />
-
-          <Text style={styles.label}>Floor Number <Text style={styles.required}>*</Text></Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter floor number"
-            value={floorNumber}
-            onChangeText={setFloorNumber}
-            keyboardType="number-pad"
-          />
-
-          <Text style={styles.label}>Area Type</Text>
-          <View style={styles.positionContainer}>
-            <TouchableOpacity 
-              style={[styles.positionButton, areaType === 'Wall' && styles.selectedPosition]}
-              onPress={() => setAreaType('Wall')}
-            >
-              <Text style={[styles.positionText, areaType === 'Wall' && styles.selectedPositionText]}>Wall</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.positionButton, areaType === 'Floor' && styles.selectedPosition]}
-              onPress={() => setAreaType('Floor')}
-            >
-              <Text style={[styles.positionText, areaType === 'Floor' && styles.selectedPositionText]}>Floor</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.positionButton, areaType === 'Ceiling' && styles.selectedPosition]}
-              onPress={() => setAreaType('Ceiling')}
-            >
-              <Text style={[styles.positionText, areaType === 'Ceiling' && styles.selectedPositionText]}>Ceiling</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.positionButton, areaType === 'column' && styles.selectedPosition]}
-              onPress={() => setAreaType('column')}
-            >
-              <Text style={[styles.positionText, areaType === 'column' && styles.selectedPositionText]}>Column</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.positionButton, areaType === 'Other' && styles.selectedPosition]}
-              onPress={() => setAreaType('Other')}
-            >
-              <Text style={[styles.positionText, areaType === 'Other' && styles.selectedPositionText]}>Other</Text>
-            </TouchableOpacity>
+          <View style={styles.cardHeader}>
+            <Ionicons name="location" size={24} color="#B77F2E" />
+            <Text style={styles.cardTitle}>Location Details</Text>
+          </View>
+          
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Room Number <Text style={styles.required}>*</Text></Text>
+            <View style={styles.inputWrapper}>
+              <Ionicons name="home-outline" size={20} color="#B77F2E" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter room number/name"
+                value={roomNumber}
+                onChangeText={setRoomNumber}
+              />
+            </View>
           </View>
 
-          <Text style={styles.label}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Add any additional details about the location"
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={4}
-          />
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Floor Number <Text style={styles.required}>*</Text></Text>
+            <View style={styles.inputWrapper}>
+              <Ionicons name="layers" size={20} color="#B77F2E" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter floor number"
+                value={floorNumber}
+                onChangeText={setFloorNumber}
+                keyboardType="number-pad"
+              />
+            </View>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Area Type</Text>
+            <View style={styles.areaTypeContainer}>
+              {['Wall', 'Floor', 'Ceiling', 'column', 'Other'].map((type) => (
+                <TouchableOpacity 
+                  key={type}
+                  style={[
+                    styles.areaTypeButton, 
+                    areaType === type && styles.selectedAreaType
+                  ]}
+                  onPress={() => setAreaType(type as any)}
+                >
+                  <Ionicons 
+                    name={getAreaTypeIcon(type)} 
+                    size={20} 
+                    color={areaType === type ? '#FFFFFF' : '#666666'} 
+                  />
+                  <Text style={[
+                    styles.areaTypeText, 
+                    areaType === type && styles.selectedAreaTypeText
+                  ]}>
+                    {type}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Description</Text>
+            <View style={[styles.inputWrapper, styles.textAreaWrapper]}>
+              <Ionicons name="create-outline" size={20} color="#B77F2E" style={[styles.inputIcon, styles.textAreaIcon]} />
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="Add any additional details about the location"
+                value={description}
+                onChangeText={setDescription}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+            </View>
+          </View>
         </View>
 
         <TouchableOpacity 
           style={[
             styles.saveButton,
-            (!roomNumber.trim() || !floorNumber.trim()) && styles.disabledButton
+            (!roomNumber.trim() || !floorNumber.trim() || isSubmitting) && styles.disabledButton
           ]}
           onPress={handleSaveLocation}
-          disabled={!roomNumber.trim() || !floorNumber.trim()}
+          disabled={!roomNumber.trim() || !floorNumber.trim() || isSubmitting}
         >
-          <Text style={styles.saveButtonText}>{isEditing ? 'Update Location' : 'Save Location'}</Text>
+          {isSubmitting ? (
+            <View style={styles.saveButtonContent}>
+              <Ionicons name="refresh" size={20} color="#FFFFFF" style={styles.loadingIcon} />
+              <Text style={styles.saveButtonText}>Saving...</Text>
+            </View>
+          ) : (
+            <View style={styles.saveButtonContent}>
+              <Ionicons name="save-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.saveButtonText}>{isEditing ? 'Update Location' : 'Save Location'}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -168,7 +236,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'ios' ? 60 : 50,
     paddingBottom: 10,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
@@ -187,17 +255,34 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    elevation: 2,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    paddingBottom: 12,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginLeft: 10,
+  },
+  inputContainer: {
+    marginBottom: 20,
   },
   label: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     marginBottom: 8,
     color: '#333333',
@@ -205,59 +290,98 @@ const styles = StyleSheet.create({
   required: {
     color: '#FF3B30',
   },
-  input: {
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#DDDDDD',
-    borderRadius: 8,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  inputIcon: {
+    paddingLeft: 12,
+  },
+  input: {
+    flex: 1,
     padding: 12,
+    paddingLeft: 8,
     fontSize: 16,
-    marginBottom: 16,
+    color: '#333333',
+  },
+  textAreaWrapper: {
+    alignItems: 'flex-start',
+  },
+  textAreaIcon: {
+    paddingTop: 12,
   },
   textArea: {
-    height: 100,
+    minHeight: 100,
     textAlignVertical: 'top',
   },
-  positionContainer: {
+  areaTypeContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginHorizontal: -5,
   },
-  positionButton: {
-    flex: 1,
-    marginHorizontal: 4,
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#DDDDDD',
+  areaTypeButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F8F8',
+    justifyContent: 'center',
+    width: '48%',
+    marginHorizontal: '1%',
+    marginBottom: 10,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
-  selectedPosition: {
-    backgroundColor: '#F8EDDC',
+  selectedAreaType: {
+    backgroundColor: '#B77F2E',
     borderColor: '#B77F2E',
   },
-  positionText: {
-    color: '#555555',
+  areaTypeText: {
+    fontSize: 14,
     fontWeight: '500',
+    color: '#666666',
+    marginLeft: 8,
   },
-  selectedPositionText: {
-    color: '#B77F2E',
+  selectedAreaTypeText: {
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   saveButton: {
     backgroundColor: '#B77F2E',
-    padding: 16,
-    borderRadius: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 24,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  saveButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   disabledButton: {
     backgroundColor: '#CCCCCC',
+    elevation: 0,
+    shadowOpacity: 0,
   },
   saveButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  loadingIcon: {
+    transform: [{ rotate: '45deg' }],
   },
 });
 
