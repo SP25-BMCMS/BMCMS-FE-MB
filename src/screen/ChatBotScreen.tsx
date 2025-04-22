@@ -14,6 +14,7 @@ import {
   Alert,
   Modal,
   ScrollView,
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -229,6 +230,48 @@ const ChatBotScreen = () => {
   }, [chatHistory]);
 
   const renderMessage = ({ item }: { item: ChatMessage }) => {
+    // Function to detect and extract image URLs
+    const extractImageUrl = (text: string): string | null => {
+      const urlRegex = /(https?:\/\/[^\s]+\.(jpeg|jpg|png|gif|bmp|webp)(\?[^\s]*)?)/i;
+      const match = text.match(urlRegex);
+      return match ? match[0] : null;
+    };
+
+    // Function to render message content with or without image
+    const renderMessageContent = (text: string, isBot: boolean) => {
+      const imageUrl = extractImageUrl(text);
+      let displayText = text;
+      
+      // Only replace the URL in the text if it exists
+      if (imageUrl) {
+        displayText = text.replace(imageUrl, '').trim();
+        // If there's nothing left after removing the URL, add a placeholder
+        if (!displayText) {
+          displayText = '';
+        }
+      }
+      
+      return (
+        <>
+          {displayText && (
+            <Text style={isBot ? styles.botMessageText : styles.userMessageText}>
+              {displayText}
+            </Text>
+          )}
+          {imageUrl && (
+            <TouchableOpacity onPress={() => Linking.openURL(imageUrl)}>
+              <Image 
+                source={{ uri: imageUrl }} 
+                style={styles.messageImage}
+                resizeMode="contain"
+              />
+              <Text style={styles.imageCaption}>Tap to open image</Text>
+            </TouchableOpacity>
+          )}
+        </>
+      );
+    };
+
     if (item.isBot) {
       return (
         <View style={styles.botMessageContainer}>
@@ -243,7 +286,7 @@ const ChatBotScreen = () => {
             </LinearGradient>
           </View>
           <View style={styles.botMessageBubble}>
-            <Text style={styles.botMessageText}>{item.text}</Text>
+            {renderMessageContent(item.text, true)}
           </View>
         </View>
       );
@@ -251,7 +294,7 @@ const ChatBotScreen = () => {
       return (
         <View style={styles.userMessageContainer}>
           <View style={styles.userMessageBubble}>
-            <Text style={styles.userMessageText}>{item.text}</Text>
+            {renderMessageContent(item.text, false)}
           </View>
         </View>
       );
@@ -264,6 +307,48 @@ const ChatBotScreen = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+
+    // Function to detect and extract image URLs
+    const extractImageUrl = (text: string): string | null => {
+      const urlRegex = /(https?:\/\/[^\s]+\.(jpeg|jpg|png|gif|bmp|webp)(\?[^\s]*)?)/i;
+      const match = text.match(urlRegex);
+      return match ? match[0] : null;
+    };
+
+    // Function to render message content with or without image
+    const renderHistoryMessageContent = (text: string, isBot: boolean) => {
+      const imageUrl = extractImageUrl(text);
+      let displayText = text;
+      
+      // Only replace the URL in the text if it exists
+      if (imageUrl) {
+        displayText = text.replace(imageUrl, '').trim();
+        // If there's nothing left after removing the URL, add a placeholder
+        if (!displayText) {
+          displayText = '';
+        }
+      }
+      
+      return (
+        <>
+          {displayText && (
+            <Text style={isBot ? styles.historyBotMessageText : styles.historyUserMessageText}>
+              {displayText}
+            </Text>
+          )}
+          {imageUrl && (
+            <TouchableOpacity onPress={() => Linking.openURL(imageUrl)}>
+              <Image 
+                source={{ uri: imageUrl }} 
+                style={styles.historyMessageImage}
+                resizeMode="contain"
+              />
+              <Text style={styles.historyImageCaption}>Tap to open image</Text>
+            </TouchableOpacity>
+          )}
+        </>
+      );
+    };
 
     if (item.isBot) {
       return (
@@ -280,7 +365,7 @@ const ChatBotScreen = () => {
           </View>
           <View style={styles.historyBotMessageContent}>
             <View style={styles.historyBotMessageBubble}>
-              <Text style={styles.historyBotMessageText}>{item.text}</Text>
+              {renderHistoryMessageContent(item.text, true)}
             </View>
             <Text style={styles.historyTimeText}>{messageTime}</Text>
           </View>
@@ -291,7 +376,7 @@ const ChatBotScreen = () => {
         <View style={styles.historyUserMessageContainer}>
           <View style={styles.historyUserMessageContent}>
             <View style={styles.historyUserMessageBubble}>
-              <Text style={styles.historyUserMessageText}>{item.text}</Text>
+              {renderHistoryMessageContent(item.text, false)}
             </View>
             <Text style={styles.historyTimeText}>{messageTime}</Text>
           </View>
@@ -718,6 +803,30 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#999',
     marginTop: 3,
+  },
+  messageImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  imageCaption: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  historyMessageImage: {
+    width: '100%',
+    height: 150,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  historyImageCaption: {
+    fontSize: 10,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 4,
   },
 });
 

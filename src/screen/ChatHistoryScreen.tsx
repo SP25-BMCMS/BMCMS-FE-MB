@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   SafeAreaView,
+  Image,
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -92,6 +94,39 @@ const ChatHistoryScreen = () => {
     const messageDate = formatDate(item.createdAt);
     const messageTime = formatTime(item.createdAt);
 
+    // Function to detect and extract image URLs
+    const extractImageUrl = (text: string): string | null => {
+      const urlRegex = /(https?:\/\/[^\s]+\.(jpeg|jpg|png|gif|bmp|webp)(\?[^\s]*)?)/i;
+      const match = text.match(urlRegex);
+      return match ? match[0] : null;
+    };
+
+    // Function to render message content with or without image
+    const renderMessageContent = (text: string, isBot: boolean) => {
+      const imageUrl = extractImageUrl(text);
+      
+      // Remove the image URL from the text to display
+      const cleanedText = imageUrl ? text.replace(imageUrl, '') : text;
+      
+      return (
+        <>
+          <Text style={isBot ? styles.botMessageText : styles.userMessageText}>
+            {cleanedText}
+          </Text>
+          {imageUrl && (
+            <TouchableOpacity onPress={() => Linking.openURL(imageUrl)}>
+              <Image 
+                source={{ uri: imageUrl }} 
+                style={styles.messageImage}
+                resizeMode="contain"
+              />
+              <Text style={styles.imageCaption}>Tap to open image</Text>
+            </TouchableOpacity>
+          )}
+        </>
+      );
+    };
+
     if (!item.isUser) {
       return (
         <View style={styles.botMessageContainer}>
@@ -107,7 +142,7 @@ const ChatHistoryScreen = () => {
           </View>
           <View style={styles.messageContentContainer}>
             <View style={styles.botMessageBubble}>
-              <Text style={styles.botMessageText}>{item.message}</Text>
+              {renderMessageContent(item.message, true)}
             </View>
             <Text style={styles.timeText}>{messageTime}</Text>
           </View>
@@ -118,7 +153,7 @@ const ChatHistoryScreen = () => {
         <View style={styles.userMessageContainer}>
           <View style={styles.messageContentContainer}>
             <View style={styles.userMessageBubble}>
-              <Text style={styles.userMessageText}>{item.message}</Text>
+              {renderMessageContent(item.message, false)}
             </View>
             <Text style={[styles.timeText, styles.userTimeText]}>{messageTime}</Text>
           </View>
@@ -317,6 +352,18 @@ const styles = StyleSheet.create({
   userTimeText: {
     textAlign: 'right',
     marginRight: 4,
+  },
+  messageImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  imageCaption: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 4,
   },
 });
 
