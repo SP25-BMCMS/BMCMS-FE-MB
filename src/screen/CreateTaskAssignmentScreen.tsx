@@ -153,7 +153,7 @@ const CreateTaskAssignmentScreen = () => {
         // Nếu có task khả dụng, set task mặc định đầu tiên
         if (availableTasksList.length > 0) {
           setSelectedTaskId(availableTasksList[0].task_id);
-          setSelectedTaskLabel(availableTasksList[0].task_id);
+          setSelectedTaskLabel(availableTasksList[0].description || availableTasksList[0].task_id);
         }
       }
     }
@@ -167,6 +167,10 @@ const CreateTaskAssignmentScreen = () => {
         type: "warning",
         duration: 3000,
         icon: "warning",
+        position: "top",
+        style: {
+          marginTop: Platform.OS === 'ios' ? 45 : StatusBar.currentHeight,
+        },
       });
       return;
     }
@@ -190,6 +194,10 @@ const CreateTaskAssignmentScreen = () => {
         type: "danger",
         duration: 3000,
         icon: "danger",
+        position: "top",
+        style: {
+          marginTop: Platform.OS === 'ios' ? 45 : StatusBar.currentHeight,
+        },
       });
       return;
     }
@@ -214,6 +222,10 @@ const CreateTaskAssignmentScreen = () => {
         type: "success",
         duration: 3000,
         icon: "success",
+        position: "top",
+        style: {
+          marginTop: Platform.OS === 'ios' ? 45 : StatusBar.currentHeight,
+        },
       });
       
       // Thêm độ trễ để đảm bảo API cập nhật dữ liệu
@@ -230,6 +242,10 @@ const CreateTaskAssignmentScreen = () => {
         type: "danger",
         duration: 3000,
         icon: "danger",
+        position: "top",
+        style: {
+          marginTop: Platform.OS === 'ios' ? 45 : StatusBar.currentHeight,
+        },
       });
     } finally {
       setSubmitting(false);
@@ -237,9 +253,9 @@ const CreateTaskAssignmentScreen = () => {
   };
   
   // Handle task selection
-  const handleTaskSelect = (taskId: string) => {
-    setSelectedTaskId(taskId);
-    setSelectedTaskLabel(taskId);
+  const handleTaskSelect = (task: AvailableTask) => {
+    setSelectedTaskId(task.task_id);
+    setSelectedTaskLabel(task.description || task.task_id);
     setTaskDropdownVisible(false);
   };
   
@@ -264,7 +280,7 @@ const CreateTaskAssignmentScreen = () => {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.containerLoading}>
-        <StatusBar backgroundColor="#B77F2E" barStyle="light-content" />
+        <StatusBar barStyle="light-content" backgroundColor="#B77F2E" />
         <View style={styles.headerLoading}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonLoading}>
             <Icon name="arrow-back" size={24} color="#FFF" />
@@ -281,7 +297,7 @@ const CreateTaskAssignmentScreen = () => {
   
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar backgroundColor="#B77F2E" barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="#B77F2E" />
       
       {/* Header */}
       <View style={styles.header}>
@@ -291,7 +307,7 @@ const CreateTaskAssignmentScreen = () => {
         <Text style={styles.headerTitle}>Create Task Assignment</Text>
       </View>
       
-      <ScrollView style={styles.scrollView}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
         <View style={styles.formContainer}>
           {/* Form Title */}
           <View style={styles.formTitleContainer}>
@@ -299,11 +315,11 @@ const CreateTaskAssignmentScreen = () => {
             <Text style={styles.formTitle}>New Assignment Details</Text>
           </View>
           
-          {/* Task ID Selection */}
+          {/* Task Selection */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>
               <Icon name="task" size={18} color="#B77F2E" style={styles.labelIcon} />
-              Task ID
+              Select Task
             </Text>
             {availableTasks.length === 0 ? (
               <View style={styles.emptyContainer}>
@@ -335,7 +351,7 @@ const CreateTaskAssignmentScreen = () => {
                   >
                     <View style={styles.modalContent}>
                       <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Select Task ID</Text>
+                        <Text style={styles.modalTitle}>Select Task</Text>
                         <TouchableOpacity onPress={() => setTaskDropdownVisible(false)}>
                           <Icon name="close" size={24} color="#333" />
                         </TouchableOpacity>
@@ -349,13 +365,16 @@ const CreateTaskAssignmentScreen = () => {
                               styles.dropdownItem,
                               selectedTaskId === item.task_id && styles.dropdownItemSelected
                             ]}
-                            onPress={() => handleTaskSelect(item.task_id)}
+                            onPress={() => handleTaskSelect(item)}
                           >
-                            <Text style={[
-                              styles.dropdownItemText,
-                              selectedTaskId === item.task_id && styles.dropdownItemTextSelected
-                            ]}>
-                              {item.task_id}
+                            <Text 
+                              style={[
+                                styles.dropdownItemText,
+                                selectedTaskId === item.task_id && styles.dropdownItemTextSelected
+                              ]}
+                              numberOfLines={2}
+                            >
+                              {item.description}
                             </Text>
                             {selectedTaskId === item.task_id && (
                               <Icon name="check" size={20} color="#B77F2E" />
@@ -564,10 +583,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F8F8',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   containerLoading: {
     flex: 1,
     backgroundColor: '#F8F8F8',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   header: {
     flexDirection: 'row',
@@ -580,6 +601,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
+    height: Platform.OS === 'ios' ? 90 : 60,
+    paddingTop: Platform.OS === 'ios' ? 40 : 0,
   },
   headerLoading: {
     flexDirection: 'row',
@@ -587,6 +610,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#B77F2E',
     paddingVertical: 16,
     paddingHorizontal: 16,
+    height: Platform.OS === 'ios' ? 90 : 60,
+    paddingTop: Platform.OS === 'ios' ? 40 : 0,
   },
   backButton: {
     padding: 8,
@@ -608,6 +633,9 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
   },
   formContainer: {
     padding: 20,
@@ -773,6 +801,8 @@ const styles = StyleSheet.create({
   dropdownItemText: {
     fontSize: 16,
     color: '#333',
+    flex: 1,
+    paddingRight: 8,
   },
   dropdownItemTextSelected: {
     color: '#B77F2E',
@@ -788,6 +818,14 @@ const styles = StyleSheet.create({
   positionText: {
     fontSize: 14,
     color: '#666',
+    marginTop: 2,
+  },
+  taskItem: {
+    flex: 1,
+  },
+  taskIdText: {
+    fontSize: 12,
+    color: '#999',
     marginTop: 2,
   },
 });

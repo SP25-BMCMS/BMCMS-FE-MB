@@ -214,10 +214,7 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Task Information</Text>
             <View style={styles.infoContainer}>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Task ID:</Text>
-                <Text style={styles.infoValue}>{taskDetail.task_id}</Text>
-              </View>
+             
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Description:</Text>
                 <Text style={styles.infoValue}>{taskDetail.description}</Text>
