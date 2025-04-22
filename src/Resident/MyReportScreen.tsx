@@ -53,7 +53,10 @@ const MyReportScreen = () => {
     setReports([]);
   };
 
-  const handleCreateFeedback = (reportId: string) => {
+  const handleCreateFeedback = (reportId: string, event?: any) => {
+    // Stop event propagation to prevent navigation to WorkProgress
+    event?.stopPropagation();
+    
     Alert.alert(
       "Feedback",
       "How would you rate the repair?",
@@ -68,6 +71,11 @@ const MyReportScreen = () => {
         },
       ]
     );
+  };
+
+  const handleViewProgress = (reportId: string) => {
+    // @ts-ignore
+    navigation.navigate("WorkProgress", { crackReportId: reportId });
   };
 
   const getStatusStyle = (status: string) => {
@@ -115,7 +123,12 @@ const MyReportScreen = () => {
         reports.map((item, index) => {
           const statusStyle = getStatusStyle(item.status);
           return (
-            <View key={index} style={styles.card}>
+            <TouchableOpacity
+              key={index}
+              style={styles.card}
+              onPress={() => handleViewProgress(item.crackReportId)}
+              activeOpacity={0.7}
+            >
               <View style={styles.cardHeader}>
                 <View>
                   <Text style={styles.unitText}>
@@ -145,15 +158,22 @@ const MyReportScreen = () => {
               )}
               
               {item.status === 'Completed' && (
-                <TouchableOpacity 
-                  style={styles.feedbackButton}
-                  onPress={() => handleCreateFeedback(item.crackReportId)}
-                >
-                  <Icon name="star" size={16} color="#FFFFFF" />
-                  <Text style={styles.feedbackButtonText}>Create Feedback</Text>
-                </TouchableOpacity>
+                <View style={styles.feedbackContainer}>
+                  <TouchableOpacity 
+                    style={styles.feedbackButton}
+                    onPress={(event) => handleCreateFeedback(item.crackReportId, event)}
+                  >
+                    <Icon name="star" size={16} color="#FFFFFF" />
+                    <Text style={styles.buttonText}>Create Feedback</Text>
+                  </TouchableOpacity>
+                </View>
               )}
-            </View>
+              
+              <View style={styles.cardFooter}>
+                <Icon name="visibility" size={16} color="#666" />
+                <Text style={styles.viewDetailsText}>Tap to view progress details</Text>
+              </View>
+            </TouchableOpacity>
           );
         })
       )}
@@ -188,6 +208,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+    borderLeftWidth: 4,
+    borderLeftColor: "#B77F2E",
   },
   cardHeader: {
     flexDirection: "row",
@@ -222,6 +244,10 @@ const styles = StyleSheet.create({
   },
   emptyImage: { width: 200, height: 200, marginBottom: 20 },
   emptyText: { color: "#999", fontSize: 16 },
+  feedbackContainer: {
+    marginTop: 12,
+    alignItems: "center",
+  },
   feedbackButton: {
     backgroundColor: "#388E3C",
     flexDirection: "row",
@@ -229,12 +255,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 10,
     borderRadius: 8,
-    marginTop: 10,
+    paddingHorizontal: 20,
   },
-  feedbackButtonText: {
+  buttonText: {
     color: "#FFFFFF",
     fontWeight: "600",
     marginLeft: 6,
+  },
+  cardFooter: {
+    marginTop: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    paddingTop: 12,
+  },
+  viewDetailsText: {
+    marginLeft: 6,
+    color: "#666",
+    fontSize: 13,
   },
 });
 

@@ -57,4 +57,5 @@ declare module '@env'{
   export const VITE_READ_NOTIFICATION: string;
   export const VITE_MARK_ALL_AS_READ: string;
   export const VITE_DELETE_ALL_NOTIFICATION: string;
+  export const VITE_GET_WORKLOG_BY_RESIDENT_ID: string;
 }

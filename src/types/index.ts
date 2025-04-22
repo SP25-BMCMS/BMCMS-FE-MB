@@ -37,6 +37,9 @@ export type RootStackParamList = {
   };
   RepairSuccess: undefined;
   MyReport: undefined;
+  WorkProgress: {
+    crackReportId: string;
+  };
   StaffProfile: undefined;
   TaskDetail: {
     assignmentId: string;
