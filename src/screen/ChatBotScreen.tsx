@@ -46,14 +46,14 @@ const ChatBotScreen = () => {
       const userType = await AsyncStorage.getItem('userType');
       if (userType !== 'resident') {
         Alert.alert(
-          "Quyền truy cập bị từ chối",
-          "Tính năng này chỉ dành cho cư dân.",
-          [{ text: "Quay lại", onPress: () => navigation.goBack() }]
+          "Access Denied",
+          "This feature is only available for residents.",
+          [{ text: "Go Back", onPress: () => navigation.goBack() }]
         );
         return;
       }
       
-      // Nếu là resident, tiếp tục tải dữ liệu
+      // If resident, continue loading data
       const id = await AsyncStorage.getItem('userId');
       setUserId(id);
       loadInitialMessages();
@@ -62,14 +62,14 @@ const ChatBotScreen = () => {
     checkAccess();
   }, [navigation]);
 
-  // Xử lý và nhóm tin nhắn theo ngày
+  // Process and group messages by date
   const processHistoryByDate = (messages: ChatMessage[]) => {
     const groupedByDate: {[date: string]: ChatMessage[]} = {};
     const dates: string[] = [];
     
     messages.forEach(msg => {
       const date = new Date(msg.timestamp);
-      const dateStr = date.toLocaleDateString('vi-VN', {
+      const dateStr = date.toLocaleDateString('en-US', {
         year: 'numeric', 
         month: 'long', 
         day: 'numeric'
@@ -83,10 +83,10 @@ const ChatBotScreen = () => {
       groupedByDate[dateStr].push(msg);
     });
     
-    // Sắp xếp ngày từ mới đến cũ
+    // Sort dates from newest to oldest
     dates.sort((a, b) => {
-      const dateA = new Date(a.split(' ').slice(1).join(' ').replace('tháng', ''));
-      const dateB = new Date(b.split(' ').slice(1).join(' ').replace('tháng', ''));
+      const dateA = new Date(a);
+      const dateB = new Date(b);
       return dateB.getTime() - dateA.getTime();
     });
     
@@ -94,16 +94,16 @@ const ChatBotScreen = () => {
     setGroupedHistory(groupedByDate);
   };
 
-  // Tải lịch sử chat
+  // Load chat history
   const loadInitialMessages = async () => {
     try {
       setInitialLoading(true);
       
       if (!userId) {
-        // Nếu chưa có userId, chỉ hiển thị tin nhắn chào mừng
+        // If no userId, only display welcome message
         const welcomeMessage: ChatMessage = {
           id: `bot-welcome-${Date.now()}`,
-          text: 'Xin chào! Tôi là trợ lý ảo của hệ thống Building Management & Crack Monitoring System. Tôi có thể giúp gì cho bạn hôm nay?',
+          text: 'Hello! I am the virtual assistant of the Building Management & Crack Monitoring System. How can I help you today?',
           isBot: true,
           timestamp: Date.now(),
         };
@@ -112,7 +112,7 @@ const ChatBotScreen = () => {
         return;
       }
       
-      // Tải lịch sử chat từ API
+      // Load chat history from API
       try {
         const historyResponse = await getChatHistory(userId);
         if (historyResponse && historyResponse.data && Array.isArray(historyResponse.data)) {
@@ -127,24 +127,24 @@ const ChatBotScreen = () => {
             setChatHistory(formattedHistory);
             processHistoryByDate(formattedHistory);
           } else {
-            // Nếu không có lịch sử, hiển thị tin nhắn chào mừng
+            // If no history, display welcome message
             const welcomeMessage: ChatMessage = {
               id: `bot-welcome-${Date.now()}`,
-              text: 'Xin chào! Tôi là trợ lý ảo của hệ thống Building Management & Crack Monitoring System. Tôi có thể giúp gì cho bạn hôm nay?',
+              text: 'Hello! I am the virtual assistant of the Building Management & Crack Monitoring System. How can I help you today?',
               isBot: true,
               timestamp: Date.now(),
             };
             setChatHistory([welcomeMessage]);
           }
         } else {
-          throw new Error('Không tìm thấy lịch sử chat');
+          throw new Error('No chat history found');
         }
       } catch (err) {
-        console.error('Lỗi khi tải lịch sử chat:', err);
-        // Hiển thị tin nhắn chào mừng khi có lỗi
+        console.error('Error loading chat history:', err);
+        // Display welcome message when there's an error
         const welcomeMessage: ChatMessage = {
           id: `bot-welcome-${Date.now()}`,
-          text: 'Xin chào! Tôi là trợ lý ảo của hệ thống Building Management & Crack Monitoring System. Tôi có thể giúp gì cho bạn hôm nay?',
+          text: 'Hello! I am the virtual assistant of the Building Management & Crack Monitoring System. How can I help you today?',
           isBot: true,
           timestamp: Date.now(),
         };
@@ -152,10 +152,10 @@ const ChatBotScreen = () => {
       }
     } catch (error) {
       console.error('Error loading chat history:', error);
-      // Hiển thị tin nhắn chào mừng khi có lỗi
+      // Display welcome message when there's an error
       const welcomeMessage: ChatMessage = {
         id: `bot-welcome-${Date.now()}`,
-        text: 'Xin chào! Tôi là trợ lý ảo của hệ thống Building Management & Crack Monitoring System. Tôi có thể giúp gì cho bạn hôm nay?',
+        text: 'Hello! I am the virtual assistant of the Building Management & Crack Monitoring System. How can I help you today?',
         isBot: true,
         timestamp: Date.now(),
       };
@@ -165,7 +165,7 @@ const ChatBotScreen = () => {
     }
   };
 
-  // Cập nhật processHistoryByDate khi chatHistory thay đổi
+  // Update processHistoryByDate when chatHistory changes
   useEffect(() => {
     if (chatHistory.length > 0) {
       processHistoryByDate(chatHistory);
@@ -196,7 +196,7 @@ const ChatBotScreen = () => {
       // Add bot response to chat
       const botMessage: ChatMessage = {
         id: `bot-${Date.now()}`,
-        text: response.message || 'Xin lỗi, tôi không thể xử lý yêu cầu của bạn lúc này.',
+        text: response.message || 'Sorry, I cannot process your request at this time.',
         isBot: true,
         timestamp: Date.now(),
       };
@@ -208,7 +208,7 @@ const ChatBotScreen = () => {
       // Add error message if API call fails
       const errorMessage: ChatMessage = {
         id: `error-${Date.now()}`,
-        text: 'Xin lỗi, đã xảy ra lỗi khi xử lý tin nhắn của bạn. Vui lòng thử lại sau.',
+        text: 'Sorry, an error occurred while processing your message. Please try again later.',
         isBot: true,
         timestamp: Date.now(),
       };
@@ -258,9 +258,9 @@ const ChatBotScreen = () => {
     }
   };
 
-  // Hiển thị tin nhắn trong lịch sử
+  // Display messages in history
   const renderHistoryMessage = (item: ChatMessage) => {
-    const messageTime = new Date(item.timestamp).toLocaleTimeString('vi-VN', {
+    const messageTime = new Date(item.timestamp).toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit'
     });
@@ -336,7 +336,7 @@ const ChatBotScreen = () => {
       {initialLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4A90E2" />
-          <Text style={styles.loadingText}>Đang tải cuộc trò chuyện...</Text>
+          <Text style={styles.loadingText}>Loading conversation...</Text>
         </View>
       ) : (
         <FlatList
@@ -362,7 +362,7 @@ const ChatBotScreen = () => {
             </LinearGradient>
           </View>
           <View style={styles.typingBubble}>
-            <Text style={styles.typingText}>Đang nhập...</Text>
+            <Text style={styles.typingText}>Typing...</Text>
           </View>
         </View>
       )}
@@ -377,7 +377,7 @@ const ChatBotScreen = () => {
           style={styles.input}
           value={message}
           onChangeText={setMessage}
-          placeholder="Nhập tin nhắn..."
+          placeholder="Type a message..."
           placeholderTextColor="#999"
           multiline
         />
@@ -390,7 +390,7 @@ const ChatBotScreen = () => {
         </TouchableOpacity>
       </KeyboardAvoidingView>
 
-      {/* Modal Lịch sử chat */}
+      {/* Chat History Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -400,7 +400,7 @@ const ChatBotScreen = () => {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Lịch sử trò chuyện</Text>
+              <Text style={styles.modalTitle}>Chat History</Text>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => setHistoryModalVisible(false)}
@@ -427,7 +427,7 @@ const ChatBotScreen = () => {
                 <View style={styles.emptyHistoryContainer}>
                   <Icon name="history" size={64} color="#CCC" />
                   <Text style={styles.emptyHistoryText}>
-                    Chưa có lịch sử trò chuyện
+                    No chat history yet
                   </Text>
                 </View>
               )}

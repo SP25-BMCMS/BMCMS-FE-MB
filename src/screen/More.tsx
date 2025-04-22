@@ -102,7 +102,7 @@ const MoreScreen = () => {
       await AsyncStorage.removeItem('userType');
       navigation.navigate("MainApp");
     } catch (error) {
-      console.error("Lỗi khi đăng xuất:", error);
+      console.error("Error logging out:", error);
     }
   };
 

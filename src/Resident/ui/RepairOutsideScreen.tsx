@@ -111,12 +111,12 @@ const RepairOutsideScreen = () => {
   const handleContinueToReview = () => {
     // Validate all required fields
     if (!isDescriptionValid) {
-      Alert.alert("Lỗi", "Vui lòng nhập mô tả chi tiết (ít nhất 5 ký tự)");
+      Alert.alert("Alert", "Please enter a detailed description (minimum 5 characters)");
       return;
     }
 
     if (!isPositionValid) {
-      Alert.alert("Lỗi", "Vui lòng chọn khu vực và vị trí vết nứt");
+      Alert.alert("Alert", "Please select the area and crack position");
       return;
     }
     
@@ -126,10 +126,10 @@ const RepairOutsideScreen = () => {
       `Vị trí báo cáo: ${selectedPosition
         .split('/')
         .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(' > ')}\n\nBạn có chắc chắn muốn tiếp tục?`,
+        .join(' > ')}\n\nAre you sure you want to continue?`,
       [
         {
-          text: "Kiểm tra lại",
+          text: "Check again",
           style: "cancel"
         },
         { 
@@ -160,20 +160,20 @@ const RepairOutsideScreen = () => {
         return (
           <>
             {/* Nhập mô tả */}
-            <Text style={styles.label}>Chi tiết</Text>
+            <Text style={styles.label}>Details</Text>
             <TextInput
               style={styles.input}
-              placeholder="Nhập miêu tả"
+              placeholder="Enter description"
               value={description}
               onChangeText={setDescription}
               multiline
             />
             {!isDescriptionValid && (
-              <Text style={styles.warningText}>Nhập ít nhất 5 ký tự mô tả</Text>
+              <Text style={styles.warningText}>Enter at least 5 characters of description</Text>
             )}
 
             {/* Chọn khu vực */}
-            <Text style={styles.label}>Chọn khu vực</Text>
+            <Text style={styles.label}>Select area</Text>
             <View style={styles.pickerContainer}>
               <Picker
                 selectedValue={selectedArea}
@@ -197,7 +197,7 @@ const RepairOutsideScreen = () => {
             {/* Chọn vị trí */}
             {selectedArea && (
               <>
-                <Text style={styles.label}>Chọn vị trí</Text>
+                <Text style={styles.label}>Select position</Text>
                 <View style={styles.pickerContainer}>
                   <Picker
                     selectedValue={selectedPosition}
@@ -209,7 +209,7 @@ const RepairOutsideScreen = () => {
                       setSelectedPosition(itemValue);
                     }}
                   >
-                    <Picker.Item label="Chọn vị trí" value="" />
+                    <Picker.Item label="Select position" value="" />
                     {Object.entries(OUTDOOR_CRACK_POSITIONS[selectedArea as keyof typeof OUTDOOR_CRACK_POSITIONS]).map(([key, value]) => {
                       console.log('🔍 Position Option:', { key, value });
                       return (
@@ -225,7 +225,7 @@ const RepairOutsideScreen = () => {
 
                 {selectedPosition && (
                   <View style={styles.selectedInfo}>
-                    <Text style={styles.selectedInfoLabel}>Vị trí đã chọn:</Text>
+                    <Text style={styles.selectedInfoLabel}>Selected position:</Text>
                     <Text style={styles.selectedInfoValue}>
                       {selectedPosition
                         .split('/')
@@ -251,7 +251,7 @@ const RepairOutsideScreen = () => {
               disabled={!(isDescriptionValid && isPositionValid)}
               onPress={() => setCurrentStep(2)}
             >
-              <Text style={styles.continueButtonText}>Tiếp tục</Text>
+              <Text style={styles.continueButtonText}>Continue</Text>
             </TouchableOpacity>
           </>
         );
@@ -260,13 +260,13 @@ const RepairOutsideScreen = () => {
         return (
           <>
             {/* Thêm hình ảnh */}
-            <Text style={styles.label}>Thêm hình ảnh</Text>
+            <Text style={styles.label}>Add photos</Text>
             <TouchableOpacity
               style={styles.imagePicker}
               onPress={openImageSourceModal}
             >
               <Icon name="add-a-photo" size={30} color="#B77F2E" />
-              <Text>Chọn ảnh</Text>
+              <Text>Choose photo</Text>
             </TouchableOpacity>
 
             {/* Modal chọn nguồn ảnh */}
@@ -276,20 +276,20 @@ const RepairOutsideScreen = () => {
               style={styles.modal}
             >
               <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Chọn nguồn ảnh</Text>
+                <Text style={styles.modalTitle}>Select photo source</Text>
                 <TouchableOpacity
                   style={styles.modalOption}
                   onPress={takePhoto}
                 >
                   <Icon name="camera-alt" size={24} color="#B77F2E" />
-                  <Text style={styles.modalOptionText}>Chụp ảnh</Text>
+                  <Text style={styles.modalOptionText}>Take photo</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.modalOption}
                   onPress={pickImageFromLibrary}
                 >
                   <Icon name="photo-library" size={24} color="#B77F2E" />
-                  <Text style={styles.modalOptionText}>Chọn từ thư viện</Text>
+                  <Text style={styles.modalOptionText}>Choose from library</Text>
                 </TouchableOpacity>
               </View>
             </Modal>
@@ -310,7 +310,7 @@ const RepairOutsideScreen = () => {
             </View>
             {images.length === 0 && (
               <Text style={styles.warningText}>
-                Vui lòng thêm ít nhất 1 ảnh
+                Please add at least 1 photo
               </Text>
             )}
 
@@ -323,7 +323,7 @@ const RepairOutsideScreen = () => {
               disabled={!isImagesValid}
               onPress={handleContinueToReview}
             >
-              <Text style={styles.continueButtonText}>Tiếp tục</Text>
+              <Text style={styles.continueButtonText}>Continue</Text>
             </TouchableOpacity>
           </>
         );
@@ -343,9 +343,9 @@ const RepairOutsideScreen = () => {
         >
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Sửa chữa khu vực chung</Text>
+        <Text style={styles.headerTitle}>Repair outside</Text>
         <Text style={styles.stepIndicator}>
-          <Text style={{ color: "#000" }}>Bước </Text>
+          <Text style={{ color: "#000" }}>Step </Text>
           <Text style={{ color: "#B77F2E" }}>{currentStep}</Text>
           <Text style={{ color: "#000" }}>/2</Text>
         </Text>
@@ -357,7 +357,7 @@ const RepairOutsideScreen = () => {
           {property.building}
         </Text>
         <Text style={styles.subTitle}>
-          Tòa {property.description} | Căn hộ {property.unit} 
+          Building {property.description} | Apartment {property.unit} 
         </Text>
       </View>
 
@@ -365,7 +365,7 @@ const RepairOutsideScreen = () => {
       <View style={styles.noticeContainer}>
         <Icon name="info" size={24} color="#2196F3" />
         <Text style={styles.noticeText}>
-          Báo cáo này sẽ được gửi cho quản lý tòa nhà để sửa chữa khu vực công cộng
+          This report will be sent to the building manager to repair the public area
         </Text>
       </View>
 

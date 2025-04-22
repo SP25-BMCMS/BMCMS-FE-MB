@@ -77,7 +77,7 @@ const StaffAssignScreen = () => {
       setLoading(true);
       setError('');
       
-      // Thêm timeout nhỏ để đảm bảo API đã cập nhật dữ liệu
+      // Add small timeout to ensure API has updated data
       await new Promise(resolve => setTimeout(resolve, 300));
       
       const response = await TaskService.getTaskAssignmentsByEmployeeId(userId);
@@ -98,29 +98,29 @@ const StaffAssignScreen = () => {
       setLoading(true);
       setError('');
       
-      // Thêm timeout nhỏ để đảm bảo API đã cập nhật dữ liệu
+      // Add small timeout to ensure API has updated data
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Lấy task assignments của leader
+      // Get task assignments of leader
       const leaderTasksResponse = await TaskService.getTaskAssignmentsByUserId();
       console.log('StaffAssignScreen - Fetched leader tasks:', leaderTasksResponse.data?.length || 0);
       
-      // Lấy các task_id từ task assignments của leader
+      // Get task_ids from leader's task assignments
       const leaderTaskIds = leaderTasksResponse.data.map(assignment => assignment.task_id);
-      const uniqueTaskIds = [...new Set(leaderTaskIds)]; // Loại bỏ các task_id trùng lặp
+      const uniqueTaskIds = [...new Set(leaderTaskIds)]; // Remove duplicate task_ids
       
       console.log('StaffAssignScreen - Unique task IDs:', uniqueTaskIds.length);
       
-      // Tạo mảng chứa các task và task assignments
+      // Create array containing tasks and task assignments
       const tasksWithAssignments: TaskWithAssignments[] = [];
       
-      // Lấy task assignments cho từng task_id
+      // Get task assignments for each task_id
       for (const taskId of uniqueTaskIds) {
         try {
           const taskResponse = await TaskService.getTaskAssignmentsByTaskId(taskId);
           
           if (taskResponse.data) {
-            // Thêm vào danh sách các task hiển thị
+            // Add to the list of tasks to display
             tasksWithAssignments.push(taskResponse.data);
           }
         } catch (err) {
@@ -138,23 +138,23 @@ const StaffAssignScreen = () => {
     }
   };
 
-  // Hàm kiểm tra xem có nên hiển thị button hay không
+  // Function to check whether button should be displayed
   const shouldShowConfirmButton = async (taskId: string): Promise<boolean> => {
     try {
-      // Lấy task assignments của user hiện tại (leader)
+      // Get task assignments of current user (leader)
       const response = await TaskService.getTaskAssignmentsByUserId();
       
-      // Tìm task assignment chính liên quan đến taskId
+      // Find main task assignment related to taskId
       const mainTaskAssignment = response.data.find(
         assignment => assignment.task_id === taskId && assignment.employee_id === userId
       );
       
-      // Nếu không tìm thấy task assignment chính
+      // If main task assignment not found
       if (!mainTaskAssignment) {
         return false;
       }
       
-      // Nếu task assignment chính đã có status là Confirmed, không hiển thị button
+      // If main task assignment already has Confirmed status, don't display button
       if (String(mainTaskAssignment.status) === 'Confirmed') {
         return false;
       }
@@ -162,13 +162,13 @@ const StaffAssignScreen = () => {
       return true;
     } catch (error) {
       console.error('Error checking task status:', error);
-      return false; // Mặc định không hiển thị nếu có lỗi
+      return false; // Default to not displaying if there's an error
     }
   };
 
-  // Hàm để kiểm tra và cập nhật trạng thái hiển thị button
+  // Function to check and update button display status
   const checkButtonVisibility = async (taskId: string, assignments: TaskAssignment[]) => {
-    // Kiểm tra xem có task nào đang ở trạng thái "InFixing" hoặc "Fixed" không
+    // Check if any task is in 'InFixing' or 'Fixed' status
     const hasInFixingOrFixedTask = assignments.some(
       assignment => String(assignment.status) === 'InFixing' || String(assignment.status) === 'Fixed'
     );
@@ -178,12 +178,12 @@ const StaffAssignScreen = () => {
       return;
     }
     
-    // Kiểm tra trạng thái thực tế từ API
+    // Check actual status from API
     const shouldShow = await shouldShowConfirmButton(taskId);
     setButtonVisibility(prev => ({...prev, [taskId]: shouldShow}));
   };
 
-  // Cập nhật useEffect để kiểm tra trạng thái button khi tasks thay đổi
+  // Update useEffect to check button status when tasks change
   useEffect(() => {
     const checkAllButtons = async () => {
       for (const task of tasks) {
@@ -551,7 +551,7 @@ const StaffAssignScreen = () => {
       ) : (
         <>
           {!isLeader ? (
-            // Hiển thị danh sách task của nhân viên
+            // Display employee's task list
             <ScrollView 
               style={styles.scrollView}
               refreshControl={

@@ -31,7 +31,7 @@ const StaffProfileScreen = () => {
       setLoading(true);
       setError(null);
       
-      // Lấy userId từ AsyncStorage
+      // Get userId from AsyncStorage
       const userId = await AsyncStorage.getItem('userId');
       
       if (!userId) {
@@ -147,7 +147,7 @@ const StaffProfileScreen = () => {
     }
   };
 
-  // Tạo avatar chữ từ tên người dùng
+  // Create initials avatar from username
   const getInitials = (name: string) => {
     if (!name) return 'S';
     const parts = name.split(' ');

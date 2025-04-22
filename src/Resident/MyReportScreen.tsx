@@ -109,7 +109,7 @@ const MyReportScreen = () => {
             source={require("../../assets/sadBuilding.png")}
             style={styles.emptyImage}
           />
-          <Text style={styles.emptyText}>Chưa có báo cáo nào.</Text>
+          <Text style={styles.emptyText}>No reports yet.</Text>
         </View>
       ) : (
         reports.map((item, index) => {

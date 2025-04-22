@@ -73,7 +73,7 @@ const ChatHistoryScreen = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -82,7 +82,7 @@ const ChatHistoryScreen = () => {
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('vi-VN', {
+    return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
     });
@@ -152,18 +152,18 @@ const ChatHistoryScreen = () => {
         >
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Lịch sử trò chuyện</Text>
+        <Text style={styles.headerTitle}>Chat History</Text>
       </View>
 
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4A90E2" />
-          <Text style={styles.loadingText}>Đang tải lịch sử...</Text>
+          <Text style={styles.loadingText}>Loading history...</Text>
         </View>
       ) : chatHistory.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Icon name="history" size={80} color="#CCCCCC" />
-          <Text style={styles.emptyText}>Chưa có lịch sử trò chuyện</Text>
+          <Text style={styles.emptyText}>No chat history yet</Text>
         </View>
       ) : (
         <FlatList

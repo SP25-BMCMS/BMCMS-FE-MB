@@ -65,7 +65,7 @@ const PropertyDetailScreen = () => {
   if (!property) {
     return (
       <View style={styles.container}>
-        <Text>Không tìm thấy thông tin căn hộ</Text>
+        <Text>Property information not found</Text>
       </View>
     );
   }
@@ -107,16 +107,16 @@ const PropertyDetailScreen = () => {
         <Text style={styles.unitCode}>
           {property.building}
         </Text>
-        <Text style={styles.subTitle}>Tòa {property.description} | Căn hộ {property.unit}</Text>
+        <Text style={styles.subTitle}>Building {property.description} | Apartment {property.unit}</Text>
       
         {/* Additional Property Details */}
         <View style={styles.propertyDetails}>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Số Tầng:</Text>
-            <Text style={styles.detailValue}>{property.numberFloor || 'Chưa xác định'}</Text>
+            <Text style={styles.detailLabel}>Number of Floors:</Text>
+            <Text style={styles.detailValue}>{property.numberFloor || 'Unknown'}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Mã căn hộ:</Text>
+            <Text style={styles.detailLabel}>Apartment Code:</Text>
             <Text style={styles.detailValue}>{property.unit}</Text>
           </View>
           <View style={styles.detailRow}>
@@ -127,7 +127,7 @@ const PropertyDetailScreen = () => {
       </View>
 
       {/* Danh sách tiện ích */}
-      <Text style={styles.sectionTitle}>Dịch vụ</Text>
+      <Text style={styles.sectionTitle}>Services</Text>
       <FlatList
         key={`flatlist-${numColumns}`}
         data={services}
@@ -138,9 +138,9 @@ const PropertyDetailScreen = () => {
           <TouchableOpacity
             style={styles.serviceItem}
             onPress={() => {
-              if (item.name === "Sửa chữa trong nhà") {
+              if (item.name === "Repair inside") {
                 handleRepairInside();
-              } else if (item.name === "Sửa chữa ngoài nhà") {
+              } else if (item.name === "Repair outside") {
                 handleRepairOutside();
               }
             }}

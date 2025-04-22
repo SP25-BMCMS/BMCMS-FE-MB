@@ -75,7 +75,7 @@ const OTPScreen = () => {
       // Lấy thông tin người dùng từ AsyncStorage
       const tempUserDataString = await AsyncStorage.getItem('tempUserData');
       if (!tempUserDataString) {
-        Alert.alert("Lỗi", "Không tìm thấy thông tin đăng ký");
+        Alert.alert("Alert", "Cannot find registration information");
         return;
       }
       
@@ -106,12 +106,12 @@ const OTPScreen = () => {
       } else {
         setError(true);
         triggerErrorAnimation();
-        Alert.alert("Lỗi", response?.message || "OTP không hợp lệ");
+        Alert.alert("Alert", response?.message || "OTP is not valid");
       }
     } catch (error) {
       setError(true);
       triggerErrorAnimation();
-      Alert.alert("Lỗi", "Có lỗi xảy ra trong quá trình xác thực OTP");
+      Alert.alert("Alert", "An error occurred during OTP verification");
     }
   };
 
@@ -172,11 +172,11 @@ const OTPScreen = () => {
         <Icon name="arrow-back" size={24} color="#000" />
       </TouchableOpacity>
 
-      <Text style={styles.headerTitle}>Nhập mã OTP</Text>
+      <Text style={styles.headerTitle}>Enter OTP</Text>
 
       <View style={styles.inputSection}>
         <Text style={styles.inputLabel}>
-          Nhập mã xác thực đã được gửi đến {params.identifier}
+          OTP has been sent to {params.identifier}
         </Text>
 
         <Animated.View
@@ -205,7 +205,7 @@ const OTPScreen = () => {
         </Animated.View>
 
         {error && (
-          <Text style={styles.errorText}>Mã OTP không đúng, vui lòng nhập lại</Text>
+          <Text style={styles.errorText}>OTP is not valid, please enter again</Text>
         )}
       </View>
 
@@ -219,7 +219,7 @@ const OTPScreen = () => {
         onPress={handleVerify}
         disabled={otp.join("").length !== 6}
       >
-        <Text style={styles.verifyButtonText}>Xác thực</Text>
+        <Text style={styles.verifyButtonText}>Verify</Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>
   );

@@ -48,54 +48,41 @@ const RepairReviewScreen = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmitCrackReport = async () => {
-    // Validate required fields
-    if (!buildingDetailId) {
-      Alert.alert('Lỗi', 'Không tìm thấy thông tin tòa nhà');
-      return;
-    }
-
-    // Log chi tiết về báo cáo
-    console.log('🔍 Crack Report Details:', {
-      buildingDetailId,
-      description,
-      selectedRoom,
-      selectedPosition,
-      position: selectedPosition || '',
-      isPrivatesAsset: isPrivatesAsset === true ? true : false // Ensure boolean type
-    });
-
-    setIsSubmitting(true);
-
     try {
-      // Convert to explicit boolean to avoid any type issues
-      const privateAssetValue = isPrivatesAsset === true;
-      
-      console.log('📤 Sending API request with payload:', {
+      setIsSubmitting(true);
+
+      if (!buildingDetailId) {
+        Alert.alert('Error', 'Building information not found');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Detailed report log
+      console.log('Submission details:', {
         buildingDetailId,
         description,
-        position: selectedPosition || '',
-        isPrivatesAsset: privateAssetValue
+        position: selectedPosition,
+        images,
+        isPrivatesAsset: property.status === 'Tenant'
       });
-      
+
       const response = await CrackService.reportCrack({
         buildingDetailId,
         description,
-        position: selectedPosition || '',
+        position: selectedPosition,
         files: images,
-        isPrivatesAsset: privateAssetValue, // Ensure boolean type
+        isPrivatesAsset: property.status === 'Tenant'
       });
 
-      if (response) {
-        // Báo cáo thành công
+      // Successful report
+      if (response && response.isSuccess) {
         navigation.navigate('RepairSuccess');
       } else {
-        // Báo cáo thất bại
-        Alert.alert('Lỗi', 'Không thể gửi báo cáo vết nứt');
+        // Failed report
+        Alert.alert('Error', 'Could not submit crack report');
       }
     } catch (error) {
-      console.error('Lỗi khi gửi báo cáo:', error);
-      Alert.alert('Lỗi', error instanceof Error ? error.message : 'Đã có lỗi xảy ra');
-    } finally {
+      console.error('Error submitting report:', error);
       setIsSubmitting(false);
     }
   };
@@ -110,34 +97,30 @@ const RepairReviewScreen = () => {
         >
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Xem lại báo cáo</Text>
+        <Text style={styles.headerTitle}>Review Report</Text>
       </View>
 
       {/* Thông tin căn hộ */}
       <View style={styles.propertyInfo}>
         <Text style={styles.unitCode}>{property.building}</Text>
         <Text style={styles.subTitle}>
-          Tòa {property.description} | Căn hộ {property.unit}
+          Building {property.description} | Apartment {property.unit}
         </Text>
       </View>
 
       {/* Chi tiết báo cáo */}
       <View style={styles.reportDetails}>
-        <Text style={styles.label}>Mô tả chi tiết</Text>
+        <Text style={styles.label}>Description</Text>
         <Text style={styles.description}>{description}</Text>
 
-        <Text style={styles.label}>Vị trí vết nứt</Text>
+        <Text style={styles.label}>Location</Text>
         <Text style={styles.position}>
-          {selectedPosition 
-            ? selectedPosition
-                .split('/')
-                .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-                .join(' > ')
-                .replace(/-/g, ' ')
-            : 'Chưa xác định'}
+          {selectedRoom ? selectedRoom.replace(/_/g, ' ') + ' - ' 
+            + selectedPosition?.split('/').pop()?.replace(/_/g, ' ')
+            : 'Not specified'}
         </Text>
 
-        <Text style={styles.label}>Hình ảnh</Text>
+        <Text style={styles.label}>Photos</Text>
         <ScrollView horizontal style={styles.imageContainer}>
           {images.map((image, index) => (
             <Image 
@@ -156,9 +139,9 @@ const RepairReviewScreen = () => {
         disabled={isSubmitting}
       >
         {isSubmitting ? (
-          <ActivityIndicator color="#FFF" />
+          <ActivityIndicator color="#FFFFFF" />
         ) : (
-          <Text style={styles.submitButtonText}>Gửi báo cáo</Text>
+          <Text style={styles.submitButtonText}>Submit Report</Text>
         )}
       </TouchableOpacity>
     </ScrollView>

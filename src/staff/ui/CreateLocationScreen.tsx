@@ -47,6 +47,7 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
         floorNumber: parseInt(floorNumber.trim(), 10),
         areaType: areaType,
         description: description.trim(),
+        crackRecords: []
       };
 
       await LocationService.createLocation(locationData);

@@ -65,7 +65,7 @@ const ResidentPropertyScreen = () => {
         
         <View style={styles.cardFooter}>
           <View style={styles.statusBadge}>
-            <Text style={styles.statusBadgeText}>Đang sở hữu</Text>
+            <Text style={styles.statusBadgeText}>Owned</Text>
           </View>
         </View>
       </TouchableOpacity>

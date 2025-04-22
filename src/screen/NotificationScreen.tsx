@@ -105,8 +105,8 @@ const NotificationScreen = ({onReadAll }: {onReadAll: () => void }) => {
             style={styles.image}
             resizeMode="contain"
           />
-          <Text style={styles.noNotificationText}>Bạn Chưa Đăng Nhập</Text>
-          <Text style={styles.subText}>Hãy đăng nhập để nhận được thông tin</Text>
+          <Text style={styles.noNotificationText}>Not Signed In</Text>
+          <Text style={styles.subText}>Please sign in to receive notifications</Text>
 
           <TouchableOpacity
             style={styles.retryButton}

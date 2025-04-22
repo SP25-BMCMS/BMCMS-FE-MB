@@ -16,6 +16,13 @@ import { RootStackParamList } from "../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from 'expo-linear-gradient';
 
+interface ChatMessage {
+  id: string;
+  text: string;
+  isBot: boolean;
+  timestamp: number;
+}
+
 type AccountScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   "MainApp"
@@ -28,6 +35,8 @@ const AccountScreen = () => {
   const [bodyAnim] = useState(new Animated.Value(0));
   const [userData, setUserData] = useState<any>(null);
   const [userType, setUserType] = useState<string | null>(null);
+  const [historyDates, setHistoryDates] = useState<string[]>([]);
+  const [groupedHistory, setGroupedHistory] = useState<{[date: string]: ChatMessage[]}>({});
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
@@ -72,7 +81,7 @@ const AccountScreen = () => {
         setIsLoggedIn(false);
       }
     } catch (error) {
-      console.error("Lỗi khi kiểm tra trạng thái đăng nhập:", error);
+      console.error("Error checking login status:", error);
     }
   };
 
@@ -90,7 +99,7 @@ const AccountScreen = () => {
 
   const handleChangePassword = () => {
     // Xử lý đổi mật khẩu
-    Alert.alert("Thông báo", "Chức năng đổi mật khẩu sẽ được phát triển sau");
+    Alert.alert("Notification", "The password change function will be developed later");
   };
   
   // Lấy lịch sử chat
@@ -121,8 +130,8 @@ const AccountScreen = () => {
     
     // Sắp xếp ngày từ mới đến cũ
     dates.sort((a, b) => {
-      const dateA = new Date(a.split(' ').slice(1).join(' ').replace('tháng', ''));
-      const dateB = new Date(b.split(' ').slice(1).join(' ').replace('tháng', ''));
+      const dateA = new Date(a.split(' ').slice(1).join(' ').replace('month', ''));
+      const dateB = new Date(b.split(' ').slice(1).join(' ').replace('month', ''));
       return dateB.getTime() - dateA.getTime();
     });
     

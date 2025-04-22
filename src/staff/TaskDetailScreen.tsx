@@ -354,7 +354,7 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
           )}
           
           <View style={styles.buttonContainer}>
-            {/* Chỉ hiển thị nút maintenance history cho các công việc bảo trì định kỳ */}
+            {/* Only show maintenance history button for scheduled maintenance tasks */}
             {taskDetail.task && taskDetail.task.crack_id === "" && taskDetail.task.schedule_job_id && (
               <TouchableOpacity 
                 style={[styles.actionButton, styles.maintenanceButton]}
@@ -372,7 +372,7 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
               </TouchableOpacity>
             )}
 
-            {/* Chỉ hiển thị button này khi status không phải là Confirmed */}
+            {/* Only show this button when status is not Confirmed */}
             {taskDetail.status !== 'Confirmed' && (
               <TouchableOpacity 
                 style={[styles.actionButton, styles.completeButton]}

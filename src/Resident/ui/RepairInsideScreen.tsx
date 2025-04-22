@@ -112,16 +112,16 @@ const RepairInsideScreen = () => {
   const handleContinueToReview = () => {
     // Validate all required fields
     if (!isDescriptionValid) {
-      Alert.alert("Lỗi", "Vui lòng nhập mô tả chi tiết (ít nhất 5 ký tự)");
+      Alert.alert("Error", "Please enter a detailed description (minimum 5 characters)");
       return;
     }
 
     if (!isPositionValid) {
-      Alert.alert("Lỗi", "Vui lòng chọn phòng và vị trí vết nứt");
+      Alert.alert("Error", "Please select a room and crack position");
       return;
     }
-    
-    // Sử dụng position từ CRACK_POSITIONS mà không thêm thông tin
+
+    // Use position from CRACK_POSITIONS
     console.log('🔍 Position to send:', selectedPosition);
 
     // Navigate to review screen with all necessary data
@@ -141,20 +141,20 @@ const RepairInsideScreen = () => {
         return (
           <>
             {/* Nhập mô tả */}
-            <Text style={styles.label}>Chi tiết</Text>
+            <Text style={styles.label}>Details</Text>
             <TextInput
               style={styles.input}
-              placeholder="Nhập miêu tả"
+              placeholder="Enter description"
               value={description}
               onChangeText={setDescription}
               multiline
             />
             {!isDescriptionValid && (
-              <Text style={styles.warningText}>Nhập ít nhất 5 ký tự mô tả</Text>
+              <Text style={styles.warningText}>Enter at least 5 characters of description</Text>
             )}
 
             {/* Chọn phòng */}
-            <Text style={styles.label}>Chọn phòng</Text>
+            <Text style={styles.label}>Select room</Text>
             <View style={styles.pickerContainer}>
               <Picker
                 selectedValue={selectedRoom}
@@ -164,7 +164,7 @@ const RepairInsideScreen = () => {
                   setSelectedPosition(''); // Reset position when room changes
                 }}
               >
-                <Picker.Item label="Chọn phòng" value="" />
+                <Picker.Item label="Select room" value="" />
                 {Object.keys(CRACK_POSITIONS).map((room) => (
                   <Picker.Item 
                     key={room} 
@@ -178,7 +178,7 @@ const RepairInsideScreen = () => {
             {/* Chọn vị trí */}
             {selectedRoom && (
               <>
-                <Text style={styles.label}>Chọn vị trí</Text>
+                <Text style={styles.label}>Select position</Text>
                 <View style={styles.pickerContainer}>
                   <Picker
                     selectedValue={selectedPosition}
@@ -190,7 +190,7 @@ const RepairInsideScreen = () => {
                       setSelectedPosition(itemValue);
                     }}
                   >
-                    <Picker.Item label="Chọn vị trí" value="" />
+                    <Picker.Item label="Select position" value="" />
                     {Object.entries(CRACK_POSITIONS[selectedRoom as keyof typeof CRACK_POSITIONS]).map(([key, value]) => {
                       console.log('🔍 Position Option:', { key, value });
                       return (
@@ -220,7 +220,7 @@ const RepairInsideScreen = () => {
               disabled={!(isDescriptionValid && isPositionValid)}
               onPress={() => setCurrentStep(2)}
             >
-              <Text style={styles.continueButtonText}>Tiếp tục</Text>
+              <Text style={styles.continueButtonText}>Continue</Text>
             </TouchableOpacity>
           </>
         );
@@ -229,13 +229,13 @@ const RepairInsideScreen = () => {
         return (
           <>
             {/* Thêm hình ảnh */}
-            <Text style={styles.label}>Thêm hình ảnh</Text>
+            <Text style={styles.label}>Add photos</Text>
             <TouchableOpacity
               style={styles.imagePicker}
               onPress={openImageSourceModal}
             >
               <Icon name="add-a-photo" size={30} color="#B77F2E" />
-              <Text>Chọn ảnh</Text>
+              <Text>Choose photo</Text>
             </TouchableOpacity>
 
             {/* Modal chọn nguồn ảnh */}
@@ -245,20 +245,26 @@ const RepairInsideScreen = () => {
               style={styles.modal}
             >
               <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Chọn nguồn ảnh</Text>
+                <Text style={styles.modalTitle}>Select photo source</Text>
                 <TouchableOpacity
                   style={styles.modalOption}
                   onPress={takePhoto}
                 >
                   <Icon name="camera-alt" size={24} color="#B77F2E" />
-                  <Text style={styles.modalOptionText}>Chụp ảnh</Text>
+                  <Text style={styles.modalOptionText}>Take photo</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.modalOption}
                   onPress={pickImageFromLibrary}
                 >
                   <Icon name="photo-library" size={24} color="#B77F2E" />
-                  <Text style={styles.modalOptionText}>Chọn từ thư viện</Text>
+                  <Text style={styles.modalOptionText}>Choose from gallery</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={closeImageSourceModal}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
             </Modal>
@@ -278,9 +284,7 @@ const RepairInsideScreen = () => {
               ))}
             </View>
             {images.length === 0 && (
-              <Text style={styles.warningText}>
-                Vui lòng thêm ít nhất 1 ảnh
-              </Text>
+              <Text style={styles.warningText}>Please add at least 1 photo</Text>
             )}
 
             {/* Nút điều hướng */}
@@ -292,7 +296,7 @@ const RepairInsideScreen = () => {
               disabled={!isImagesValid}
               onPress={handleContinueToReview}
             >
-              <Text style={styles.continueButtonText}>Tiếp tục</Text>
+              <Text style={styles.continueButtonText}>Continue</Text>
             </TouchableOpacity>
           </>
         );
@@ -312,9 +316,9 @@ const RepairInsideScreen = () => {
         >
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Yêu cầu sửa chữa</Text>
+        <Text style={styles.headerTitle}>Repair Request</Text>
         <Text style={styles.stepIndicator}>
-          <Text style={{ color: "#000" }}>Bước </Text>
+          <Text style={{ color: "#000" }}>Step </Text>
           <Text style={{ color: "#B77F2E" }}>{currentStep}</Text>
           <Text style={{ color: "#000" }}>/2</Text>
         </Text>
@@ -326,7 +330,7 @@ const RepairInsideScreen = () => {
           {property.building}
         </Text>
         <Text style={styles.subTitle}>
-          Tòa {property.description} | Căn hộ {property.unit} 
+          Building {property.description} | Apartment {property.unit} 
         </Text>
       </View>
 
@@ -486,6 +490,19 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 8,
     marginBottom: 10,
+  },
+  cancelButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 15,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+  },
+  cancelButtonText: {
+    color: "#B77F2E",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginLeft: 10,
   },
 });
 

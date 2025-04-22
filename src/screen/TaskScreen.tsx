@@ -62,7 +62,7 @@ const TaskScreen = () => {
         return response.data;
       } catch (error) {
         console.error('Error fetching all task assignments:', error);
-        setError('Không thể tải dữ liệu. Vui lòng thử lại sau.');
+        setError('Cannot load data. Please try again later.');
         return { data: [] };
       }
     },
@@ -86,7 +86,7 @@ const TaskScreen = () => {
         return response;
       } catch (error) {
         console.error('Error fetching user task assignments:', error);
-        setError('Không thể tải dữ liệu nhiệm vụ. Vui lòng thử lại sau.');
+        setError('Cannot load task data. Please try again later.');
         return { data: [] };
       }
     },
@@ -338,7 +338,7 @@ const TaskScreen = () => {
                 const url = VITE_CHANGE_STATUS_CRACK.replace('{id}', crackReportId);
                 await instance.patch(url, {
                   status: "Reviewing",
-                  description: "Đang tiến hành xem xét"
+                  description: "In progress review"
                 });
                 
                 // 2. Tạo worklog để ghi lại việc thay đổi trạng thái
@@ -508,7 +508,7 @@ const TaskScreen = () => {
                       <Text style={styles.statusText}>{getStatusText(assignment.status)}</Text>
                     </View>
                     
-                    {/* Hiển thị chip Reviewing khi status là Confirmed và đã nhấn button */}
+                    {/* Display Reviewing chip when status is Confirmed and button has been pressed */}
                     {String(assignment.status) === 'Confirmed' && reviewingTasks.includes(assignment.assignment_id) && (
                       <View style={[styles.statusBadge, styles.reviewingChip]}>
                         <Text style={styles.statusText}>Reviewing</Text>
@@ -527,7 +527,7 @@ const TaskScreen = () => {
                     {formatDate(assignment.created_at)}
                   </Text>
                   
-                  {/* Hiển thị loại task */}
+                  {/* Display task type */}
                   <View style={styles.taskTypeBadge}>
                     <Icon 
                       name={viewMode === ViewMode.MAINTENANCE_TASKS ? "build" : "report-problem"} 
@@ -545,7 +545,7 @@ const TaskScreen = () => {
                   </View>
                 </View>
 
-                {/* Chỉ hiển thị nút Reviewing cho các task có crack_id và ở tab Crack Tasks */}
+                {/* Only display Reviewing button for tasks with crack_id in Crack Tasks tab */}
                 {viewMode === ViewMode.CRACK_TASKS && renderReviewingButton(assignment)}
               </TouchableOpacity>
             ))
