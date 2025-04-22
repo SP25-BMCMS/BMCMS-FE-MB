@@ -6,89 +6,391 @@ import {
   Image,
   TouchableOpacity,
   FlatList,
+  ActivityIndicator,
+  RefreshControl,
+  Alert,
+  Animated,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { NotificationService, Notification } from "../service/Notification";
+import Icon from "react-native-vector-icons/MaterialIcons";
+import { format, formatDistanceToNow } from "date-fns";
+import { showMessage } from "react-native-flash-message";
+import { Swipeable } from "react-native-gesture-handler";
 
-const NotificationScreen = ({onReadAll }: {onReadAll: () => void }) => {
+const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
   const navigation = useNavigation();
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userType, setUserType] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchUserStatus = async () => {
-    const user = await AsyncStorage.getItem("userData");
+    const userDataString = await AsyncStorage.getItem("userData");
     const type = await AsyncStorage.getItem("userType");
-    setIsLoggedIn(!!user);
+    const id = await AsyncStorage.getItem("userId");
+    const token = await AsyncStorage.getItem("accessToken");
+    
+    console.log("DEBUG - User Info:", { 
+      hasUserData: !!userDataString, 
+      userType: type, 
+      userId: id,
+      hasToken: !!token
+    });
+    
+    setIsLoggedIn(!!userDataString && !!token);
     setUserType(type);
+    setUserId(id);
   };
 
   const fetchNotifications = async () => {
-    const userString = await AsyncStorage.getItem("userData");
-    const userType = await AsyncStorage.getItem("userType");
-    
-    if (!userString) return;
-
-    const user = JSON.parse(userString);
-    // Xác định key khác nhau cho staff và resident
-    const userKey = userType === 'staff' ? user.username : user.phone.toString();
+    console.log("DEBUG - fetchNotifications called, userId:", userId);
+    if (!userId) {
+      console.log("DEBUG - No userId, skipping notification fetch");
+      return;
+    }
 
     setLoading(true);
-    const data = await AsyncStorage.getItem(`notifications_${userKey}`);
-    const parsed = data ? JSON.parse(data) : [];
-    setNotifications(parsed);
-    setLoading(false);
+    try {
+      console.log("DEBUG - Fetching notifications for userId:", userId);
+      const response = await NotificationService.getNotificationsByUserId(userId);
+      console.log("DEBUG - Notification response:", response);
+      
+      let notificationData: Notification[] = [];
+      
+      // Handle different possible API response structures
+      if (response.success && Array.isArray(response.data)) {
+        // Standard response structure
+        notificationData = response.data;
+        console.log("DEBUG - Notifications loaded:", response.data.length);
+      } else if (Array.isArray(response)) {
+        // If API directly returns array
+        notificationData = response;
+        console.log("DEBUG - Notifications loaded (direct array):", response.length);
+      } else if (response.data && Array.isArray(response.data)) {
+        // Axios style response
+        notificationData = response.data;
+        console.log("DEBUG - Notifications loaded (axios style):", response.data.length);
+      } else {
+        console.log("DEBUG - Unexpected response format:", response);
+        notificationData = [];
+      }
+      
+      setNotifications(notificationData);
+      
+      // Count unread notifications
+      const unread = notificationData.filter(item => !item.isRead).length;
+      setUnreadCount(unread);
+      console.log("DEBUG - Unread notification count:", unread);
+      
+    } catch (error) {
+      console.error("DEBUG - Error fetching notifications:", error);
+      setNotifications([]);
+      setUnreadCount(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const markAsRead = async (id: string) => {
+    try {
+      await NotificationService.markNotificationAsRead(id);
+      // Update local state to reflect the change
+      setNotifications(prevNotifications =>
+        prevNotifications.map(notification =>
+          notification.id === id ? { ...notification, isRead: true } : notification
+        )
+      );
+      // Decrease unread count
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      
+      // Show success toast with custom style
+      showMessage({
+        message: "Notification marked as read",
+        type: "success",
+        icon: "success",
+        duration: 2000,
+        backgroundColor: "#4CAF50",
+        color: "#FFFFFF",
+        style: {
+          borderRadius: 8,
+          marginTop: 40,
+        },
+      });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      
+      // Show error toast with custom style
+      showMessage({
+        message: "Failed to mark notification as read",
+        description: "Please try again later",
+        type: "danger",
+        icon: "danger",
+        duration: 3000,
+        backgroundColor: "#F44336",
+        color: "#FFFFFF",
+        style: {
+          borderRadius: 8,
+          marginTop: 40,
+        },
+      });
+    }
+  };
+
+  const deleteNotification = async (id: string) => {
+    try {
+      // Remove notification from local state
+      setNotifications(prevNotifications =>
+        prevNotifications.filter(notification => notification.id !== id)
+      );
+      
+      // If the deleted notification was unread, update the counter
+      const wasUnread = notifications.find(n => n.id === id)?.isRead === false;
+      if (wasUnread) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+      
+      // Show success toast
+      showMessage({
+        message: "Notification deleted",
+        type: "success",
+        icon: "success",
+        duration: 2000,
+        backgroundColor: "#4CAF50",
+        color: "#FFFFFF",
+        style: {
+          borderRadius: 8,
+          marginTop: 40,
+        },
+      });
+      
+      // Here you would call an API endpoint to delete the notification on the server
+      // await NotificationService.deleteNotification(id);
+      
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      
+      // Show error toast
+      showMessage({
+        message: "Failed to delete notification",
+        description: "Please try again later",
+        type: "danger",
+        icon: "danger",
+        duration: 3000,
+        backgroundColor: "#F44336",
+        color: "#FFFFFF",
+        style: {
+          borderRadius: 8,
+          marginTop: 40,
+        },
+      });
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchNotifications();
+    setRefreshing(false);
   };
 
   useEffect(() => {
     fetchUserStatus();
   }, []);
 
+  useEffect(() => {
+    if (userId) {
+      fetchNotifications();
+    }
+  }, [userId]);
+
   useFocusEffect(
     React.useCallback(() => {
-      fetchNotifications();
-      onReadAll(); 
-    }, [])
+      if (userId) {
+        fetchNotifications();
+      }
+      onReadAll();
+    }, [userId])
   );
 
-  const deleteNotification = async (id: string) => {
-    const userString = await AsyncStorage.getItem("userData");
-    const userType = await AsyncStorage.getItem("userType");
-    
-    if (!userString) return;
-  
-    const user = JSON.parse(userString);
-    // Xác định key khác nhau cho staff và resident
-    const userKey = userType === 'staff' ? user.username : user.phone.toString();
-    
-    const data = await AsyncStorage.getItem(`notifications_${userKey}`);
-    const parsed = data ? JSON.parse(data) : [];
-  
-    const updatedNotifications = parsed.filter((item: any) => item.id !== id);
-  
-    await AsyncStorage.setItem(
-      `notifications_${userKey}`,
-      JSON.stringify(updatedNotifications)
-    );
-  
-    setNotifications(updatedNotifications);
+  const formatNotificationDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      
+      // If less than 24 hours ago, show relative time
+      if (now.getTime() - date.getTime() < 24 * 60 * 60 * 1000) {
+        return formatDistanceToNow(date, { addSuffix: true });
+      }
+      
+      // Otherwise show formatted date
+      return format(date, "dd MMM yyyy • HH:mm");
+    } catch (error) {
+      return dateString;
+    }
   };
 
-  
+  // Get icon based on notification type
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'TASK_ASSIGNMENT':
+        return <Icon name="assignment" size={24} color="#1976D2" />;
+      case 'SYSTEM':
+        return <Icon name="notifications" size={24} color="#4CAF50" />;
+      case 'MAINTENANCE':
+        return <Icon name="build" size={24} color="#FF9800" />;
+      case 'CRACK':
+        return <Icon name="broken-image" size={24} color="#F44336" />;
+      default:
+        return <Icon name="notifications" size={24} color="#757575" />;
+    }
+  };
 
-  const renderItem = ({ item }: { item: any }) => (
-    <View style={styles.notiCard}>
-      <Text style={styles.notiMessage}>{item.message}</Text>
-      <Text style={styles.notiTime}>{item.timestamp}</Text>
-      <TouchableOpacity
-      style={styles.deleteButton}
-      onPress={() => deleteNotification(item.id)}
+  const navigateToDetail = (notification: Notification) => {
+    // Mark as read when notification is tapped
+    if (!notification.isRead) {
+      markAsRead(notification.id);
+    }
+    
+    // Here you would implement navigation based on notification.link or type
+    Alert.alert("Navigate to", notification.link || "Details");
+  };
+
+  const renderRightActions = (id: string, progress: Animated.AnimatedInterpolation<number>) => {
+    const trans = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [80, 0],
+    });
+    
+    return (
+      <Animated.View
+        style={[
+          styles.deleteSwipeAction,
+          { transform: [{ translateX: trans }] }
+        ]}
+      >
+        <TouchableOpacity
+          style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}
+          onPress={() => deleteNotification(id)}
+        >
+          <Icon name="delete" size={24} color="#FFFFFF" />
+          <Text style={styles.deleteActionText}>Delete</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
+  const renderItem = ({ item }: { item: Notification }) => (
+    <Swipeable
+      renderRightActions={(progress) => renderRightActions(item.id, progress)}
+      friction={2}
+      rightThreshold={40}
     >
-      <Text style={styles.deleteButtonText}>Delete</Text>
-    </TouchableOpacity>
-    </View>
+      <TouchableOpacity 
+        style={[styles.notiCard, !item.isRead && styles.unreadCard]}
+        onPress={() => navigateToDetail(item)}
+      >
+        <View style={styles.notiHeader}>
+          <View style={styles.notiIconContainer}>
+            {getNotificationIcon(item.type)}
+            {!item.isRead && (
+              <View style={styles.iconBadge} />
+            )}
+          </View>
+          <View style={styles.notiContent}>
+            <Text style={[styles.notiTitle, !item.isRead && styles.unreadText]}>
+              {item.title}
+            </Text>
+            <Text style={styles.notiMessage}>{item.content}</Text>
+            <Text style={styles.notiTime}>{formatNotificationDate(item.createdAt)}</Text>
+          </View>
+          <Icon name="chevron-left" size={16} color="#CCCCCC" style={styles.swipeIndicator} />
+        </View>
+        <View style={styles.notiActions}>
+          {!item.isRead && (
+            <TouchableOpacity
+              style={styles.markReadButton}
+              onPress={() => markAsRead(item.id)}
+            >
+              <Icon name="check-circle" size={20} color="#4CAF50" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </TouchableOpacity>
+    </Swipeable>
   );
+
+  // Mark all notifications as read
+  const markAllAsRead = async () => {
+    if (notifications.length === 0) return;
+    
+    const unreadNotifications = notifications.filter(notification => !notification.isRead);
+    if (unreadNotifications.length === 0) return;
+    
+    try {
+      // Show loading toast
+      showMessage({
+        message: "Marking all notifications as read...",
+        type: "info",
+        icon: "info",
+        duration: 2000,
+        backgroundColor: "#2196F3",
+        color: "#FFFFFF",
+        style: {
+          borderRadius: 8,
+          marginTop: 40,
+        },
+      });
+      
+      // Mark each unread notification as read
+      for (const notification of unreadNotifications) {
+        await NotificationService.markNotificationAsRead(notification.id);
+      }
+      
+      // Update local state
+      setNotifications(prevNotifications =>
+        prevNotifications.map(notification => ({ ...notification, isRead: true }))
+      );
+      
+      // Reset unread count
+      setUnreadCount(0);
+      
+      // Show success toast
+      showMessage({
+        message: `${unreadNotifications.length} notifications marked as read`,
+        type: "success",
+        icon: "success",
+        duration: 3000,
+        backgroundColor: "#4CAF50",
+        color: "#FFFFFF",
+        style: {
+          borderRadius: 8,
+          marginTop: 40,
+        },
+      });
+      
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      
+      // Show error toast
+      showMessage({
+        message: "Failed to mark all notifications as read",
+        description: "Please try again later",
+        type: "danger",
+        icon: "danger",
+        duration: 3000,
+        backgroundColor: "#F44336",
+        color: "#FFFFFF",
+        style: {
+          borderRadius: 8,
+          marginTop: 40,
+        },
+      });
+    }
+  };
 
   if (!isLoggedIn) {
     return (
@@ -98,7 +400,7 @@ const NotificationScreen = ({onReadAll }: {onReadAll: () => void }) => {
           <Text style={styles.headerTitle}>NOTIFICATION</Text>
         </View>
 
-        {/* UI chưa đăng nhập */}
+        {/* UI for not logged in users */}
         <View style={styles.content}>
           <Image
             source={require("../../assets/notification-login.png")}
@@ -109,11 +411,11 @@ const NotificationScreen = ({onReadAll }: {onReadAll: () => void }) => {
           <Text style={styles.subText}>Please sign in to receive notifications</Text>
 
           <TouchableOpacity
-            style={styles.retryButton}
+            style={styles.actionButton}
             // @ts-ignore
             onPress={() => navigation.navigate("SignIn")}
           >
-            <Text style={styles.retryText}>SignIn</Text>
+            <Text style={styles.actionButtonText}>Sign In</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -127,9 +429,26 @@ const NotificationScreen = ({onReadAll }: {onReadAll: () => void }) => {
         <Text style={styles.headerTitle}>
           {userType === 'staff' ? 'STAFF NOTIFICATIONS' : 'NOTIFICATIONS'}
         </Text>
+        <View style={styles.headerRight}>
+          {unreadCount > 0 && (
+            <View style={styles.badgeContainer}>
+              <Text style={styles.badgeText}>{unreadCount}</Text>
+            </View>
+          )}
+          {unreadCount > 0 && (
+            <TouchableOpacity style={styles.readAllButton} onPress={markAllAsRead}>
+              <Icon name="done-all" size={24} color="#4CAF50" />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
-      {notifications.length === 0 ? (
+      {loading && !refreshing ? (
+        <View style={styles.content}>
+          <ActivityIndicator size="large" color="#B77F2E" />
+          <Text style={styles.loadingText}>Loading notifications...</Text>
+        </View>
+      ) : notifications.length === 0 ? (
         // Empty notification list
         <View style={styles.content}>
           <Image
@@ -137,7 +456,7 @@ const NotificationScreen = ({onReadAll }: {onReadAll: () => void }) => {
             style={styles.image}
             resizeMode="contain"
           />
-          <Text style={styles.noNotificationText}>No notification</Text>
+          <Text style={styles.noNotificationText}>No Notifications</Text>
           <Text style={styles.subText}>
             {userType === 'staff' 
               ? "You don't have any staff notifications yet" 
@@ -146,11 +465,11 @@ const NotificationScreen = ({onReadAll }: {onReadAll: () => void }) => {
           </Text>
 
           <TouchableOpacity
-            style={styles.retryButton}
+            style={styles.actionButton}
             onPress={fetchNotifications}
             disabled={loading}
           >
-            <Text style={styles.retryText}>{loading ? "Loading..." : "Retry"}</Text>
+            <Text style={styles.actionButtonText}>{loading ? "Loading..." : "Refresh"}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -159,6 +478,13 @@ const NotificationScreen = ({onReadAll }: {onReadAll: () => void }) => {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={{ padding: 16 }}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh}
+              colors={["#B77F2E"]}
+            />
+          }
         />
       )}
     </View>
@@ -166,7 +492,10 @@ const NotificationScreen = ({onReadAll }: {onReadAll: () => void }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: { 
+    flex: 1, 
+    backgroundColor: "#fff" 
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -182,11 +511,20 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textTransform: "uppercase",
   },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   content: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 20,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#666",
   },
   image: {
     width: 200,
@@ -205,13 +543,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
   },
-  retryButton: {
+  actionButton: {
     backgroundColor: "#B77F2E",
     paddingVertical: 12,
     paddingHorizontal: 40,
     borderRadius: 30,
   },
-  retryText: {
+  actionButtonText: {
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
@@ -223,29 +561,125 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderLeftWidth: 4,
     borderLeftColor: "#B77F2E",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
-  notiMessage: {
+  unreadCard: {
+    backgroundColor: "#FEF8E8",
+    borderLeftColor: "#FFC107",
+  },
+  notiHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  notiIconContainer: {
+    marginRight: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#f1f1f1",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  iconBadge: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#FF4500",
+    borderWidth: 1,
+    borderColor: "#FFF",
+  },
+  notiContent: {
+    flex: 1,
+  },
+  notiTitle: {
     fontSize: 16,
     fontWeight: "600",
     color: "#333",
+    marginBottom: 4,
+  },
+  unreadText: {
+    fontWeight: "700",
+    color: "#000",
+  },
+  notiMessage: {
+    fontSize: 14,
+    color: "#555",
+    marginBottom: 8,
+    lineHeight: 20,
   },
   notiTime: {
     fontSize: 12,
     color: "#888",
-    marginTop: 4,
+  },
+  notiActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 12,
+  },
+  markReadButton: {
+    marginLeft: 8,
+    padding: 8,
   },
   deleteButton: {
-    marginTop: 8,
-    alignSelf: 'flex-end',
-    backgroundColor: '#E53935',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 5,
+    marginLeft: 8,
+    padding: 8,
   },
-  deleteButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+  retryButton: {
+    backgroundColor: "#B77F2E",
+    paddingVertical: 12,
+    paddingHorizontal: 40,
+    borderRadius: 30,
+  },
+  retryText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  badgeContainer: {
+    backgroundColor: "#FF4500",
+    borderRadius: 15,
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 5,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
+    borderWidth: 1.5,
+    borderColor: "#FFF",
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  readAllButton: {
+    marginLeft: 8,
+    padding: 8,
+  },
+  deleteSwipeAction: {
+    backgroundColor: "#E53935",
+    justifyContent: "center",
+    alignItems: "center",
+    width: 80,
+    height: "100%",
+    marginBottom: 12,
+  },
+  deleteActionText: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
+    fontSize: 12,
+    marginTop: 4,
+  },
+  swipeIndicator: {
+    marginLeft: 12,
   },
 });
 
