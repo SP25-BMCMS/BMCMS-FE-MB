@@ -55,4 +55,6 @@ declare module '@env'{
   export const VITE_GET_AREA_LIST: string;
   export const VITE_GET_NOTIFICATION_BY_USER_ID: string;
   export const VITE_READ_NOTIFICATION: string;
+  export const VITE_MARK_ALL_AS_READ: string;
+  export const VITE_DELETE_ALL_NOTIFICATION: string;
 }

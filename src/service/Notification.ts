@@ -3,7 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { 
   VITE_API_SECRET, 
   VITE_GET_NOTIFICATION_BY_USER_ID,
-  VITE_READ_NOTIFICATION
+  VITE_READ_NOTIFICATION,
+  VITE_MARK_ALL_AS_READ,
+  VITE_DELETE_ALL_NOTIFICATION
 } from '@env';
 
 export interface NotificationResponse {
@@ -75,6 +77,28 @@ export const NotificationService = {
       return response.data;
     } catch (error) {
       console.error('Error marking notification as read:', error);
+      throw error;
+    }
+  },
+
+  markAllAsRead: async (userId: string): Promise<any> => {
+    try {
+      const endpoint = VITE_MARK_ALL_AS_READ.replace('{userId}', userId);
+      const response = await instance.put(endpoint);
+      return response.data;
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      throw error;
+    }
+  },
+
+  deleteAllNotifications: async (userId: string): Promise<any> => {
+    try {
+      const endpoint = VITE_DELETE_ALL_NOTIFICATION.replace('{userId}', userId);
+      const response = await instance.delete(endpoint);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting all notifications:', error);
       throw error;
     }
   }

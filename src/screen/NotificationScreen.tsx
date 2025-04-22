@@ -325,7 +325,7 @@ const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
 
   // Mark all notifications as read
   const markAllAsRead = async () => {
-    if (notifications.length === 0) return;
+    if (notifications.length === 0 || !userId) return;
     
     const unreadNotifications = notifications.filter(notification => !notification.isRead);
     if (unreadNotifications.length === 0) return;
@@ -345,10 +345,8 @@ const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
         },
       });
       
-      // Mark each unread notification as read
-      for (const notification of unreadNotifications) {
-        await NotificationService.markNotificationAsRead(notification.id);
-      }
+      // Call the API to mark all notifications as read
+      await NotificationService.markAllAsRead(userId);
       
       // Update local state
       setNotifications(prevNotifications =>
@@ -390,6 +388,81 @@ const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
         },
       });
     }
+  };
+
+  // Delete all notifications
+  const deleteAllNotifications = async () => {
+    if (notifications.length === 0 || !userId) return;
+    
+    Alert.alert(
+      "Delete All Notifications",
+      "Are you sure you want to delete all notifications? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Delete All",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Show loading toast
+              showMessage({
+                message: "Deleting all notifications...",
+                type: "info",
+                icon: "info",
+                duration: 2000,
+                backgroundColor: "#2196F3",
+                color: "#FFFFFF",
+                style: {
+                  borderRadius: 8,
+                  marginTop: 40,
+                },
+              });
+              
+              // Call API to delete all notifications
+              await NotificationService.deleteAllNotifications(userId);
+              
+              // Clear local state
+              setNotifications([]);
+              setUnreadCount(0);
+              
+              // Show success toast
+              showMessage({
+                message: "All notifications deleted",
+                type: "success",
+                icon: "success",
+                duration: 3000,
+                backgroundColor: "#4CAF50",
+                color: "#FFFFFF",
+                style: {
+                  borderRadius: 8,
+                  marginTop: 40,
+                },
+              });
+            } catch (error) {
+              console.error("Error deleting all notifications:", error);
+              
+              // Show error toast
+              showMessage({
+                message: "Failed to delete all notifications",
+                description: "Please try again later",
+                type: "danger",
+                icon: "danger",
+                duration: 3000,
+                backgroundColor: "#F44336",
+                color: "#FFFFFF",
+                style: {
+                  borderRadius: 8,
+                  marginTop: 40,
+                },
+              });
+            }
+          }
+        }
+      ]
+    );
   };
 
   if (!isLoggedIn) {
@@ -438,6 +511,11 @@ const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
           {unreadCount > 0 && (
             <TouchableOpacity style={styles.readAllButton} onPress={markAllAsRead}>
               <Icon name="done-all" size={24} color="#4CAF50" />
+            </TouchableOpacity>
+          )}
+          {notifications.length > 0 && (
+            <TouchableOpacity style={styles.deleteAllButton} onPress={deleteAllNotifications}>
+              <Icon name="delete-sweep" size={24} color="#E53935" />
             </TouchableOpacity>
           )}
         </View>
@@ -680,6 +758,10 @@ const styles = StyleSheet.create({
   },
   swipeIndicator: {
     marginLeft: 12,
+  },
+  deleteAllButton: {
+    marginLeft: 8,
+    padding: 8,
   },
 });
 
