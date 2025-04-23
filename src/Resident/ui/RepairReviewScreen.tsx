@@ -57,11 +57,20 @@ const RepairReviewScreen = () => {
         return;
       }
 
+      // Đảm bảo position đúng định dạng "area/building/floor/direction"
+      let formattedPosition = selectedPosition;
+      if (selectedPosition && selectedPosition.split('/').length < 4) {
+        // Nếu position đang ở dạng "kitchen/floor", chuyển thành "kitchen/building/1/floor"
+        const [area, direction] = selectedPosition.split('/');
+        formattedPosition = `${area}/building/1/${direction}`;
+        console.log('🔍 Formatted position:', formattedPosition);
+      }
+
       // Detailed report log
       console.log('Submission details:', {
         buildingDetailId,
         description,
-        position: selectedPosition,
+        position: formattedPosition,
         images,
         isPrivatesAsset: property.status === 'Tenant'
       });
@@ -69,7 +78,7 @@ const RepairReviewScreen = () => {
       const response = await CrackService.reportCrack({
         buildingDetailId,
         description,
-        position: selectedPosition,
+        position: formattedPosition,
         files: images,
         isPrivatesAsset: property.status === 'Tenant'
       });
@@ -83,6 +92,7 @@ const RepairReviewScreen = () => {
       }
     } catch (error) {
       console.error('Error submitting report:', error);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to submit report');
       setIsSubmitting(false);
     }
   };

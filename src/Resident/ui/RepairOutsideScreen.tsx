@@ -122,8 +122,8 @@ const RepairOutsideScreen = () => {
     
     // Hiển thị thông báo xác nhận vị trí
     Alert.alert(
-      "Xác nhận thông tin",
-      `Vị trí báo cáo: ${selectedPosition
+      "Confirmation",
+      `Report position: ${selectedPosition
         .split('/')
         .map(part => part.charAt(0).toUpperCase() + part.slice(1))
         .join(' > ')}\n\nAre you sure you want to continue?`,
@@ -133,7 +133,7 @@ const RepairOutsideScreen = () => {
           style: "cancel"
         },
         { 
-          text: "Tiếp tục", 
+          text: "Continue", 
           onPress: () => {
             // Sử dụng position từ OUTDOOR_CRACK_POSITIONS
             console.log('🔍 Position to send:', selectedPosition);
@@ -183,7 +183,7 @@ const RepairOutsideScreen = () => {
                   setSelectedPosition(''); // Reset position when area changes
                 }}
               >
-                <Picker.Item label="Chọn khu vực" value="" />
+                <Picker.Item label="Select area" value="" />
                 {Object.keys(OUTDOOR_CRACK_POSITIONS).map((area) => (
                   <Picker.Item 
                     key={area} 

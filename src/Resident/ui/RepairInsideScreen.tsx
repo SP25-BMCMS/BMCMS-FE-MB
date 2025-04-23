@@ -121,8 +121,15 @@ const RepairInsideScreen = () => {
       return;
     }
 
-    // Use position from CRACK_POSITIONS
-    console.log('🔍 Position to send:', selectedPosition);
+    // Định dạng lại position để phù hợp với API
+    let formattedPosition = selectedPosition;
+    // Nếu selectedPosition là từ CRACK_POSITIONS (cho bên trong), cần định dạng lại
+    if (selectedRoom && selectedPosition && selectedPosition.split('/').length < 4) {
+      // Chuyển đổi từ 'kitchen/floor' sang 'area/building/floor/direction'
+      const [area, direction] = selectedPosition.split('/');
+      formattedPosition = `${area}/building/1/${direction}`;
+      console.log('🔍 Formatted position:', formattedPosition);
+    }
 
     // Navigate to review screen with all necessary data
     navigation.navigate("RepairReview", {
@@ -131,7 +138,7 @@ const RepairInsideScreen = () => {
       images,
       buildingDetailId,
       selectedRoom,
-      selectedPosition
+      selectedPosition: formattedPosition
     });
   };
 

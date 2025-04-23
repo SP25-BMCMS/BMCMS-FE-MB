@@ -75,7 +75,6 @@ const PropertyDetailScreen = () => {
     { id: "1", name: "Resident Information", icon: "people", color: "#4CAF50" },
     { id: "2", name: "Repair inside", icon: "build", color: "#FF5722" },
     { id: "3", name: "Repair outside", icon: "apartment", color: "#2196F3" },
-    { id: "4", name: "Other services", icon: "more-horiz", color: "#9C27B0" },
   ];
 
   const handleRepairInside = () => {
