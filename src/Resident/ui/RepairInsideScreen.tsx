@@ -10,6 +10,7 @@ import {
   ScrollView,
   Platform,
   Alert,
+  FlatList,
 } from "react-native";
 import Modal from "react-native-modal";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -21,8 +22,6 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { Property } from "../../types";
 import { CRACK_POSITIONS } from "../../types";
-import { Picker } from "@react-native-picker/picker";
-import { PropertyService } from "../../service/propertyService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Define route params type
@@ -33,7 +32,7 @@ type RootStackParamList = {
     description: string;
     images: string[];
     buildingDetailId?: string;
-    selectedRoom?: keyof typeof CRACK_POSITIONS;
+    selectedRoom?: keyof typeof CRACK_POSITIONS | 'OTHER';
     selectedPosition?: string;
   };
 };
@@ -49,9 +48,16 @@ const RepairInsideScreen = () => {
   const [isImageSourceModalVisible, setImageSourceModalVisible] = useState(false);
   
   // New state for crack reporting
-  const [selectedRoom, setSelectedRoom] = useState<keyof typeof CRACK_POSITIONS | ''>('');
+  const [selectedRoom, setSelectedRoom] = useState<keyof typeof CRACK_POSITIONS | 'OTHER' | ''>('');
   const [selectedPosition, setSelectedPosition] = useState('');
+  const [customPosition, setCustomPosition] = useState('');
   const [buildingDetailId, setBuildingDetailId] = useState<string | undefined>(undefined);
+  
+  // Dropdown states
+  const [isRoomDropdownOpen, setIsRoomDropdownOpen] = useState(false);
+  const [isPositionDropdownOpen, setIsPositionDropdownOpen] = useState(false);
+  const [roomDisplayText, setRoomDisplayText] = useState('Select room');
+  const [positionDisplayText, setPositionDisplayText] = useState('Select position');
 
   // Fetch building detail ID when screen loads
   React.useEffect(() => {
@@ -107,7 +113,28 @@ const RepairInsideScreen = () => {
 
   const isDescriptionValid = description.trim().length >= 5;
   const isImagesValid = images.length > 0;
-  const isPositionValid = selectedRoom && selectedPosition;
+  const isPositionValid = selectedRoom && (selectedRoom === 'OTHER' || selectedPosition);
+
+  const handleRoomSelect = (room: keyof typeof CRACK_POSITIONS | 'OTHER') => {
+    setSelectedRoom(room);
+    setRoomDisplayText(room === 'OTHER' ? 'Other' : room.replace(/_/g, ' '));
+    setIsRoomDropdownOpen(false);
+    
+    // Reset position when room changes
+    if (room !== 'OTHER') {
+      setSelectedPosition('');
+      setPositionDisplayText('Select position');
+    } else {
+      // For 'OTHER', auto-set a dummy position value to satisfy validation
+      setSelectedPosition('other');
+    }
+  };
+
+  const handlePositionSelect = (key: string, value: string) => {
+    setSelectedPosition(value);
+    setPositionDisplayText(key.replace(/_/g, ' '));
+    setIsPositionDropdownOpen(false);
+  };
 
   const handleContinueToReview = () => {
     // Validate all required fields
@@ -121,15 +148,9 @@ const RepairInsideScreen = () => {
       return;
     }
 
-    // Định dạng lại position để phù hợp với API
-    let formattedPosition = selectedPosition;
-    // Nếu selectedPosition là từ CRACK_POSITIONS (cho bên trong), cần định dạng lại
-    if (selectedRoom && selectedPosition && selectedPosition.split('/').length < 4) {
-      // Chuyển đổi từ 'kitchen/floor' sang 'area/building/floor/direction'
-      const [area, direction] = selectedPosition.split('/');
-      formattedPosition = `${area}/building/1/${direction}`;
-      console.log('🔍 Formatted position:', formattedPosition);
-    }
+    // Use position from CRACK_POSITIONS or 'other' for OTHER room
+    const finalPosition = selectedRoom === 'OTHER' ? 'other' : selectedPosition;
+    console.log('🔍 Position to send:', finalPosition);
 
     // Navigate to review screen with all necessary data
     navigation.navigate("RepairReview", {
@@ -138,8 +159,108 @@ const RepairInsideScreen = () => {
       images,
       buildingDetailId,
       selectedRoom,
-      selectedPosition: formattedPosition
+      selectedPosition: finalPosition
     });
+  };
+
+  const renderRoomDropdown = () => {
+    return (
+      <>
+        <Text style={styles.label}>Select room</Text>
+        <TouchableOpacity 
+          style={styles.dropdownButton}
+          onPress={() => {
+            setIsRoomDropdownOpen(!isRoomDropdownOpen);
+            setIsPositionDropdownOpen(false);
+          }}
+        >
+          <Icon name="room" size={20} color="#B77F2E" style={styles.dropdownIcon} />
+          <Text style={styles.dropdownButtonText}>{roomDisplayText}</Text>
+          <Icon 
+            name={isRoomDropdownOpen ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+            size={24} 
+            color="#B77F2E" 
+          />
+        </TouchableOpacity>
+
+        {isRoomDropdownOpen && (
+          <View style={styles.dropdownMenu}>
+            <ScrollView nestedScrollEnabled={true} style={styles.scrollList}>
+              {[...Object.keys(CRACK_POSITIONS), 'OTHER'].map((item) => (
+                <TouchableOpacity 
+                  key={item}
+                  style={styles.dropdownItem}
+                  onPress={() => handleRoomSelect(item as keyof typeof CRACK_POSITIONS | 'OTHER')}
+                >
+                  <Text 
+                    style={[
+                      styles.dropdownItemText,
+                      selectedRoom === item ? styles.selectedDropdownItem : {}
+                    ]}
+                  >
+                    {item === 'OTHER' ? 'Other' : item.replace(/_/g, ' ')}
+                  </Text>
+                  {selectedRoom === item && (
+                    <Icon name="check" size={18} color="#B77F2E" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </>
+    );
+  };
+
+  const renderPositionDropdown = () => {
+    if (!selectedRoom || selectedRoom === 'OTHER') return null;
+    
+    return (
+      <>
+        <Text style={styles.label}>Select position</Text>
+        <TouchableOpacity 
+          style={styles.dropdownButton}
+          onPress={() => {
+            setIsPositionDropdownOpen(!isPositionDropdownOpen);
+            setIsRoomDropdownOpen(false);
+          }}
+        >
+          <Icon name="place" size={20} color="#B77F2E" style={styles.dropdownIcon} />
+          <Text style={styles.dropdownButtonText}>{positionDisplayText}</Text>
+          <Icon 
+            name={isPositionDropdownOpen ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+            size={24} 
+            color="#B77F2E" 
+          />
+        </TouchableOpacity>
+
+        {isPositionDropdownOpen && (
+          <View style={styles.dropdownMenu}>
+            <ScrollView nestedScrollEnabled={true} style={styles.scrollList}>
+              {Object.entries(CRACK_POSITIONS[selectedRoom as keyof typeof CRACK_POSITIONS]).map(([key, value]) => (
+                <TouchableOpacity 
+                  key={key}
+                  style={styles.dropdownItem}
+                  onPress={() => handlePositionSelect(key, value)}
+                >
+                  <Text 
+                    style={[
+                      styles.dropdownItemText,
+                      selectedPosition === value ? styles.selectedDropdownItem : {}
+                    ]}
+                  >
+                    {key.replace(/_/g, ' ')}
+                  </Text>
+                  {selectedPosition === value && (
+                    <Icon name="check" size={18} color="#B77F2E" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </>
+    );
   };
 
   const renderStep = () => {
@@ -160,58 +281,11 @@ const RepairInsideScreen = () => {
               <Text style={styles.warningText}>Enter at least 5 characters of description</Text>
             )}
 
-            {/* Chọn phòng */}
-            <Text style={styles.label}>Select room</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={selectedRoom}
-                onValueChange={(itemValue: string) => {
-                  const room = itemValue as keyof typeof CRACK_POSITIONS;
-                  setSelectedRoom(room || '');
-                  setSelectedPosition(''); // Reset position when room changes
-                }}
-              >
-                <Picker.Item label="Select room" value="" />
-                {Object.keys(CRACK_POSITIONS).map((room) => (
-                  <Picker.Item 
-                    key={room} 
-                    label={room.replace(/_/g, ' ')} 
-                    value={room} 
-                  />
-                ))}
-              </Picker>
-            </View>
+            {/* Custom Room Dropdown */}
+            {renderRoomDropdown()}
 
-            {/* Chọn vị trí */}
-            {selectedRoom && (
-              <>
-                <Text style={styles.label}>Select position</Text>
-                <View style={styles.pickerContainer}>
-                  <Picker
-                    selectedValue={selectedPosition}
-                    onValueChange={(itemValue: string) => {
-                      console.log('🔍 Selected Position:', {
-                        room: selectedRoom,
-                        position: itemValue
-                      });
-                      setSelectedPosition(itemValue);
-                    }}
-                  >
-                    <Picker.Item label="Select position" value="" />
-                    {Object.entries(CRACK_POSITIONS[selectedRoom as keyof typeof CRACK_POSITIONS]).map(([key, value]) => {
-                      console.log('🔍 Position Option:', { key, value });
-                      return (
-                        <Picker.Item 
-                          key={key} 
-                          label={key.replace(/_/g, ' ')} 
-                          value={value} 
-                        />
-                      );
-                    })}
-                  </Picker>
-                </View>
-              </>
-            )}
+            {/* Custom Position Dropdown */}
+            {renderPositionDropdown()}
 
             {/* Nút Tiếp tục */}
             <TouchableOpacity
@@ -411,7 +485,12 @@ const styles = StyleSheet.create({
     color: "#B77F2E",
     fontWeight: "bold",
   },
-  label: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
+  label: { 
+    fontSize: 18, 
+    fontWeight: "bold", 
+    marginBottom: 10,
+    color: "#333"
+  },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
@@ -421,7 +500,11 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
     marginBottom: 10,
   },
-  warningText: { color: "red", fontSize: 12, marginBottom: 10 },
+  warningText: { 
+    color: "red", 
+    fontSize: 12, 
+    marginBottom: 10 
+  },
   imagePicker: {
     flexDirection: "row",
     alignItems: "center",
@@ -492,11 +575,100 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontSize: 16,
   },
-  pickerContainer: {
+  // Custom dropdown styles
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#B77F2E',
     borderRadius: 8,
+    backgroundColor: '#FDF7F0',
+    height: 50,
+    paddingHorizontal: 10,
     marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.18,
+    shadowRadius: 1.00,
+    elevation: 1,
+  },
+  dropdownIcon: {
+    marginRight: 10,
+  },
+  dropdownButtonText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
+  dropdownMenu: {
+    borderWidth: 1,
+    borderColor: '#B77F2E',
+    borderRadius: 8,
+    backgroundColor: '#FFF',
+    marginTop: -5,
+    marginBottom: 15,
+    maxHeight: 160,
+    overflow: 'hidden',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    zIndex: 999,
+  },
+  flatList: {
+    maxHeight: 200,
+  },
+  scrollList: {
+    maxHeight: 160,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  selectedDropdownItem: {
+    fontWeight: 'bold',
+    color: '#B77F2E',
+  },
+  customInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#B77F2E',
+    borderRadius: 8,
+    backgroundColor: '#FDF7F0',
+    height: 50,
+    paddingHorizontal: 10,
+    marginBottom: 15,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.18,
+    shadowRadius: 1.00,
+    elevation: 1,
+  },
+  customInput: {
+    flex: 1,
+    height: 50,
+    paddingLeft: 5,
+    color: '#333',
   },
   cancelButton: {
     flexDirection: "row",

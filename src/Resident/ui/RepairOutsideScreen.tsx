@@ -10,6 +10,7 @@ import {
   ScrollView,
   Platform,
   Alert,
+  FlatList,
 } from "react-native";
 import Modal from "react-native-modal";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -21,7 +22,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { Property } from "../../types";
 import { OUTDOOR_CRACK_POSITIONS } from "../../types";
-import { Picker } from "@react-native-picker/picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Define route params type
 type RootStackParamList = {
@@ -51,6 +52,12 @@ const RepairOutsideScreen = () => {
   const [selectedArea, setSelectedArea] = useState<keyof typeof OUTDOOR_CRACK_POSITIONS | ''>('');
   const [selectedPosition, setSelectedPosition] = useState('');
   const [buildingDetailId, setBuildingDetailId] = useState<string | undefined>(undefined);
+
+  // Dropdown states
+  const [isAreaDropdownOpen, setIsAreaDropdownOpen] = useState(false);
+  const [isPositionDropdownOpen, setIsPositionDropdownOpen] = useState(false);
+  const [areaDisplayText, setAreaDisplayText] = useState('Select area');
+  const [positionDisplayText, setPositionDisplayText] = useState('Select position');
 
   // Fetch building detail ID when screen loads
   React.useEffect(() => {
@@ -108,6 +115,22 @@ const RepairOutsideScreen = () => {
   const isImagesValid = images.length > 0;
   const isPositionValid = selectedArea && selectedPosition;
 
+  const handleAreaSelect = (area: keyof typeof OUTDOOR_CRACK_POSITIONS) => {
+    setSelectedArea(area);
+    setAreaDisplayText(area.replace(/_/g, ' '));
+    setIsAreaDropdownOpen(false);
+    
+    // Reset position when area changes
+    setSelectedPosition('');
+    setPositionDisplayText('Select position');
+  };
+
+  const handlePositionSelect = (key: string, value: string) => {
+    setSelectedPosition(value);
+    setPositionDisplayText(key.replace(/_/g, ' '));
+    setIsPositionDropdownOpen(false);
+  };
+
   const handleContinueToReview = () => {
     // Validate all required fields
     if (!isDescriptionValid) {
@@ -154,6 +177,118 @@ const RepairOutsideScreen = () => {
     );
   };
 
+  const renderAreaDropdown = () => {
+    return (
+      <>
+        <Text style={styles.label}>Select area</Text>
+        <TouchableOpacity 
+          style={styles.dropdownButton}
+          onPress={() => {
+            setIsAreaDropdownOpen(!isAreaDropdownOpen);
+            setIsPositionDropdownOpen(false);
+          }}
+        >
+          <Icon name="place" size={20} color="#B77F2E" style={styles.dropdownIcon} />
+          <Text style={styles.dropdownButtonText}>{areaDisplayText}</Text>
+          <Icon 
+            name={isAreaDropdownOpen ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+            size={24} 
+            color="#B77F2E" 
+          />
+        </TouchableOpacity>
+
+        {isAreaDropdownOpen && (
+          <View style={styles.dropdownMenu}>
+            <ScrollView nestedScrollEnabled={true} style={styles.scrollList}>
+              {Object.keys(OUTDOOR_CRACK_POSITIONS).map((area) => (
+                <TouchableOpacity 
+                  key={area}
+                  style={styles.dropdownItem}
+                  onPress={() => handleAreaSelect(area as keyof typeof OUTDOOR_CRACK_POSITIONS)}
+                >
+                  <Text 
+                    style={[
+                      styles.dropdownItemText,
+                      selectedArea === area ? styles.selectedDropdownItem : {}
+                    ]}
+                  >
+                    {area.replace(/_/g, ' ')}
+                  </Text>
+                  {selectedArea === area && (
+                    <Icon name="check" size={18} color="#B77F2E" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </>
+    );
+  };
+
+  const renderPositionDropdown = () => {
+    if (!selectedArea) return null;
+    
+    return (
+      <>
+        <Text style={styles.label}>Select position</Text>
+        <TouchableOpacity 
+          style={styles.dropdownButton}
+          onPress={() => {
+            setIsPositionDropdownOpen(!isPositionDropdownOpen);
+            setIsAreaDropdownOpen(false);
+          }}
+        >
+          <Icon name="location-on" size={20} color="#B77F2E" style={styles.dropdownIcon} />
+          <Text style={styles.dropdownButtonText}>{positionDisplayText}</Text>
+          <Icon 
+            name={isPositionDropdownOpen ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+            size={24} 
+            color="#B77F2E" 
+          />
+        </TouchableOpacity>
+
+        {isPositionDropdownOpen && (
+          <View style={styles.dropdownMenu}>
+            <ScrollView nestedScrollEnabled={true} style={styles.scrollList}>
+              {Object.entries(OUTDOOR_CRACK_POSITIONS[selectedArea as keyof typeof OUTDOOR_CRACK_POSITIONS]).map(([key, value]) => (
+                <TouchableOpacity 
+                  key={key}
+                  style={styles.dropdownItem}
+                  onPress={() => handlePositionSelect(key, value)}
+                >
+                  <Text 
+                    style={[
+                      styles.dropdownItemText,
+                      selectedPosition === value ? styles.selectedDropdownItem : {}
+                    ]}
+                  >
+                    {key.replace(/_/g, ' ')}
+                  </Text>
+                  {selectedPosition === value && (
+                    <Icon name="check" size={18} color="#B77F2E" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {selectedPosition && (
+          <View style={styles.selectedInfo}>
+            <Text style={styles.selectedInfoLabel}>Selected position:</Text>
+            <Text style={styles.selectedInfoValue}>
+              {selectedPosition
+                .split('/')
+                .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                .join(' > ')}
+            </Text>
+          </View>
+        )}
+      </>
+    );
+  };
+
   const renderStep = () => {
     switch (currentStep) {
       case 1:
@@ -172,70 +307,11 @@ const RepairOutsideScreen = () => {
               <Text style={styles.warningText}>Enter at least 5 characters of description</Text>
             )}
 
-            {/* Chọn khu vực */}
-            <Text style={styles.label}>Select area</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={selectedArea}
-                onValueChange={(itemValue: string) => {
-                  const area = itemValue as keyof typeof OUTDOOR_CRACK_POSITIONS;
-                  setSelectedArea(area || '');
-                  setSelectedPosition(''); // Reset position when area changes
-                }}
-              >
-                <Picker.Item label="Select area" value="" />
-                {Object.keys(OUTDOOR_CRACK_POSITIONS).map((area) => (
-                  <Picker.Item 
-                    key={area} 
-                    label={area.replace(/_/g, ' ')} 
-                    value={area} 
-                  />
-                ))}
-              </Picker>
-            </View>
+            {/* Custom Area Dropdown */}
+            {renderAreaDropdown()}
 
-            {/* Chọn vị trí */}
-            {selectedArea && (
-              <>
-                <Text style={styles.label}>Select position</Text>
-                <View style={styles.pickerContainer}>
-                  <Picker
-                    selectedValue={selectedPosition}
-                    onValueChange={(itemValue: string) => {
-                      console.log('🔍 Selected Position:', {
-                        area: selectedArea,
-                        position: itemValue
-                      });
-                      setSelectedPosition(itemValue);
-                    }}
-                  >
-                    <Picker.Item label="Select position" value="" />
-                    {Object.entries(OUTDOOR_CRACK_POSITIONS[selectedArea as keyof typeof OUTDOOR_CRACK_POSITIONS]).map(([key, value]) => {
-                      console.log('🔍 Position Option:', { key, value });
-                      return (
-                        <Picker.Item 
-                          key={key} 
-                          label={key.replace(/_/g, ' ')} 
-                          value={value} 
-                        />
-                      );
-                    })}
-                  </Picker>
-                </View>
-
-                {selectedPosition && (
-                  <View style={styles.selectedInfo}>
-                    <Text style={styles.selectedInfoLabel}>Selected position:</Text>
-                    <Text style={styles.selectedInfoValue}>
-                      {selectedPosition
-                        .split('/')
-                        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-                        .join(' > ')}
-                    </Text>
-                  </View>
-                )}
-              </>
-            )}
+            {/* Custom Position Dropdown */}
+            {renderPositionDropdown()}
 
             {/* Nút Tiếp tục */}
             <TouchableOpacity
@@ -453,7 +529,12 @@ const styles = StyleSheet.create({
     color: "#B77F2E",
     fontWeight: "bold",
   },
-  label: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
+  label: { 
+    fontSize: 18, 
+    fontWeight: "bold", 
+    marginBottom: 10,
+    color: "#333"
+  },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
@@ -463,7 +544,11 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
     marginBottom: 10,
   },
-  warningText: { color: "red", fontSize: 12, marginBottom: 10 },
+  warningText: { 
+    color: "red", 
+    fontSize: 12, 
+    marginBottom: 10 
+  },
   imagePicker: {
     flexDirection: "row",
     alignItems: "center",
@@ -534,27 +619,93 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontSize: 16,
   },
-  pickerContainer: {
+  // Custom dropdown styles
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#B77F2E',
     borderRadius: 8,
+    backgroundColor: '#FDF7F0',
+    height: 50,
+    paddingHorizontal: 10,
     marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.18,
+    shadowRadius: 1.00,
+    elevation: 1,
+  },
+  dropdownIcon: {
+    marginRight: 10,
+  },
+  dropdownButtonText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
+  dropdownMenu: {
+    borderWidth: 1,
+    borderColor: '#B77F2E',
+    borderRadius: 8,
+    backgroundColor: '#FFF',
+    marginTop: -5,
+    marginBottom: 15,
+    maxHeight: 160,
+    overflow: 'hidden',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    zIndex: 999,
+  },
+  scrollList: {
+    maxHeight: 160,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  selectedDropdownItem: {
+    fontWeight: 'bold',
+    color: '#B77F2E',
   },
   selectedInfo: {
     flexDirection: "row",
     alignItems: "center",
     padding: 10,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#B77F2E",
     borderRadius: 8,
+    backgroundColor: "#FDF7F0",
+    marginBottom: 10,
   },
   selectedInfoLabel: {
     fontSize: 14,
     fontWeight: "bold",
     marginRight: 10,
+    color: "#333",
   },
   selectedInfoValue: {
     fontSize: 14,
+    color: "#B77F2E",
+    fontWeight: "500",
   },
 });
 

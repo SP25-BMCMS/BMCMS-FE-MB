@@ -567,6 +567,7 @@ const TaskScreen = () => {
 
 const styles = StyleSheet.create({
   container: {
+    marginTop: 10,
     flex: 1,
     backgroundColor: '#FFFFFF',
     padding: 16,
@@ -600,6 +601,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   badgeContainer: {
+    marginTop: 10,
     flexDirection: 'row',
     marginBottom: 15,
   },

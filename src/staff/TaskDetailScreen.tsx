@@ -242,10 +242,6 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
               {taskDetail.crackInfo.data.map((crackReport, index) => (
                 <View key={index} style={styles.crackInfoContainer}>
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Report ID:</Text>
-                    <Text style={styles.infoValue}>{crackReport.crackReportId}</Text>
-                  </View>
-                  <View style={styles.infoRow}>
                     <Text style={styles.infoLabel}>Description:</Text>
                     <Text style={styles.infoValue}>{crackReport.description}</Text>
                   </View>
@@ -413,6 +409,7 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    marginTop: 20,
     backgroundColor: '#FFFFFF',
   },
   header: {
