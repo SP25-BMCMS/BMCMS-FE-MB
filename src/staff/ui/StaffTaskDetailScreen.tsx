@@ -37,6 +37,15 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
     fetchTaskDetail();
   }, [assignmentId]);
 
+  // Add debug logs in a separate useEffect to avoid JSX ReactNode errors
+  useEffect(() => {
+    if (taskDetail) {
+      console.log('Task detail crack_id:', taskDetail.task.crack_id);
+      console.log('Task detail schedule_job_id:', taskDetail.task.schedule_job_id);
+      console.log('Should show maintenance button:', taskDetail.task.crack_id === "" && taskDetail.task.schedule_job_id);
+    }
+  }, [taskDetail]);
+
   const fetchTaskDetail = async () => {
     try {
       setLoading(true);
@@ -351,6 +360,24 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
           )}
           
           <View style={styles.buttonContainer}>
+            {/* Only show maintenance history button for scheduled maintenance tasks */}
+            {taskDetail.task && taskDetail.task.crack_id === "" && taskDetail.task.schedule_job_id && (
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.maintenanceButton]}
+                onPress={() => {
+                  console.log('Navigating to staff maintenance history with ID:', taskDetail.task.schedule_job_id);
+                  navigation.navigate('StaffMaintenanceHistory', { 
+                    scheduleJobId: taskDetail.task.schedule_job_id,
+                    buildingName: taskDetail.description.split(' ').pop() // Extract building name from description
+                  });
+                }}
+              >
+                <Text style={styles.buttonText}>
+                  View Maintenance History
+                </Text>
+              </TouchableOpacity>
+            )}
+
             {taskDetail.status !== 'Reassigned' && taskDetail.status !== 'Confirmed' && (
               <TouchableOpacity 
                 style={[styles.actionButton, styles.completeButton]}
@@ -609,6 +636,10 @@ const styles = StyleSheet.create({
   },
   viewInspectionsButton: {
     backgroundColor: '#007AFF',
+  },
+  maintenanceButton: {
+    backgroundColor: '#5AC8FA',
+    marginBottom: 12,
   },
   buttonText: {
     color: '#FFFFFF',

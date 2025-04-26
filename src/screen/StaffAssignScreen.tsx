@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, FlatList, SectionList, Alert } from 'react-native';
 import { TaskService } from '../service/Task';
+import { AuthService } from '../service/Auth';
 import { TaskAssignment, Task } from '../types';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
@@ -10,6 +11,7 @@ import { RootStackParamList } from '../types';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showMessage } from 'react-native-flash-message';
+import { useQuery, useQueryClient, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -46,6 +48,8 @@ const StaffAssignScreen = () => {
   const [userId, setUserId] = useState<string>('');
   const [confirmedTasks, setConfirmedTasks] = useState<string[]>([]);
   const [buttonVisibility, setButtonVisibility] = useState<{[key: string]: boolean}>({});
+  const [userCache, setUserCache] = useState<{[key: string]: string}>({});
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const checkUserPosition = async () => {
@@ -322,6 +326,16 @@ const StaffAssignScreen = () => {
       return null;
     }
     
+    // Sử dụng hook để lấy tên người dùng từ employee_id
+    const { 
+      data: userName = `User ${assignment.employee_id.substring(0, 8)}`, 
+      isLoading: isLoadingUserInfo,
+      isError
+    } = useUserInfo(assignment.employee_id);
+    
+    // Kiểm tra xem đã có trong cache
+    const userFromCache = userCache[assignment.employee_id];
+    
     return (
       <TouchableOpacity 
         key={assignment.assignment_id} 
@@ -344,7 +358,17 @@ const StaffAssignScreen = () => {
           </Text>
           <Text style={styles.taskInfoText}>
             <Text style={styles.taskInfoLabel}>Assigned to: </Text>
-            {assignment.employee_id.substring(0, 8)}...
+            {isLoadingUserInfo && !userFromCache ? (
+              <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <ActivityIndicator size="small" color="#B77F2E" style={{marginRight: 5}} />
+                <Text>{assignment.employee_id.substring(0, 8)}...</Text>
+              </View>
+            ) : (
+              userName
+            )}
+            {!isError && !isLoadingUserInfo && (
+              <Text style={styles.idReference}> ({assignment.employee_id.substring(0, 8)}...)</Text>
+            )}
           </Text>
           <Text style={styles.taskInfoText}>
             <Text style={styles.taskInfoLabel}>Created: </Text>
@@ -529,6 +553,108 @@ const StaffAssignScreen = () => {
       </View>
     ) : null;
   };
+
+  // Function để lấy thông tin nhân viên bằng userId
+  const fetchUserInfo = async (employeeId: string): Promise<string> => {
+    try {
+      // Kiểm tra cache trước khi gọi API
+      if (userCache[employeeId]) {
+        return userCache[employeeId];
+      }
+      
+      // Thêm timeout để hủy request sau 3 giây
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      // Gọi API để lấy thông tin chi tiết của nhân viên
+      const response = await AuthService.getStaffDetails(employeeId);
+      clearTimeout(timeoutId);
+      
+      if (response && response.data) {
+        const userName = response.data.username || 'Unknown';
+        // Cập nhật cache
+        setUserCache(prev => ({...prev, [employeeId]: userName}));
+        return userName;
+      }
+      
+      // Nếu không có dữ liệu, hiển thị ID ngắn gọn
+      const shortId = employeeId.substring(0, 8);
+      setUserCache(prev => ({...prev, [employeeId]: `User ${shortId}`}));
+      return `User ${shortId}`;
+    } catch (error) {
+      console.error(`Error fetching user info for ID ${employeeId}:`, error);
+      // Nếu có lỗi, hiển thị ID ngắn gọn
+      const shortId = employeeId.substring(0, 8);
+      setUserCache(prev => ({...prev, [employeeId]: `User ${shortId}`}));
+      return `User ${shortId}`;
+    }
+  };
+
+  // Hook để lấy thông tin người dùng
+  const useUserInfo = (employeeId: string) => {
+    return useQuery({
+      queryKey: ['userInfo', employeeId],
+      queryFn: () => fetchUserInfo(employeeId),
+      staleTime: 1000 * 60 * 30, // Tăng lên 30 phút để giảm số lần gọi API
+      gcTime: 1000 * 60 * 60, // Cache trong 1 giờ (thay cho cacheTime)
+      retry: 1, // Chỉ retry 1 lần nếu thất bại
+      retryDelay: 500, // Retry sau 500ms
+      enabled: !!employeeId,
+    });
+  };
+
+  // Prefetch thông tin người dùng cho tất cả các assignments hiển thị
+  useEffect(() => {
+    const prefetchUserData = async () => {
+      // Chỉ xử lý nếu có tasks và queryClient
+      if (!tasks.length || !queryClient) return;
+      
+      // Tạo danh sách tất cả employee_id cần prefetch
+      const employeeIds = new Set<string>();
+      
+      tasks.forEach(task => {
+        task.taskAssignments.forEach(assignment => {
+          if (assignment.employee_id && assignment.employee_id !== userId) {
+            employeeIds.add(assignment.employee_id);
+          }
+        });
+      });
+      
+      console.log(`Prefetching data for ${employeeIds.size} employees`);
+      
+      // Prefetch theo batch để không gọi quá nhiều API cùng lúc
+      const batchSize = 3;
+      const idsArray = Array.from(employeeIds);
+      
+      for (let i = 0; i < idsArray.length; i += batchSize) {
+        const batch = idsArray.slice(i, i + batchSize);
+        
+        // Thực hiện prefetch song song
+        await Promise.all(
+          batch.map(async (employeeId) => {
+            // Kiểm tra xem đã có trong cache chưa
+            const cachedData = queryClient.getQueryData(['userInfo', employeeId]);
+            if (!cachedData) {
+              try {
+                // Prefetch và lưu vào cache
+                const userData = await fetchUserInfo(employeeId);
+                queryClient.setQueryData(['userInfo', employeeId], userData);
+              } catch (error) {
+                console.error(`Error prefetching data for employee ${employeeId}:`, error);
+              }
+            }
+          })
+        );
+        
+        // Chờ một chút trước khi tiếp tục batch tiếp theo để không gây quá tải
+        if (i + batchSize < idsArray.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+    };
+    
+    prefetchUserData();
+  }, [tasks, queryClient, userId]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -747,6 +873,20 @@ const styles = StyleSheet.create({
     color: '#333333',
     marginLeft: 8,
   },
+  idReference: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
+  },
 });
 
-export default StaffAssignScreen; 
+// Bọc component chính bằng QueryClientProvider
+const queryClient = new QueryClient();
+
+export default function StaffAssignScreenWithQueryClient() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <StaffAssignScreen />
+    </QueryClientProvider>
+  );
+}; 

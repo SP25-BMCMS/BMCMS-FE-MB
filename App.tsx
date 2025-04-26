@@ -32,6 +32,7 @@ import ChatHistoryScreen from './src/screen/ChatHistoryScreen';
 import EditLocationScreen from './src/staff/ui/EditLocationScreen';
 import LocationDetailScreen from './src/staff/ui/LocationDetailScreen';
 import MaintenanceHistoryScreen from './src/staff/ui/MaintenanceHistoryScreen';
+import StaffMaintenanceHistoryScreen from './src/staff/ui/StaffMaintenanceHistoryScreen';
 import TechnicalRecordScreen from './src/staff/ui/TechnicalRecordScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -71,6 +72,7 @@ const App = () => {
           <Stack.Screen name='ChatHistory' component={ChatHistoryScreen} />
           <Stack.Screen name='LocationDetail' component={LocationDetailScreen} />
           <Stack.Screen name='MaintenanceHistory' component={MaintenanceHistoryScreen} />
+          <Stack.Screen name='StaffMaintenanceHistory' component={StaffMaintenanceHistoryScreen} />
           <Stack.Screen name='TechnicalRecord' component={TechnicalRecordScreen} />
         </Stack.Navigator>
       </NavigationContainer>

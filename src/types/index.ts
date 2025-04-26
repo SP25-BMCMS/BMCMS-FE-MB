@@ -88,6 +88,10 @@ export type RootStackParamList = {
     scheduleJobId: string;
     buildingName?: string;
   };
+  StaffMaintenanceHistory: {
+    scheduleJobId: string;
+    buildingName?: string;
+  };
   TechnicalRecord: {
     buildingId: string;
     buildingName?: string;
