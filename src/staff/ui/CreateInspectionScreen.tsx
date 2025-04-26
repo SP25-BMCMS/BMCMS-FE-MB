@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,10 @@ import {
   Switch,
   ActivityIndicator,
   Alert,
-  FlatList
+  FlatList,
+  Keyboard,
+  Platform,
+  KeyboardAvoidingView
 } from 'react-native';
 import Modal from 'react-native-modal';
 import { RouteProp } from '@react-navigation/native';
@@ -65,10 +68,12 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
   const [searchText, setSearchText] = useState<string>('');
 
   // Thêm hàm lọc materials dựa trên từ khóa tìm kiếm
-  const filteredMaterials = materials.filter(material => 
-    material.name.toLowerCase().includes(searchText.toLowerCase()) || 
-    material.description.toLowerCase().includes(searchText.toLowerCase())
-  );
+  const filteredMaterials = React.useMemo(() => {
+    return materials.filter(material => 
+      material.name.toLowerCase().includes(searchText.toLowerCase()) || 
+      material.description.toLowerCase().includes(searchText.toLowerCase())
+    );
+  }, [materials, searchText]);
 
   // Load materials when verified is toggled to true
   useEffect(() => {
@@ -490,6 +495,9 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
 
+  // Add scrollview ref
+  const scrollViewRef = useRef<ScrollView>(null);
+
   // Render review screen
   if (showReviewScreen) {
     return (
@@ -623,414 +631,437 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Task Information Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Task Information</Text>
-          <View style={styles.divider} />
-          
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Task ID:</Text>
-            <Text style={styles.infoValue}>{taskDetail.task_id.substring(0, 8)}...</Text>
-          </View>
-          
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Description:</Text>
-            <Text style={styles.infoValue}>{taskDetail.description}</Text>
-          </View>
-          
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Status:</Text>
-            <View style={[styles.statusBadge, { backgroundColor: '#007AFF' }]}>
-              <Text style={styles.statusText}>In Progress</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Inspection Type Selection */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Inspection Type</Text>
-          <View style={styles.divider} />
-          
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>
-              {isPrivateAsset ? 'Private Asset' : 'Regular Inspection'}
-            </Text>
-            <Switch
-              trackColor={{ false: '#767577', true: '#B77F2E' }}
-              thumbColor={isPrivateAsset ? '#f5dd4b' : '#f4f3f4'}
-              ios_backgroundColor="#3e3e3e"
-              onValueChange={togglePrivateAssetStatus}
-              value={isPrivateAsset}
-            />
-          </View>
-          
-          <Text style={styles.infoText}>
-            {isPrivateAsset 
-              ? 'Private assets do not require verification or materials selection.' 
-              : 'Regular inspections can be marked as verified and may require repair materials.'}
-          </Text>
-        </View>
-
-        {/* Images Section */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Inspection Images</Text>
-          <View style={styles.divider} />
-          
-          <TouchableOpacity
-            style={styles.imagePicker}
-            onPress={openImageSourceModal}
-          >
-            <Ionicons name="camera" size={24} color="#B77F2E" />
-            <Text style={styles.imagePickerText}>Add Photos</Text>
-          </TouchableOpacity>
-          
-          {/* Image Source Modal */}
-          <Modal
-            isVisible={isImageSourceModalVisible}
-            onBackdropPress={closeImageSourceModal}
-            style={styles.modal}
-          >
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Select Image Source</Text>
-              
-              <TouchableOpacity
-                style={styles.modalOption}
-                onPress={takePhoto}
-              >
-                <Ionicons name="camera" size={24} color="#B77F2E" />
-                <Text style={styles.modalOptionText}>Take Photo</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.modalOption}
-                onPress={pickImageFromLibrary}
-              >
-                <Ionicons name="images" size={24} color="#B77F2E" />
-                <Text style={styles.modalOptionText}>Choose from Gallery</Text>
-              </TouchableOpacity>
-            </View>
-          </Modal>
-          
-          {/* Image Gallery */}
-          {images.length > 0 && (
-            <View style={styles.imageContainer}>
-              {images.map((image, index) => (
-                <View key={index} style={styles.imageWrapper}>
-                  <Image source={{ uri: image }} style={styles.image} />
-                  <TouchableOpacity
-                    style={styles.removeImageButton}
-                    onPress={() => removeImage(index)}
-                  >
-                    <Ionicons name="close-circle" size={24} color="#FF3B30" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          )}
-          
-          {images.length === 0 && (
-            <Text style={styles.warningText}>Please add at least one image</Text>
-          )}
-        </View>
-
-        {/* Notes Section */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Inspection Notes</Text>
-          <View style={styles.divider} />
-          
-          <TextInput
-            style={styles.notesInput}
-            placeholder="Enter detailed inspection notes..."
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-          />
-          
-          {notes.trim() === '' && (
-            <Text style={styles.warningText}>Please add inspection notes</Text>
-          )}
-        </View>
-
-        {/* Verification Status - Only shown for regular inspections */}
-        {!isPrivateAsset && (
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{flex: 1}}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
+        <ScrollView 
+          ref={scrollViewRef}
+          style={styles.content} 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Task Information Card */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Verification Status</Text>
+            <Text style={styles.cardTitle}>Task Information</Text>
+            <View style={styles.divider} />
+            
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Task ID:</Text>
+              <Text style={styles.infoValue}>{taskDetail.task_id.substring(0, 8)}...</Text>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Description:</Text>
+              <Text style={styles.infoValue}>{taskDetail.description}</Text>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Status:</Text>
+              <View style={[styles.statusBadge, { backgroundColor: '#007AFF' }]}>
+                <Text style={styles.statusText}>In Progress</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Inspection Type Selection */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Inspection Type</Text>
             <View style={styles.divider} />
             
             <View style={styles.switchRow}>
               <Text style={styles.switchLabel}>
-                {isVerified ? 'Verified' : 'Unverified'}
+                {isPrivateAsset ? 'Private Asset' : 'Regular Inspection'}
               </Text>
               <Switch
                 trackColor={{ false: '#767577', true: '#B77F2E' }}
-                thumbColor={isVerified ? '#f5dd4b' : '#f4f3f4'}
+                thumbColor={isPrivateAsset ? '#f5dd4b' : '#f4f3f4'}
                 ios_backgroundColor="#3e3e3e"
-                onValueChange={toggleVerificationStatus}
-                value={isVerified}
+                onValueChange={togglePrivateAssetStatus}
+                value={isPrivateAsset}
               />
             </View>
             
             <Text style={styles.infoText}>
-              {isVerified 
-                ? 'This crack has been verified and requires repair. Status will be set to Verified.' 
-                : 'Status will be set to Unverified if this crack doesn\'t need immediate repair.'}
+              {isPrivateAsset 
+                ? 'Private assets do not require verification or materials selection.' 
+                : 'Regular inspections can be marked as verified and may require repair materials.'}
             </Text>
           </View>
-        )}
 
-        {/* Materials Section - Only shown when Verified and not a private asset */}
-        {!isPrivateAsset && isVerified && (
+          {/* Images Section */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Materials for Repair</Text>
+            <Text style={styles.cardTitle}>Inspection Images</Text>
             <View style={styles.divider} />
             
-            {materialsLoading ? (
-              <ActivityIndicator size="small" color="#B77F2E" style={styles.loadingIndicator} />
-            ) : (
-              <>
-                {selectedMaterials.length > 0 ? (
-                  <View style={styles.materialList}>
-                    {selectedMaterials.map((item, index) => (
-                      <View key={index} style={styles.materialItem}>
-                        <View style={styles.materialContent}>
-                          <View style={styles.materialHeader}>
-                            <Text style={styles.materialName} numberOfLines={1}>
-                              {item.material.name}
-                            </Text>
-                            <Text style={styles.materialQuantity}>
-                              x{item.quantity}
-                            </Text>
-                          </View>
-                          <Text style={styles.materialPrice}>
-                            {parseInt(item.material.unit_price, 10).toLocaleString()} VND/unit
-                          </Text>
-                          <Text style={styles.materialSubtotal}>
-                            Subtotal: {(parseInt(item.material.unit_price, 10) * item.quantity).toLocaleString()} VND
-                          </Text>
-                        </View>
-                        <View style={styles.materialActions}>
-                          <TouchableOpacity 
-                            onPress={() => editMaterial(index)}
-                            style={styles.materialEditButton}
-                          >
-                            <Ionicons name="pencil" size={18} color="#B77F2E" />
-                          </TouchableOpacity>
-                          <TouchableOpacity 
-                            onPress={() => removeMaterial(index)}
-                            style={styles.materialDeleteButton}
-                          >
-                            <Ionicons name="trash" size={18} color="#FF3B30" />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    ))}
-                    
-                    <View style={styles.materialTotalRow}>
-                      <Text style={styles.materialTotalLabel}>Total Cost:</Text>
-                      <Text style={styles.materialTotalValue}>
-                        {calculateTotalCost().toLocaleString()} VND
-                      </Text>
-                    </View>
-                  </View>
-                ) : (
-                  <Text style={styles.noMaterialsText}>No materials added yet</Text>
-                )}
+            <TouchableOpacity
+              style={styles.imagePicker}
+              onPress={openImageSourceModal}
+            >
+              <Ionicons name="camera" size={24} color="#B77F2E" />
+              <Text style={styles.imagePickerText}>Add Photos</Text>
+            </TouchableOpacity>
+            
+            {/* Image Source Modal */}
+            <Modal
+              isVisible={isImageSourceModalVisible}
+              onBackdropPress={closeImageSourceModal}
+              style={styles.modal}
+            >
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Select Image Source</Text>
                 
                 <TouchableOpacity
-                  style={styles.addButton}
-                  onPress={openMaterialModal}
+                  style={styles.modalOption}
+                  onPress={takePhoto}
                 >
-                  <Ionicons name="add-circle" size={24} color="#B77F2E" />
-                  <Text style={styles.addButtonText}>Add Material</Text>
+                  <Ionicons name="camera" size={24} color="#B77F2E" />
+                  <Text style={styles.modalOptionText}>Take Photo</Text>
                 </TouchableOpacity>
                 
-                {/* Material Selection Modal */}
-                <Modal
-                  isVisible={isMaterialModalVisible}
-                  onBackdropPress={closeMaterialModal}
-                  style={styles.materialModal}
+                <TouchableOpacity
+                  style={styles.modalOption}
+                  onPress={pickImageFromLibrary}
                 >
-                  <View style={styles.materialModalContent}>
-                    <Text style={styles.modalTitle}>
-                      {selectedMaterialForEdit ? 'Update Material Quantity' : 'Select Material'}
-                    </Text>
-                    
-                    {selectedMaterialForEdit ? (
-                      <View style={styles.materialUpdateContainer}>
-                        <Text style={styles.materialUpdateTitle}>{selectedMaterialForEdit.material.name}</Text>
-                        <Text style={styles.materialUpdateDescription}>{selectedMaterialForEdit.material.description}</Text>
-                        <Text style={styles.materialUpdateStock}>
-                          Available: {selectedMaterialForEdit.material.stock_quantity} units
-                        </Text>
-                        <Text style={styles.materialUpdatePrice}>
-                          Unit Price: {parseInt(selectedMaterialForEdit.material.unit_price, 10).toLocaleString()} VND
-                        </Text>
-                        
-                        <View style={styles.quantityContainer}>
-                          <Text style={styles.quantityLabel}>Quantity:</Text>
-                          <TextInput 
-                            style={styles.quantityInput}
-                            value={materialQuantity}
-                            onChangeText={setMaterialQuantity}
-                            keyboardType="number-pad"
-                            selectTextOnFocus
-                          />
-                        </View>
-                        
-                        <View style={styles.materialModalActions}>
-                          <TouchableOpacity
-                            style={styles.materialModalButton}
-                            onPress={closeMaterialModal}
-                          >
-                            <Text style={styles.materialModalButtonText}>Cancel</Text>
-                          </TouchableOpacity>
-                          
-                          <TouchableOpacity
-                            style={[styles.materialModalButton, styles.materialModalPrimaryButton]}
-                            onPress={updateMaterial}
-                          >
-                            <Text style={styles.materialModalPrimaryButtonText}>Update</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    ) : (
-                      <View style={styles.materialSelectContainer}>
-                        {/* Add search bar */}
-                        <View style={styles.searchContainer}>
-                          <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
-                          <TextInput
-                            style={styles.searchInput}
-                            placeholder="Search materials..."
-                            value={searchText}
-                            onChangeText={setSearchText}
-                            clearButtonMode="while-editing"
-                          />
-                          {searchText.length > 0 && (
-                            <TouchableOpacity onPress={() => setSearchText('')} style={styles.clearSearchButton}>
-                              <Ionicons name="close-circle" size={18} color="#999" />
-                            </TouchableOpacity>
-                          )}
-                        </View>
-                        
-                        {filteredMaterials.length > 0 ? (
-                          <FlatList
-                            data={filteredMaterials}
-                            keyExtractor={(item) => item.material_id}
-                            renderItem={({ item }) => (
-                              <TouchableOpacity
-                                style={styles.materialSelectItem}
-                                onPress={() => {
-                                  // Khi người dùng chọn vật liệu, cập nhật form 
-                                  // và hiển thị giao diện nhập số lượng
-                                  setSelectedMaterialForEdit({ material: item, quantity: 1 });
-                                  setMaterialQuantity('1');
-                                }}
-                              >
-                                <View style={styles.materialSelectContent}>
-                                  <Text style={styles.materialSelectName}>{item.name}</Text>
-                                  <Text style={styles.materialSelectDescription} numberOfLines={2}>
-                                    {item.description}
-                                  </Text>
-                                  <View style={styles.materialSelectFooter}>
-                                    <Text style={styles.materialSelectPrice}>
-                                      {parseInt(item.unit_price, 10).toLocaleString()} VND/unit
-                                    </Text>
-                                    <Text style={styles.materialSelectStock}>
-                                      Available: {item.stock_quantity}
-                                    </Text>
-                                  </View>
-                                </View>
-                              </TouchableOpacity>
-                            )}
-                            ItemSeparatorComponent={() => <View style={styles.materialSeparator} />}
-                            style={styles.materialSelectList}
-                          />
-                        ) : (
-                          <View style={styles.noSearchResultsContainer}>
-                            <Ionicons name="search-outline" size={48} color="#CCC" />
-                            <Text style={styles.noSearchResultsText}>No materials found matching "{searchText}"</Text>
-                          </View>
-                        )}
-                        
-                        <TouchableOpacity
-                          style={styles.closeMaterialModalButton}
-                          onPress={closeMaterialModal}
-                        >
-                          <Text style={styles.closeMaterialModalText}>Cancel</Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
+                  <Ionicons name="images" size={24} color="#B77F2E" />
+                  <Text style={styles.modalOptionText}>Choose from Gallery</Text>
+                </TouchableOpacity>
+              </View>
+            </Modal>
+            
+            {/* Image Gallery */}
+            {images.length > 0 && (
+              <View style={styles.imageContainer}>
+                {images.map((image, index) => (
+                  <View key={index} style={styles.imageWrapper}>
+                    <Image source={{ uri: image }} style={styles.image} />
+                    <TouchableOpacity
+                      style={styles.removeImageButton}
+                      onPress={() => removeImage(index)}
+                    >
+                      <Ionicons name="close-circle" size={24} color="#FF3B30" />
+                    </TouchableOpacity>
                   </View>
-                </Modal>
-              </>
+                ))}
+              </View>
+            )}
+            
+            {images.length === 0 && (
+              <Text style={styles.warningText}>Please add at least one image</Text>
             )}
           </View>
-        )}
 
-        {/* Submit Button */}
-        <TouchableOpacity
-          style={[
-            styles.submitButton,
-            {
-              backgroundColor: 
-                images.length > 0 && 
-                notes.trim() !== '' && 
-                (isPrivateAsset || !isVerified || (isVerified && selectedMaterials.length > 0))
-                  ? '#B77F2E'
-                  : '#CCC'
-            }
-          ]}
-          disabled={
-            images.length === 0 || 
-            notes.trim() === '' || 
-            (!isPrivateAsset && isVerified && selectedMaterials.length === 0) ||
-            loading
-          }
-          onPress={handleReviewInspection}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Text style={styles.submitButtonText}>Review Inspection</Text>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
-
-      {/* Confirmation Modal for Material Removal */}
-      <Modal
-        isVisible={confirmModalVisible}
-        backdropOpacity={0.4}
-        onBackdropPress={cancelRemoveMaterial}
-        animationIn="fadeIn"
-        animationOut="fadeOut"
-        style={styles.modal}
-      >
-        <View style={styles.removeModalContainer}>
-          <View style={styles.removeModalContent}>
-            <Text style={styles.removeModalTitle}>Remove Material</Text>
-            <Text style={styles.removeModalText}>
-              Are you sure you want to remove this material?
-            </Text>
+          {/* Notes Section */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Inspection Notes</Text>
+            <View style={styles.divider} />
             
-            <View style={styles.removeModalActions}>
-              <TouchableOpacity
-                style={[styles.removeModalButton, styles.removeModalCancelButton]}
-                onPress={cancelRemoveMaterial}
-              >
-                <Text style={styles.removeModalCancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
+            <TextInput
+              style={styles.notesInput}
+              placeholder="Enter detailed inspection notes..."
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              onFocus={() => {
+                // Auto-scroll to this input when focused with a slight delay to ensure keyboard is visible
+                setTimeout(() => {
+                  scrollViewRef.current?.scrollToEnd({animated: true});
+                }, 300);
+              }}
+            />
+            
+            {notes.trim() === '' && (
+              <Text style={styles.warningText}>Please add inspection notes</Text>
+            )}
+          </View>
+
+          {/* Verification Status - Only shown for regular inspections */}
+          {!isPrivateAsset && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Verification Status</Text>
+              <View style={styles.divider} />
               
-              <TouchableOpacity
-                style={[styles.removeModalButton, styles.removeModalRemoveButton]}
-                onPress={confirmRemoveMaterial}
-              >
-                <Text style={styles.removeModalRemoveButtonText}>Remove</Text>
-              </TouchableOpacity>
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>
+                  {isVerified ? 'Verified' : 'Unverified'}
+                </Text>
+                <Switch
+                  trackColor={{ false: '#767577', true: '#B77F2E' }}
+                  thumbColor={isVerified ? '#f5dd4b' : '#f4f3f4'}
+                  ios_backgroundColor="#3e3e3e"
+                  onValueChange={toggleVerificationStatus}
+                  value={isVerified}
+                />
+              </View>
+              
+              <Text style={styles.infoText}>
+                {isVerified 
+                  ? 'This crack has been verified and requires repair. Status will be set to Verified.' 
+                  : 'Status will be set to Unverified if this crack doesn\'t need immediate repair.'}
+              </Text>
+            </View>
+          )}
+
+          {/* Materials Section - Only shown when Verified and not a private asset */}
+          {!isPrivateAsset && isVerified && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Materials for Repair</Text>
+              <View style={styles.divider} />
+              
+              {materialsLoading ? (
+                <ActivityIndicator size="small" color="#B77F2E" style={styles.loadingIndicator} />
+              ) : (
+                <>
+                  {selectedMaterials.length > 0 ? (
+                    <View style={styles.materialList}>
+                      {selectedMaterials.map((item, index) => (
+                        <View key={index} style={styles.materialItem}>
+                          <View style={styles.materialContent}>
+                            <View style={styles.materialHeader}>
+                              <Text style={styles.materialName} numberOfLines={1}>
+                                {item.material.name}
+                              </Text>
+                              <Text style={styles.materialQuantity}>
+                                x{item.quantity}
+                              </Text>
+                            </View>
+                            <Text style={styles.materialPrice}>
+                              {parseInt(item.material.unit_price, 10).toLocaleString()} VND/unit
+                            </Text>
+                            <Text style={styles.materialSubtotal}>
+                              Subtotal: {(parseInt(item.material.unit_price, 10) * item.quantity).toLocaleString()} VND
+                            </Text>
+                          </View>
+                          <View style={styles.materialActions}>
+                            <TouchableOpacity 
+                              onPress={() => editMaterial(index)}
+                              style={styles.materialEditButton}
+                            >
+                              <Ionicons name="pencil" size={18} color="#B77F2E" />
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                              onPress={() => removeMaterial(index)}
+                              style={styles.materialDeleteButton}
+                            >
+                              <Ionicons name="trash" size={18} color="#FF3B30" />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ))}
+                      
+                      <View style={styles.materialTotalRow}>
+                        <Text style={styles.materialTotalLabel}>Total Cost:</Text>
+                        <Text style={styles.materialTotalValue}>
+                          {calculateTotalCost().toLocaleString()} VND
+                        </Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <Text style={styles.noMaterialsText}>No materials added yet</Text>
+                  )}
+                  
+                  <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={openMaterialModal}
+                  >
+                    <Ionicons name="add-circle" size={24} color="#B77F2E" />
+                    <Text style={styles.addButtonText}>Add Material</Text>
+                  </TouchableOpacity>
+                  
+                  {/* Material Selection Modal */}
+                  <Modal
+                    isVisible={isMaterialModalVisible}
+                    onBackdropPress={closeMaterialModal}
+                    style={styles.materialModal}
+                  >
+                    <View style={styles.materialModalContent}>
+                      <Text style={styles.modalTitle}>
+                        {selectedMaterialForEdit ? 'Update Material Quantity' : 'Select Material'}
+                      </Text>
+                      
+                      {selectedMaterialForEdit ? (
+                        <View style={styles.materialUpdateContainer}>
+                          <Text style={styles.materialUpdateTitle}>{selectedMaterialForEdit.material.name}</Text>
+                          <Text style={styles.materialUpdateDescription}>{selectedMaterialForEdit.material.description}</Text>
+                          <Text style={styles.materialUpdateStock}>
+                            Available: {selectedMaterialForEdit.material.stock_quantity} units
+                          </Text>
+                          <Text style={styles.materialUpdatePrice}>
+                            Unit Price: {parseInt(selectedMaterialForEdit.material.unit_price, 10).toLocaleString()} VND
+                          </Text>
+                          
+                          <View style={styles.quantityContainer}>
+                            <Text style={styles.quantityLabel}>Quantity:</Text>
+                            <TextInput 
+                              style={styles.quantityInput}
+                              value={materialQuantity}
+                              onChangeText={setMaterialQuantity}
+                              keyboardType="number-pad"
+                              selectTextOnFocus
+                            />
+                          </View>
+                          
+                          <View style={styles.materialModalActions}>
+                            <TouchableOpacity
+                              style={styles.materialModalButton}
+                              onPress={closeMaterialModal}
+                            >
+                              <Text style={styles.materialModalButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity
+                              style={[styles.materialModalButton, styles.materialModalPrimaryButton]}
+                              onPress={updateMaterial}
+                            >
+                              <Text style={styles.materialModalPrimaryButtonText}>Update</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ) : (
+                        <View style={styles.materialSelectContainer}>
+                          {/* Add search bar */}
+                          <View style={styles.searchContainer}>
+                            <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+                            <TextInput
+                              style={styles.searchInput}
+                              placeholder="Search materials..."
+                              value={searchText}
+                              onChangeText={(text) => setSearchText(text)}
+                              clearButtonMode="while-editing"
+                              autoCapitalize="none"
+                              autoCorrect={false}
+                            />
+                            {searchText.length > 0 && (
+                              <TouchableOpacity 
+                                onPress={() => setSearchText('')} 
+                                style={styles.clearSearchButton}
+                                hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+                              >
+                                <Ionicons name="close-circle" size={18} color="#999" />
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                          
+                          {filteredMaterials.length > 0 ? (
+                            <FlatList
+                              data={filteredMaterials}
+                              keyExtractor={(item) => item.material_id}
+                              renderItem={({ item }) => (
+                                <TouchableOpacity
+                                  style={styles.materialSelectItem}
+                                  onPress={() => {
+                                    // Khi người dùng chọn vật liệu, cập nhật form 
+                                    // và hiển thị giao diện nhập số lượng
+                                    setSelectedMaterialForEdit({ material: item, quantity: 1 });
+                                    setMaterialQuantity('1');
+                                  }}
+                                >
+                                  <View style={styles.materialSelectContent}>
+                                    <Text style={styles.materialSelectName}>{item.name}</Text>
+                                    <Text style={styles.materialSelectDescription} numberOfLines={2}>
+                                      {item.description}
+                                    </Text>
+                                    <View style={styles.materialSelectFooter}>
+                                      <Text style={styles.materialSelectPrice}>
+                                        {parseInt(item.unit_price, 10).toLocaleString()} VND/unit
+                                      </Text>
+                                      <Text style={styles.materialSelectStock}>
+                                        Available: {item.stock_quantity}
+                                      </Text>
+                                    </View>
+                                  </View>
+                                </TouchableOpacity>
+                              )}
+                              ItemSeparatorComponent={() => <View style={styles.materialSeparator} />}
+                              style={styles.materialSelectList}
+                            />
+                          ) : (
+                            <View style={styles.noSearchResultsContainer}>
+                              <Ionicons name="search-outline" size={48} color="#CCC" />
+                              <Text style={styles.noSearchResultsText}>No materials found matching "{searchText}"</Text>
+                            </View>
+                          )}
+                          
+                          <TouchableOpacity
+                            style={styles.closeMaterialModalButton}
+                            onPress={closeMaterialModal}
+                          >
+                            <Text style={styles.closeMaterialModalText}>Cancel</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  </Modal>
+                </>
+              )}
+            </View>
+          )}
+
+          {/* Submit Button */}
+          <TouchableOpacity
+            style={[
+              styles.submitButton,
+              {
+                backgroundColor: 
+                  images.length > 0 && 
+                  notes.trim() !== '' && 
+                  (isPrivateAsset || !isVerified || (isVerified && selectedMaterials.length > 0))
+                    ? '#B77F2E'
+                    : '#CCC'
+              }
+            ]}
+            disabled={
+              images.length === 0 || 
+              notes.trim() === '' || 
+              (!isPrivateAsset && isVerified && selectedMaterials.length === 0) ||
+              loading
+            }
+            onPress={handleReviewInspection}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.submitButtonText}>Review Inspection</Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* Confirmation Modal for Material Removal */}
+        <Modal
+          isVisible={confirmModalVisible}
+          backdropOpacity={0.4}
+          onBackdropPress={cancelRemoveMaterial}
+          animationIn="fadeIn"
+          animationOut="fadeOut"
+          style={styles.modal}
+        >
+          <View style={styles.removeModalContainer}>
+            <View style={styles.removeModalContent}>
+              <Text style={styles.removeModalTitle}>Remove Material</Text>
+              <Text style={styles.removeModalText}>
+                Are you sure you want to remove this material?
+              </Text>
+              
+              <View style={styles.removeModalActions}>
+                <TouchableOpacity
+                  style={[styles.removeModalButton, styles.removeModalCancelButton]}
+                  onPress={cancelRemoveMaterial}
+                >
+                  <Text style={styles.removeModalCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.removeModalButton, styles.removeModalRemoveButton]}
+                  onPress={confirmRemoveMaterial}
+                >
+                  <Text style={styles.removeModalRemoveButtonText}>Remove</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -1186,6 +1217,15 @@ const styles = StyleSheet.create({
     height: 120,
     textAlignVertical: 'top',
     fontSize: 16,
+    paddingBottom: 20,
+    ...Platform.select({
+      ios: {
+        paddingTop: 12,
+      },
+      android: {
+        paddingTop: 8,
+      },
+    }),
   },
   warningText: {
     color: '#FF3B30',

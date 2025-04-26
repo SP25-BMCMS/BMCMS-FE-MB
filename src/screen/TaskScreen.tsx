@@ -501,7 +501,7 @@ const TaskScreen = () => {
               >
                 <View style={styles.taskHeader}>
                   <Text style={styles.taskTitle} numberOfLines={2}>
-                    {assignment.description ? assignment.description.replace(/undefined/g, '') : ''}
+                    {assignment.description}
                   </Text>
                   <View style={styles.statusContainer}>
                     <View style={[styles.statusBadge, { backgroundColor: getStatusColor(assignment.status) }]}>

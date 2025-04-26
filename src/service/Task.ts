@@ -325,13 +325,21 @@ export const TaskService = {
     try {
       const userId = await AsyncStorage.getItem('userId') || '';
       const url = VITE_REPORT_STATUS_INSPECTION.replace('{inspection_id}', inspectionId);
-      const data = {
+      
+      console.log('Sending report status update with data:', {
         inspection_id: inspectionId,
         report_status: status,
         userId: userId,
         reason: reason
-      };
-      const response = await instance.patch(url, data);
+      });
+      
+      const response = await instance.patch(url, {
+        inspection_id: inspectionId,
+        report_status: status,
+        userId: userId,
+        reason: reason
+      });
+      
       return response.data;
     } catch (error) {
       console.error(`Error updating inspection report status for ID ${inspectionId}:`, error);

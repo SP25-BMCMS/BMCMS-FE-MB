@@ -583,7 +583,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F8F8',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   containerLoading: {
     flex: 1,

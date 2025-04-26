@@ -93,8 +93,20 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
   const confirmMarkAsPrivateAsset = async () => {
     if (!selectedInspection) return;
     
+    if (!reason.trim()) {
+      showMessage({
+        message: "Error",
+        description: "Please enter a reason for this change",
+        type: "danger",
+        duration: 3000,
+      });
+      return;
+    }
+    
     try {
       setSubmitting(true);
+      
+      console.log('Reason being sent:', reason);
       
       // First update as private asset
       await TaskService.updateInspectionAsPrivateAsset(selectedInspection.inspection_id);
@@ -103,7 +115,7 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
       await TaskService.updateInspectionReportStatus(
         selectedInspection.inspection_id, 
         'Pending',
-        reason
+        reason.trim() // Ensure we're sending a trimmed value
       );
       
       // Close modal and reset reason
@@ -334,10 +346,17 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
                 style={styles.reasonInput}
                 placeholder="Enter reason for this change"
                 value={reason}
-                onChangeText={setReason}
+                onChangeText={text => setReason(text)}
                 multiline
-                numberOfLines={2}
+                numberOfLines={3}
+                textAlignVertical="top"
+                autoCapitalize="none"
               />
+              {reason.trim() === '' && (
+                <Text style={{color: 'red', fontSize: 12, marginTop: 4}}>
+                  Please enter a reason to continue
+                </Text>
+              )}
             </View>
             
             <View style={styles.modalActions}>
