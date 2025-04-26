@@ -11,6 +11,7 @@ import {
   Platform,
   Alert,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
 import Modal from "react-native-modal";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -59,6 +60,9 @@ const RepairInsideScreen = () => {
   const [roomDisplayText, setRoomDisplayText] = useState('Select room');
   const [positionDisplayText, setPositionDisplayText] = useState('Select position');
 
+  // Thêm state để theo dõi trạng thái loading
+  const [isLoading, setIsLoading] = useState(false);
+
   // Fetch building detail ID when screen loads
   React.useEffect(() => {
     // Lấy buildingDetailId từ property
@@ -76,7 +80,26 @@ const RepairInsideScreen = () => {
     }
   }, [property]);
 
+  // Thêm useEffect để kiểm tra quyền khi màn hình được tải
+  React.useEffect(() => {
+    (async () => {
+      // Yêu cầu quyền truy cập thư viện ảnh khi component được mount
+      if (Platform.OS === 'ios') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          console.log('Media library permission not granted');
+        }
+        
+        const cameraStatus = await ImagePicker.requestCameraPermissionsAsync();
+        if (cameraStatus.status !== 'granted') {
+          console.log('Camera permission not granted');
+        }
+      }
+    })();
+  }, []);
+
   const openImageSourceModal = () => {
+    Keyboard.dismiss(); // Dismiss keyboard if it's open
     setImageSourceModalVisible(true);
   };
 
@@ -85,25 +108,101 @@ const RepairInsideScreen = () => {
   };
 
   const pickImageFromLibrary = async () => {
-    closeImageSourceModal();
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      setImages([...images, result.assets[0].uri]);
+    if (isLoading) return; // Prevent multiple calls
+    
+    try {
+      setIsLoading(true); // Start loading
+      // Đóng modal trước khi mở image picker
+      setImageSourceModalVisible(false);
+      
+      // Trì hoãn mở image picker để đảm bảo modal đã đóng hoàn toàn
+      setTimeout(async () => {
+        try {
+          // Request media library permissions
+          if (Platform.OS === 'ios') {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert(
+                "Permission Denied",
+                "We need access to your photos to continue. Please grant permission in your device settings.",
+                [{ text: "OK" }]
+              );
+              setIsLoading(false);
+              return;
+            }
+          }
+          
+          // Bọc trong một try-catch để xử lý lỗi từ launchImageLibraryAsync
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 0.5,
+            allowsEditing: Platform.OS === 'ios', // Chỉ cho phép chỉnh sửa trên iOS
+            aspect: [4, 3],
+          });
+          
+          if (!result.canceled && result.assets && result.assets.length > 0) {
+            // Cập nhật state images
+            setImages(prevImages => [...prevImages, result.assets[0].uri]);
+          }
+        } catch (error) {
+          console.error("Error in image picker:", error);
+          Alert.alert("Error", "Cannot access photo library. Please try again.");
+        } finally {
+          setIsLoading(false); // End loading regardless of outcome
+        }
+      }, 500); // Tăng delay để đảm bảo modal đã đóng hoàn toàn
+    } catch (error) {
+      console.error("Error in pickImageFromLibrary:", error);
+      setIsLoading(false);
     }
   };
 
   const takePhoto = async () => {
-    closeImageSourceModal();
-    const result = await ImagePicker.launchCameraAsync({
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      setImages([...images, result.assets[0].uri]);
+    if (isLoading) return; // Prevent multiple calls
+    
+    try {
+      setIsLoading(true); // Start loading
+      // Đóng modal trước khi mở camera
+      setImageSourceModalVisible(false);
+      
+      // Trì hoãn mở camera để đảm bảo modal đã đóng hoàn toàn
+      setTimeout(async () => {
+        try {
+          // Request camera permissions
+          if (Platform.OS === 'ios') {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert(
+                "Permission Denied",
+                "We need access to your camera to continue. Please grant permission in your device settings.",
+                [{ text: "OK" }]
+              );
+              setIsLoading(false);
+              return;
+            }
+          }
+          
+          // Bọc trong một try-catch để xử lý lỗi từ launchCameraAsync
+          const result = await ImagePicker.launchCameraAsync({
+            quality: 0.5,
+            allowsEditing: Platform.OS === 'ios', // Chỉ cho phép chỉnh sửa trên iOS
+            aspect: [4, 3],
+          });
+          
+          if (!result.canceled && result.assets && result.assets.length > 0) {
+            // Cập nhật state images sử dụng functional update để tránh race condition
+            setImages(prevImages => [...prevImages, result.assets[0].uri]);
+          }
+        } catch (error) {
+          console.error("Error in camera:", error);
+          Alert.alert("Error", "Cannot access camera. Please try again.");
+        } finally {
+          setIsLoading(false); // End loading regardless of outcome
+        }
+      }, 500); // Tăng delay để đảm bảo modal đã đóng hoàn toàn
+    } catch (error) {
+      console.error("Error in takePhoto:", error);
+      setIsLoading(false);
     }
   };
 
@@ -314,6 +413,7 @@ const RepairInsideScreen = () => {
             <TouchableOpacity
               style={styles.imagePicker}
               onPress={openImageSourceModal}
+              disabled={isLoading}
             >
               <Icon name="add-a-photo" size={30} color="#B77F2E" />
               <Text>Choose photo</Text>
@@ -323,13 +423,30 @@ const RepairInsideScreen = () => {
             <Modal
               isVisible={isImageSourceModalVisible}
               onBackdropPress={closeImageSourceModal}
+              onBackButtonPress={closeImageSourceModal}
+              backdropTransitionOutTiming={0}
+              useNativeDriver={true}
+              useNativeDriverForBackdrop={true}
+              animationInTiming={300}
+              animationOutTiming={300}
+              hideModalContentWhileAnimating={true}
+              propagateSwipe={true}
               style={styles.modal}
             >
               <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Select photo source</Text>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Select photo source</Text>
+                  <TouchableOpacity 
+                    onPress={closeImageSourceModal}
+                    style={styles.closeModalButton}
+                  >
+                    <Icon name="close" size={24} color="#333" />
+                  </TouchableOpacity>
+                </View>
                 <TouchableOpacity
                   style={styles.modalOption}
                   onPress={takePhoto}
+                  activeOpacity={0.6}
                 >
                   <Icon name="camera-alt" size={24} color="#B77F2E" />
                   <Text style={styles.modalOptionText}>Take photo</Text>
@@ -337,27 +454,37 @@ const RepairInsideScreen = () => {
                 <TouchableOpacity
                   style={styles.modalOption}
                   onPress={pickImageFromLibrary}
+                  activeOpacity={0.6}
                 >
                   <Icon name="photo-library" size={24} color="#B77F2E" />
                   <Text style={styles.modalOptionText}>Choose from gallery</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={closeImageSourceModal}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
               </View>
             </Modal>
+
+            {/* Loading indicator */}
+            {isLoading && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#B77F2E" />
+                <Text style={styles.loadingText}>Loading image...</Text>
+              </View>
+            )}
 
             {/* Hiển thị ảnh đã chọn */}
             <View style={styles.imageContainer}>
               {images.map((image, index) => (
                 <View key={index} style={styles.imageWrapper}>
-                  <Image source={{ uri: image }} style={styles.image} />
+                  <Image 
+                    source={{ uri: image }} 
+                    style={styles.image} 
+                    resizeMode="cover"
+                    resizeMethod="scale"
+                  />
                   <TouchableOpacity
                     style={styles.removeImageButton}
                     onPress={() => removeImage(index)}
+                    activeOpacity={0.7}
+                    disabled={isLoading}
                   >
                     <Icon name="close" size={20} color="#fff" />
                   </TouchableOpacity>
@@ -372,9 +499,9 @@ const RepairInsideScreen = () => {
             <TouchableOpacity
               style={[
                 styles.continueButton,
-                { backgroundColor: isImagesValid ? "#B77F2E" : "#ccc" },
+                { backgroundColor: isImagesValid && !isLoading ? "#B77F2E" : "#ccc" },
               ]}
-              disabled={!isImagesValid}
+              disabled={!isImagesValid || isLoading}
               onPress={handleContinueToReview}
             >
               <Text style={styles.continueButtonText}>Continue</Text>
@@ -551,18 +678,41 @@ const styles = StyleSheet.create({
   modal: {
     justifyContent: "flex-end",
     margin: 0,
+    ...Platform.select({
+      ios: {
+        marginBottom: 20,
+      }
+    }),
   },
   modalContent: {
     backgroundColor: "white",
     padding: 22,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 15,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 15,
+  },
+  closeModalButton: {
+    padding: 5,
   },
   modalOption: {
     flexDirection: "row",
@@ -682,6 +832,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginLeft: 10,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#B77F2E',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
 

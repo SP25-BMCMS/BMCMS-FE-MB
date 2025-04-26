@@ -501,7 +501,7 @@ const TaskScreen = () => {
               >
                 <View style={styles.taskHeader}>
                   <Text style={styles.taskTitle} numberOfLines={2}>
-                    {assignment.description}
+                    {assignment.description ? assignment.description.replace(/undefined/g, '') : ''}
                   </Text>
                   <View style={styles.statusContainer}>
                     <View style={[styles.statusBadge, { backgroundColor: getStatusColor(assignment.status) }]}>
@@ -518,10 +518,6 @@ const TaskScreen = () => {
                 </View>
                 
                 <View style={styles.taskInfo}>
-                  <Text style={styles.taskInfoText}>
-                    <Text style={styles.taskInfoLabel}>Task ID: </Text>
-                    {assignment.task_id.substring(0, 8)}...
-                  </Text>
                   <Text style={styles.taskInfoText}>
                     <Text style={styles.taskInfoLabel}>Created: </Text>
                     {formatDate(assignment.created_at)}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
+  Modal,
+  TextInput,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -15,6 +17,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import { WorkLogService, WorkLog } from "../service/WorkLog";
 import { showMessage } from "react-native-flash-message";
+import axios from "axios";
 
 interface WorkProgressScreenParams {
   crackReportId: string;
@@ -24,6 +27,12 @@ const WorkProgressScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { crackReportId } = route.params as WorkProgressScreenParams;
+  
+  // Feedback state
+  const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     data: worklogsData,
@@ -49,72 +58,126 @@ const WorkProgressScreen = () => {
   });
 
   const handleCreateFeedback = () => {
-    showRatingOptions();
+    setRating(5);
+    setComment("");
+    setFeedbackModalVisible(true);
   };
 
-  const showRatingOptions = () => {
-    // Create a custom view for rating selection
-    const ratingView = (
-      <View style={{padding: 10}}>
-        <Text style={{color: '#FFF', fontWeight: 'bold', marginBottom: 10}}>
-          Rate the repair work:
-        </Text>
-        <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-          {[1, 2, 3, 4, 5].map((rating) => (
-            <TouchableOpacity
-              key={rating}
-              onPress={() => submitFeedback(rating)}
-              style={{
-                padding: 10,
-                backgroundColor: '#FFF3',
-                borderRadius: 20,
-                width: 40,
-                height: 40,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{color: '#FFF', fontWeight: 'bold'}}>{rating}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-    );
-
-    showMessage({
-      message: "Submit Feedback",
-      description: "How would you rate the repair work?",
-      type: "info",
-      backgroundColor: "#FF9800",
-      color: "#FFFFFF",
-      duration: 5000,
-      renderCustomContent: () => ratingView,
-      icon: "info",
-      style: {
-        borderRadius: 8,
-        marginTop: 40,
-      },
-    });
-  };
-
-  const submitFeedback = (rating: number) => {
-    // Here you would call your API to submit the feedback
-    // For example: submitFeedbackToAPI(crackReportId, rating)
+  const submitFeedback = async () => {
+    if (!worklogsData) return;
     
-    // Show success toast
-    showMessage({
-      message: "Feedback Submitted",
-      description: `Thank you for your ${rating}-star rating!`,
-      type: "success",
-      icon: "success",
-      backgroundColor: "#4CAF50",
-      color: "#FFFFFF",
-      duration: 3000,
-      style: {
-        borderRadius: 8,
-        marginTop: 40,
-      },
-    });
+    // Validate comment
+    if (!comment.trim()) {
+      showMessage({
+        message: "Comment Required",
+        description: "Please add a comment about your experience",
+        type: "warning",
+        backgroundColor: "#FF9800",
+        color: "#FFFFFF",
+        duration: 3000,
+        style: {
+          borderRadius: 8,
+          marginTop: 40,
+        },
+      });
+      return;
+    }
+    
+    try {
+      setIsSubmitting(true);
+      
+      const userId = await AsyncStorage.getItem("userId");
+      if (!userId) {
+        throw new Error("User ID not found");
+      }
+      
+      // Lấy task_id theo cách đơn giản và an toàn hơn
+      let taskId = "";
+      
+      // Kiểm tra từ properties cơ bản trước
+      if (worklogsData.task_id) {
+        // Nếu có task_id trực tiếp
+        taskId = worklogsData.task_id;
+      } else if (worklogsData.taskAssignments && worklogsData.taskAssignments.length > 0) {
+        // Nếu có assignments, lấy task_id từ assignment đầu tiên
+        const assignment = worklogsData.taskAssignments[0];
+        if (assignment && assignment.task_id) {
+          taskId = assignment.task_id;
+        }
+      }
+      
+      // Nếu vẫn không tìm thấy, có thể đi vào một số trường hợp khác
+      if (!taskId) {
+        console.log("Không tìm thấy task_id theo cách thông thường, tìm cách khác...");
+        console.log("Worklog data structure:", JSON.stringify(worklogsData, null, 2));
+        
+        // Tạo tạm task_id từ crackReportId nếu không tìm thấy
+        taskId = crackReportId;
+      }
+      
+      if (!taskId) {
+        throw new Error("Không thể xác định task ID để gửi feedback");
+      }
+      
+      // Prepare the feedback data as required by the API
+      const feedbackData = {
+        task_id: taskId,
+        feedback_by: userId,
+        comments: comment,
+        rating: rating
+      };
+      
+      console.log("Gửi feedback:", feedbackData);
+      
+      // Get the API base URL from .env file
+      const apiUrl = process.env.VITE_API_URL || '';
+      const feedbackEndpoint = process.env.VITE_POST_FEEDBACK || '/feedbacks';
+      
+      // Send the feedback to the API
+      const token = await AsyncStorage.getItem("token");
+      const response = await axios.post(`${apiUrl}${feedbackEndpoint}`, feedbackData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      // Close the modal
+      setFeedbackModalVisible(false);
+      
+      // Show success message
+      showMessage({
+        message: "Feedback Submitted",
+        description: `Thank you for your ${rating}-star rating!`,
+        type: "success",
+        icon: "success",
+        backgroundColor: "#4CAF50",
+        color: "#FFFFFF",
+        duration: 3000,
+        style: {
+          borderRadius: 8,
+          marginTop: 40,
+        },
+      });
+      
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      showMessage({
+        message: "Error",
+        description: "Failed to submit feedback. Please try again.",
+        type: "danger",
+        icon: "danger",
+        backgroundColor: "#F44336",
+        color: "#FFFFFF",
+        duration: 3000,
+        style: {
+          borderRadius: 8,
+          marginTop: 40,
+        },
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isLoading) {
@@ -376,6 +439,75 @@ const WorkProgressScreen = () => {
           </ScrollView>
         </View>
       )}
+
+      {/* Feedback Modal */}
+      <Modal
+        visible={feedbackModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setFeedbackModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.feedbackModalContent}>
+            <Text style={styles.feedbackModalTitle}>Rate Repair Work</Text>
+            
+            <Text style={styles.ratingLabel}>Select Rating:</Text>
+            <View style={styles.ratingContainer}>
+              {[1, 2, 3, 4, 5].map((value) => (
+                <TouchableOpacity
+                  key={value}
+                  onPress={() => setRating(value)}
+                  style={[
+                    styles.ratingButton,
+                    rating === value && styles.ratingButtonSelected
+                  ]}
+                >
+                  <Icon
+                    name="star"
+                    size={24}
+                    color={rating >= value ? "#FFC107" : "#E0E0E0"}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+            
+            <Text style={styles.commentLabel}>Add Comment: <Text style={styles.requiredField}>*</Text></Text>
+            <TextInput
+              style={styles.commentInput}
+              placeholder="Share your experience about the repair work..."
+              value={comment}
+              onChangeText={setComment}
+              multiline
+              numberOfLines={4}
+            />
+            
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setFeedbackModalVisible(false)}
+                disabled={isSubmitting}
+              >
+                <Text style={styles.modalCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[
+                  styles.modalSubmitButton,
+                  {backgroundColor: isSubmitting ? '#999' : '#4CAF50'}
+                ]}
+                onPress={submitFeedback}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.modalSubmitButtonText}>Submit</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -603,6 +735,102 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "bold",
     marginLeft: 8,
+  },
+  // Modal styles
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  feedbackModalContent: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 22,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  feedbackModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  ratingLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#555',
+    marginBottom: 10,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  ratingButton: {
+    padding: 8,
+    marginHorizontal: 4,
+  },
+  ratingButtonSelected: {
+    backgroundColor: '#FFF9E5',
+    borderRadius: 20,
+  },
+  commentLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#555',
+    marginBottom: 10,
+  },
+  requiredField: {
+    color: '#FF3B30',
+    fontWeight: 'bold',
+  },
+  commentInput: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    marginBottom: 20,
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalCancelButton: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
+  },
+  modalCancelButtonText: {
+    color: '#333',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  modalSubmitButton: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#4CAF50',
+    alignItems: 'center',
+    flex: 1,
+    marginLeft: 8,
+  },
+  modalSubmitButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
 
