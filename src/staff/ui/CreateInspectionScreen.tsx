@@ -479,11 +479,15 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
         duration: 3000,
       });
       
-      // Navigate back to TaskScreen and refresh data
+      // Navigate back to TaskDetail screen with the assignment ID
       setTimeout(() => {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Task' }]
+        // First go back to previous screen (TaskDetail)
+        navigation.goBack();
+        
+        // Then force a refresh by dispatching a focus event
+        const refreshEvent = navigation.addListener('focus', () => {
+          // Remove the listener to avoid multiple refreshes
+          refreshEvent();
         });
       }, 500);
     } catch (error) {
