@@ -479,9 +479,12 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
         duration: 3000,
       });
       
-      // Thay đổi: Điều hướng đến TaskDetail với assignment_id tương ứng thay vì quay lại
+      // Navigate back to TaskScreen and refresh data
       setTimeout(() => {
-        navigation.navigate('TaskDetail', { assignmentId: taskDetail.assignment_id });
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Task' }]
+        });
       }, 500);
     } catch (error) {
       console.error('Error submitting inspection:', error);

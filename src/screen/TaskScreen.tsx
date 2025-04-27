@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Modal } from 'react-native';
 import { TaskService } from '../service/Task';
 import { TaskAssignment } from '../types';
 import { format } from 'date-fns';
@@ -31,6 +31,12 @@ const TaskScreen = () => {
   const [checkedTasks, setCheckedTasks] = useState<{[key: string]: boolean}>({});
   const [tokenValid, setTokenValid] = useState<boolean>(true);
   const queryClient = useQueryClient();
+  
+  // Add status filter state
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  
+  // Add state for dropdown visibility
+  const [showFilterDropdown, setShowFilterDropdown] = useState<boolean>(false);
 
   // Kiểm tra token
   useFocusEffect(
@@ -107,6 +113,11 @@ const TaskScreen = () => {
   const taskAssignments = viewMode === ViewMode.MAINTENANCE_TASKS
     ? maintenanceTasks
     : crackTasks;
+    
+  // Apply status filter if selected
+  const filteredTaskAssignments = statusFilter 
+    ? taskAssignments.filter((assignment: TaskAssignment) => String(assignment.status) === statusFilter)
+    : taskAssignments;
 
   // Check if loading
   const isLoading = isLoadingUserTasks || isLoadingAllTasks;
@@ -148,6 +159,7 @@ const TaskScreen = () => {
 
   const onRefresh = async () => {
     setCheckedTasks({});
+    setStatusFilter(null); // Reset filter when refreshing
     await refetchUserTasks();
     await refetchAllTasks();
   };
@@ -392,6 +404,7 @@ const TaskScreen = () => {
       : ViewMode.MAINTENANCE_TASKS
     );
     setCheckedTasks({});
+    setStatusFilter(null); // Reset status filter when switching views
   };
   
   const renderTasksBadge = () => {
@@ -458,6 +471,130 @@ const TaskScreen = () => {
       {/* Display task counts */}
       {renderTasksBadge()}
       
+      {/* Status filter section */}
+      <View style={styles.filterContainer}>
+        {statusFilter && (
+          <View style={styles.activeFilterIndicator}>
+            <Text style={styles.activeFilterText}>
+              Filtered by: {getStatusText(statusFilter)}
+            </Text>
+            <TouchableOpacity onPress={() => setStatusFilter(null)}>
+              <Icon name="cancel" size={20} color="#FF4500" />
+            </TouchableOpacity>
+          </View>
+        )}
+        
+        <TouchableOpacity 
+          style={styles.filterButton}
+          onPress={() => setShowFilterDropdown(!showFilterDropdown)}
+        >
+          <Icon name="filter-list" size={20} color="#FFFFFF" />
+          <Text style={styles.filterButtonText}>
+            {statusFilter ? `Filter: ${getStatusText(statusFilter)}` : "Filter by Status"}
+          </Text>
+          <Icon 
+            name={showFilterDropdown ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+            size={20} 
+            color="#FFFFFF" 
+          />
+        </TouchableOpacity>
+        
+        <Modal
+          visible={showFilterDropdown}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowFilterDropdown(false)}
+        >
+          <TouchableOpacity 
+            style={styles.modalOverlay}
+            activeOpacity={0.5}
+            onPress={() => setShowFilterDropdown(false)}
+          >
+            <View 
+              style={styles.dropdownContainer} 
+              onStartShouldSetResponder={() => true}
+              onTouchEnd={(e) => e.stopPropagation()}
+            >
+              <Text style={styles.dropdownTitle}>Filter by Status</Text>
+              
+              <TouchableOpacity
+                style={[styles.dropdownItem, statusFilter === null && styles.dropdownItemActive]}
+                onPress={() => {
+                  setStatusFilter(null);
+                  setShowFilterDropdown(false);
+                }}
+              >
+                <Text style={[styles.dropdownItemText, statusFilter === null && styles.dropdownItemTextActive]}>
+                  All
+                </Text>
+                {statusFilter === null && <Icon name="check" size={18} color="#FF4500" />}
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.dropdownItem, statusFilter === 'Pending' && styles.dropdownItemActive]}
+                onPress={() => {
+                  setStatusFilter('Pending');
+                  setShowFilterDropdown(false);
+                }}
+              >
+                <Text style={[styles.dropdownItemText, statusFilter === 'Pending' && styles.dropdownItemTextActive]}>
+                  Pending
+                </Text>
+                {statusFilter === 'Pending' && <Icon name="check" size={18} color="#FF4500" />}
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.dropdownItem, statusFilter === 'Verified' && styles.dropdownItemActive]}
+                onPress={() => {
+                  setStatusFilter('Verified');
+                  setShowFilterDropdown(false);
+                }}
+              >
+                <Text style={[styles.dropdownItemText, statusFilter === 'Verified' && styles.dropdownItemTextActive]}>
+                  Verified
+                </Text>
+                {statusFilter === 'Verified' && <Icon name="check" size={18} color="#FF4500" />}
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.dropdownItem, statusFilter === 'Confirmed' && styles.dropdownItemActive]}
+                onPress={() => {
+                  setStatusFilter('Confirmed');
+                  setShowFilterDropdown(false);
+                }}
+              >
+                <Text style={[styles.dropdownItemText, statusFilter === 'Confirmed' && styles.dropdownItemTextActive]}>
+                  Confirmed
+                </Text>
+                {statusFilter === 'Confirmed' && <Icon name="check" size={18} color="#FF4500" />}
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.dropdownItem, statusFilter === 'InProgress' && styles.dropdownItemActive]}
+                onPress={() => {
+                  setStatusFilter('InProgress');
+                  setShowFilterDropdown(false);
+                }}
+              >
+                <Text style={[styles.dropdownItemText, statusFilter === 'InProgress' && styles.dropdownItemTextActive]}>
+                  In Progress
+                </Text>
+                {statusFilter === 'InProgress' && <Icon name="check" size={18} color="#FF4500" />}
+              </TouchableOpacity>
+
+              <View style={styles.dropdownFooter}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => setShowFilterDropdown(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      </View>
+      
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#B77F2E" />
@@ -475,8 +612,11 @@ const TaskScreen = () => {
           refreshControl={
             <RefreshControl refreshing={isFetching} onRefresh={onRefresh} />
           }
+          onScrollBeginDrag={() => {
+            if (showFilterDropdown) setShowFilterDropdown(false);
+          }}
         >
-          {taskAssignments.length === 0 ? (
+          {filteredTaskAssignments.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Icon 
                 name={viewMode === ViewMode.MAINTENANCE_TASKS ? "build" : "assignment"} 
@@ -484,13 +624,23 @@ const TaskScreen = () => {
                 color="#CCC" 
               />
               <Text style={styles.emptyText}>
-                {viewMode === ViewMode.MAINTENANCE_TASKS 
-                  ? "No maintenance tasks available"
-                  : "No crack-related tasks available"}
+                {statusFilter 
+                  ? `No ${viewMode === ViewMode.MAINTENANCE_TASKS ? "maintenance" : "crack"} tasks with '${getStatusText(statusFilter)}' status`
+                  : viewMode === ViewMode.MAINTENANCE_TASKS 
+                    ? "No maintenance tasks available"
+                    : "No crack-related tasks available"}
               </Text>
+              {statusFilter && (
+                <TouchableOpacity 
+                  style={styles.clearFilterButton}
+                  onPress={() => setStatusFilter(null)}
+                >
+                  <Text style={styles.clearFilterText}>Clear Filter</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
-            taskAssignments.map((assignment) => (
+            filteredTaskAssignments.map((assignment) => (
               <TouchableOpacity 
                 key={assignment.assignment_id} 
                 style={[
@@ -756,6 +906,111 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 4,
     fontWeight: '500',
+  },
+  filterContainer: {
+    marginTop: 10,
+    marginBottom: 15,
+    width: '50%',
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#B77F2E',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  filterButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    marginLeft: 4,
+    fontSize: 14,
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '100%',
+    width: '100%',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dropdownContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    width: '80%',
+    maxWidth: 300,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  dropdownItemActive: {
+    backgroundColor: '#FFF3E0',
+    borderRadius: 8,
+  },
+  dropdownItemText: {
+    color: '#333',
+    fontWeight: '500',
+    fontSize: 16,
+  },
+  dropdownItemTextActive: {
+    color: '#FF4500',
+    fontWeight: 'bold',
+  },
+  activeFilterIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  activeFilterText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginRight: 8,
+  },
+  clearFilterButton: {
+    backgroundColor: '#B77F2E',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  clearFilterText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  dropdownTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  dropdownFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 10,
+  },
+  cancelButton: {
+    backgroundColor: '#B77F2E',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  cancelButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
 });
 

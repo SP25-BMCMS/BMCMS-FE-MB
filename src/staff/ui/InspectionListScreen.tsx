@@ -42,7 +42,6 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
   const [submitting, setSubmitting] = useState(false);
   const [selectedInspection, setSelectedInspection] = useState<EnhancedInspection | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [reason, setReason] = useState<string>('');
   
   // Initialize Query Client
   const queryClient = useQueryClient();
@@ -93,37 +92,24 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
   const confirmMarkAsPrivateAsset = async () => {
     if (!selectedInspection) return;
     
-    if (!reason.trim()) {
-      showMessage({
-        message: "Error",
-        description: "Please enter a reason for this change",
-        type: "danger",
-        duration: 3000,
-      });
-      return;
-    }
-    
     try {
       setSubmitting(true);
-      
-      console.log('Reason being sent:', reason);
       
       // First update as private asset
       await TaskService.updateInspectionAsPrivateAsset(selectedInspection.inspection_id);
       
-      // Then update the report status to Pending with reason
+      // Then update the report status to Pending
       await TaskService.updateInspectionReportStatus(
         selectedInspection.inspection_id, 
         'Pending',
-        reason.trim() // Ensure we're sending a trimmed value
+        'Marked as private asset' // Default reason
       );
       
-      // Close modal and reset reason
+      // Close modal
       setShowConfirmModal(false);
       setSelectedInspection(null);
-      setReason('');
       
-      // Show flash message instead of toast
+      // Show flash message
       showMessage({
         message: "Success",
         description: "Inspection marked as Private Asset and set to Pending status.",
@@ -340,31 +326,11 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
               This will update the status to 'Pending'.
             </Text>
             
-            <View style={styles.reasonContainer}>
-              <Text style={styles.reasonLabel}>Reason:</Text>
-              <TextInput
-                style={styles.reasonInput}
-                placeholder="Enter reason for this change"
-                value={reason}
-                onChangeText={text => setReason(text)}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-                autoCapitalize="none"
-              />
-              {reason.trim() === '' && (
-                <Text style={{color: 'red', fontSize: 12, marginTop: 4}}>
-                  Please enter a reason to continue
-                </Text>
-              )}
-            </View>
-            
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => {
                   setShowConfirmModal(false);
-                  setReason('');
                 }}
                 disabled={submitting}
               >
@@ -372,13 +338,9 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
               </TouchableOpacity>
               
               <TouchableOpacity
-                style={[
-                  styles.modalButton, 
-                  styles.confirmButton,
-                  !reason.trim() ? styles.disabledButton : null
-                ]}
+                style={[styles.modalButton, styles.confirmButton]}
                 onPress={confirmMarkAsPrivateAsset}
-                disabled={submitting || !reason.trim()}
+                disabled={submitting}
               >
                 {submitting ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
