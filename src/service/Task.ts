@@ -359,6 +359,18 @@ export const TaskService = {
     }
   },
 
+  // Add this function to get all schedule jobs
+  async getAllScheduleJobs(): Promise<any> {
+    try {
+      const url = VITE_GET_SCHEDULES_JOB.replace('{schedule_job_id}', '');
+      const response = await instance.get(url);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching all schedule jobs:', error);
+      throw error;
+    }
+  },
+
   // Add function to get maintenance history by device ID
   async getMaintenanceHistoryByDeviceId(deviceId: string): Promise<any> {
     try {

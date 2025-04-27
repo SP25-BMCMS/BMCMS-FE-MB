@@ -41,6 +41,14 @@ type InspectionDetailScreenNavigationProp = StackNavigationProp<
   "InspectionDetail"
 >;
 
+// Enhanced Inspection type with the new fields
+interface EnhancedInspection extends Inspection {
+  isprivateasset?: boolean;
+  report_status?: string;
+  confirmed_by?: string | null;
+  reason?: string;
+}
+
 type Props = {
   route: InspectionDetailScreenRouteProp;
   navigation: InspectionDetailScreenNavigationProp;
@@ -403,7 +411,7 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     );
   }
 
-  const currentInspection = inspectionDetail || inspection;
+  const currentInspection = (inspectionDetail || inspection) as EnhancedInspection;
   const imageUrls = currentInspection.image_urls || [];
   const buildingDetailId =
     inspectionDetail?.crackInfo?.data[0]?.buildingDetailId || "";

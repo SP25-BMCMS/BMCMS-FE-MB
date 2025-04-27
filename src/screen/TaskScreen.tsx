@@ -11,7 +11,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showMessage } from 'react-native-flash-message';
 import instance from '../service/Auth';
-import { VITE_CHANGE_STATUS_CRACK, VITE_GET_TASK_ASSIGNMENT } from '@env';
+import { VITE_CHANGE_STATUS_CRACK, VITE_GET_TASK_ASSIGNMENT, VITE_CHANGE_STATUS_SCHEDULE_JOB_ID } from '@env';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { validateToken } from '../service/Auth';
 
@@ -28,7 +28,9 @@ const TaskScreen = () => {
   const [error, setError] = useState<string>('');
   const [isLeader, setIsLeader] = useState<boolean>(false);
   const [reviewingTasks, setReviewingTasks] = useState<string[]>([]);
+  const [reviewingScheduleTasks, setReviewingScheduleTasks] = useState<string[]>([]);
   const [checkedTasks, setCheckedTasks] = useState<{[key: string]: boolean}>({});
+  const [checkedScheduleTasks, setCheckedScheduleTasks] = useState<{[key: string]: boolean}>({});
   const [tokenValid, setTokenValid] = useState<boolean>(true);
   const queryClient = useQueryClient();
   
@@ -125,6 +127,26 @@ const TaskScreen = () => {
   // Check if fetching (for pull-to-refresh)
   const isFetching = isFetchingUserTasks || isFetchingAllTasks;
 
+  // Add new query for schedule jobs
+  const { 
+    data: scheduleJobsData,
+  } = useQuery({
+    queryKey: ['scheduleJobs'],
+    queryFn: async () => {
+      try {
+        if (!tokenValid) return { data: [] };
+        
+        const response = await TaskService.getAllScheduleJobs();
+        return response.data || [];
+      } catch (error) {
+        console.error('Error fetching schedule jobs:', error);
+        return [];
+      }
+    },
+    enabled: tokenValid,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
   useEffect(() => {
     const checkUserPosition = async () => {
       try {
@@ -150,6 +172,7 @@ const TaskScreen = () => {
       refetchUserTasks();
       refetchAllTasks();
       setCheckedTasks({});
+      setCheckedScheduleTasks({});
       
       return () => {
         // Cleanup khi unfocus
@@ -159,6 +182,7 @@ const TaskScreen = () => {
 
   const onRefresh = async () => {
     setCheckedTasks({});
+    setCheckedScheduleTasks({});
     setStatusFilter(null); // Reset filter when refreshing
     await refetchUserTasks();
     await refetchAllTasks();
@@ -267,6 +291,34 @@ const TaskScreen = () => {
     }
   };
 
+  // Hàm mới để kiểm tra schedule job
+  const shouldShowScheduleReviewingButton = async (assignment: TaskAssignment): Promise<boolean> => {
+    if (!tokenValid) return false;
+    
+    try {
+      // Kiểm tra nếu task đã được đánh dấu là đang reviewing trong session hiện tại
+      if (reviewingScheduleTasks.includes(assignment.assignment_id)) {
+        return false;
+      }
+      
+      // Nếu chưa, lấy thông tin chi tiết để kiểm tra schedule_job_id
+      const taskDetailResponse = await TaskService.getTaskAssignmentDetail(assignment.assignment_id);
+      const scheduleJobId = taskDetailResponse.data.task.schedule_job_id;
+      
+      if (!scheduleJobId) {
+        return false; // Không có schedule job, không hiển thị button
+      }
+      
+      // Kiểm tra trạng thái của schedule job
+      // Có thể thêm kiểm tra trạng thái nếu API trả về thông tin này
+      
+      return true; // Hiển thị button cho các task có schedule_job_id và status là Confirmed
+    } catch (error) {
+      console.error('Error checking schedule job status:', error);
+      return false;
+    }
+  };
+
   const renderReviewingButton = (assignment: TaskAssignment) => {
     // Nếu không phải Confirmed, không hiển thị gì cả
     if (String(assignment.status) !== 'Confirmed') {
@@ -302,6 +354,47 @@ const TaskScreen = () => {
         <TouchableOpacity
           style={styles.reviewingButton}
           onPress={() => handleChangeToReviewing(assignment)}
+        >
+          <Text style={styles.reviewingButtonText}>Change to Reviewing</Text>
+        </TouchableOpacity>
+      );
+    }
+    
+    // Mặc định không hiển thị gì
+    return null;
+  };
+
+  // Hàm mới để hiển thị nút Reviewing cho schedule job
+  const renderScheduleReviewingButton = (assignment: TaskAssignment) => {
+    // Nếu không phải Confirmed, không hiển thị gì cả
+    if (String(assignment.status) !== 'Confirmed') {
+      return null;
+    }
+    
+    // Nếu đã kiểm tra và là reviewing, không hiển thị button
+    if (reviewingScheduleTasks.includes(assignment.assignment_id)) {
+      return null;
+    }
+    
+    // Nếu chưa kiểm tra, kiểm tra và lưu kết quả
+    if (checkedScheduleTasks[assignment.assignment_id] === undefined) {
+      shouldShowScheduleReviewingButton(assignment).then(shouldShow => {
+        setCheckedScheduleTasks(prev => ({
+          ...prev,
+          [assignment.assignment_id]: shouldShow
+        }));
+      });
+      
+      // Trong lúc đang kiểm tra, không hiển thị gì
+      return null;
+    }
+    
+    // Nếu đã kiểm tra và kết quả là hiển thị button
+    if (checkedScheduleTasks[assignment.assignment_id]) {
+      return (
+        <TouchableOpacity
+          style={[styles.reviewingButton, { backgroundColor: '#4CD964' }]} // Màu xanh lá cho schedule job
+          onPress={() => handleChangeToScheduleReviewing(assignment)}
         >
           <Text style={styles.reviewingButtonText}>Change to Reviewing</Text>
         </TouchableOpacity>
@@ -398,12 +491,117 @@ const TaskScreen = () => {
     }
   };
 
+  // Hàm mới để xử lý thay đổi trạng thái schedule job
+  const handleChangeToScheduleReviewing = async (assignment: TaskAssignment) => {
+    if (!tokenValid) {
+      Alert.alert("Session Expired", "Your session has expired. Please log in again.");
+      return;
+    }
+    
+    try {
+      // Lấy chi tiết của task assignment để lấy schedule_job_id
+      const taskDetailResponse = await TaskService.getTaskAssignmentDetail(assignment.assignment_id);
+      const scheduleJobId = taskDetailResponse.data.task.schedule_job_id;
+      
+      if (!scheduleJobId) {
+        showMessage({
+          message: "Error",
+          description: "No schedule job found for this task",
+          type: "danger",
+          duration: 3000
+        });
+        return;
+      }
+      
+      console.log('Schedule Job ID:', scheduleJobId);
+      
+      // Kiểm tra xem schedule job có tồn tại trong dữ liệu đã cache không
+      if (scheduleJobsData) {
+        const scheduleJobExists = scheduleJobsData.some((job: any) => job.id === scheduleJobId);
+        if (!scheduleJobExists) {
+          console.warn('Warning: Schedule job ID not found in cached data:', scheduleJobId);
+        }
+      }
+      
+      // Hiển thị dialog xác nhận
+      Alert.alert(
+        "Change Status",
+        "Do you want to change this schedule job status to Reviewing?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel"
+          },
+          {
+            text: "Confirm",
+            onPress: async () => {
+              try {
+                // 1. Gọi API thay đổi trạng thái của schedule job
+                const url = VITE_CHANGE_STATUS_SCHEDULE_JOB_ID.replace('{schedule_job_id}', scheduleJobId);
+                console.log('Sending request to URL:', url);
+                console.log('Request payload:', {
+                  status: "Reviewing"
+                });
+                
+                await instance.put(url, {
+                  status: "Reviewing"
+                });
+                
+                // 2. Tạo worklog để ghi lại việc thay đổi trạng thái
+                await TaskService.updateStatusAndCreateWorklog(assignment.assignment_id, 'Confirmed');
+                
+                // Thêm task này vào danh sách reviewing và cập nhật checkedScheduleTasks
+                setReviewingScheduleTasks(prev => [...prev, assignment.assignment_id]);
+                setCheckedScheduleTasks(prev => ({
+                  ...prev,
+                  [assignment.assignment_id]: false
+                }));
+                
+                // Hiển thị thông báo thành công
+                showMessage({
+                  message: "Success",
+                  description: "Schedule job status changed to Reviewing",
+                  type: "success",
+                  duration: 3000
+                });
+                
+                // Refresh lại danh sách
+                onRefresh();
+              } catch (error: any) {
+                console.error('Error changing schedule job status:', error);
+                // Log more detailed error information
+                if (error.response) {
+                  console.error('Error response:', error.response.status, error.response.data);
+                }
+                showMessage({
+                  message: "Error",
+                  description: "Failed to update schedule job status: " + (error.response?.data?.message || error.message || "Unknown error"),
+                  type: "danger",
+                  duration: 3000
+                });
+              }
+            }
+          }
+        ]
+      );
+    } catch (error: any) {
+      console.error('Error in handleChangeToScheduleReviewing:', error);
+      showMessage({
+        message: "Error",
+        description: "An error occurred while processing your request",
+        type: "danger",
+        duration: 3000
+      });
+    }
+  };
+
   const toggleViewMode = () => {
     setViewMode(viewMode === ViewMode.MAINTENANCE_TASKS 
       ? ViewMode.CRACK_TASKS 
       : ViewMode.MAINTENANCE_TASKS
     );
     setCheckedTasks({});
+    setCheckedScheduleTasks({});
     setStatusFilter(null); // Reset status filter when switching views
   };
   
@@ -659,7 +857,9 @@ const TaskScreen = () => {
                     </View>
                     
                     {/* Display Reviewing chip when status is Confirmed and button has been pressed */}
-                    {String(assignment.status) === 'Confirmed' && reviewingTasks.includes(assignment.assignment_id) && (
+                    {String(assignment.status) === 'Confirmed' && 
+                     (reviewingTasks.includes(assignment.assignment_id) || 
+                      reviewingScheduleTasks.includes(assignment.assignment_id)) && (
                       <View style={[styles.statusBadge, styles.reviewingChip]}>
                         <Text style={styles.statusText}>Reviewing</Text>
                       </View>
@@ -691,8 +891,14 @@ const TaskScreen = () => {
                   </View>
                 </View>
 
-                {/* Only display Reviewing button for tasks with crack_id in Crack Tasks tab */}
-                {viewMode === ViewMode.CRACK_TASKS && renderReviewingButton(assignment)}
+                {/* Display Reviewing buttons for tasks with appropriate status */}
+                <View style={styles.actionButtonsContainer}>
+                  {/* Crack reviewing button */}
+                  {viewMode === ViewMode.CRACK_TASKS && renderReviewingButton(assignment)}
+                  
+                  {/* Schedule job reviewing button */}
+                  {viewMode === ViewMode.MAINTENANCE_TASKS && renderScheduleReviewingButton(assignment)}
+                </View>
               </TouchableOpacity>
             ))
           )}
@@ -1011,6 +1217,13 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    marginTop: 8,
+    flexWrap: 'wrap',
+    gap: 8,
   },
 });
 
