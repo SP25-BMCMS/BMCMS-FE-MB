@@ -49,12 +49,25 @@ export const LocationService = {
   },
 
   // Create new location
-  async createLocation(data: LocationData): Promise<any> {
+  async createLocation(data: any): Promise<any> {
     try {
-      const response = await instance.post(VITE_CREATE_LOCATION, data);
+      // Remove crackRecords field and ensure areaType is a string
+      const { crackRecords, ...cleanedData } = data;
+      
+      // Ensure areaType is a string
+      cleanedData.areaType = String(cleanedData.areaType);
+      
+      console.log('Sending location data to API:', JSON.stringify(cleanedData));
+      const response = await instance.post(VITE_CREATE_LOCATION, cleanedData);
+      console.log('API response status:', response.status);
+      console.log('API response data:', JSON.stringify(response.data));
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating location:', error);
+      if (error.response) {
+        console.error('Response data:', JSON.stringify(error.response.data));
+        console.error('Response status:', error.response.status);
+      }
       throw error;
     }
   },

@@ -112,14 +112,32 @@ const TaskScreen = () => {
   ) || [];
 
   // Sử dụng taskAssignments dựa trên viewMode
-  const taskAssignments = viewMode === ViewMode.MAINTENANCE_TASKS
+  const unsortedTaskAssignments = viewMode === ViewMode.MAINTENANCE_TASKS
     ? maintenanceTasks
     : crackTasks;
     
   // Apply status filter if selected
-  const filteredTaskAssignments = statusFilter 
-    ? taskAssignments.filter((assignment: TaskAssignment) => String(assignment.status) === statusFilter)
-    : taskAssignments;
+  const unsortedFilteredTaskAssignments = statusFilter 
+    ? unsortedTaskAssignments.filter((assignment: TaskAssignment) => String(assignment.status) === statusFilter)
+    : unsortedTaskAssignments;
+  
+  // Sort tasks - completed tasks at the bottom, others at the top
+  const filteredTaskAssignments = [...unsortedFilteredTaskAssignments].sort((a, b) => {
+    const statusA = a.task?.status || a.status;
+    const statusB = b.task?.status || b.status;
+    
+    // If both tasks are Completed or neither is Completed, sort by creation date (newest first)
+    if ((statusA === 'Completed' && statusB === 'Completed') || 
+        (statusA !== 'Completed' && statusB !== 'Completed')) {
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    }
+    
+    // Move Completed tasks to the bottom
+    if (statusA === 'Completed') return 1;
+    if (statusB === 'Completed') return -1;
+    
+    return 0;
+  });
 
   // Check if loading
   const isLoading = isLoadingUserTasks || isLoadingAllTasks;

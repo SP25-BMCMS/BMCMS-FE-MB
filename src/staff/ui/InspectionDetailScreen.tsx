@@ -31,6 +31,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { StaffService, StaffInfo } from "../../service/Staff";
 import { CrackRecordService } from "../../service/CrackRecord";
 import { Picker } from "@react-native-picker/picker";
+import { showMessage } from "react-native-flash-message";
 
 type InspectionDetailScreenRouteProp = RouteProp<
   RootStackParamList,
@@ -225,18 +226,26 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       // Refetch crack records to update UI
       await refetchCrackRecords();
       
-      Alert.alert(
-        "Success",
-        "Crack record created successfully. You can add more records if needed.",
-        [{ text: "OK" }]
-      );
+      showMessage({
+        message: "Success",
+        description: "Crack record created successfully. You can add more records if needed.",
+        type: "success",
+        icon: "success",
+        duration: 3000,
+        backgroundColor: "#4CD964",
+        color: "#FFFFFF",
+      });
     },
     onError: (error: any) => {
-      Alert.alert(
-        "Error",
-        error.response?.data?.message || "Failed to create crack record",
-        [{ text: "OK" }]
-      );
+      showMessage({
+        message: "Error",
+        description: error.response?.data?.message || "Failed to create crack record",
+        type: "danger",
+        icon: "danger",
+        duration: 3000,
+        backgroundColor: "#FF3B30",
+        color: "#FFFFFF",
+      });
     },
   });
 
@@ -340,15 +349,28 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       crackRecordData.width <= 0 ||
       crackRecordData.depth <= 0
     ) {
-      Alert.alert(
-        "Validation Error",
-        "All measurements must be greater than 0"
-      );
+      showMessage({
+        message: "Validation Error",
+        description: "All measurements must be greater than 0",
+        type: "warning",
+        icon: "warning",
+        duration: 3000,
+        backgroundColor: "#FF9500",
+        color: "#FFFFFF",
+      });
       return;
     }
 
     if (!crackRecordData.description.trim()) {
-      Alert.alert("Validation Error", "Description is required");
+      showMessage({
+        message: "Validation Error",
+        description: "Description is required",
+        type: "warning",
+        icon: "warning",
+        duration: 3000,
+        backgroundColor: "#FF9500",
+        color: "#FFFFFF",
+      });
       return;
     }
 

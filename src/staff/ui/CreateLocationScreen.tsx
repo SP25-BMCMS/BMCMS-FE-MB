@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
-  Alert,
   Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -26,69 +25,21 @@ type Props = {
   navigation: CreateLocationScreenNavigationProp;
 };
 
+// Define valid area types
+type AreaType = 'Floor' | 'Wall' | 'Ceiling' | 'column' | 'Other';
+const VALID_AREA_TYPES: AreaType[] = ['Floor', 'Wall', 'Ceiling', 'column', 'Other'];
+
 const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
   const { onGoBack, initialData } = route.params;
   const isEditing = false;
 
   const [roomNumber, setRoomNumber] = useState<string>('');
   const [floorNumber, setFloorNumber] = useState<string>('');
-  const [areaType, setAreaType] = useState<'Floor' | 'Wall' | 'Ceiling' | 'column' | 'Other'>('Floor');
+  const [areaType, setAreaType] = useState<AreaType>('Floor');
   const [description, setDescription] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const handleSaveLocation = async () => {
-    if (!roomNumber.trim() || !floorNumber.trim()) {
-      showMessage({
-        message: "Missing Information",
-        description: "Please fill in the required fields (Room and Floor)",
-        type: "warning",
-        position: "top",
-      });
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      const locationData: LocationData = {
-        buildingDetailId: initialData.buildingDetailId,
-        inspection_id: initialData.inspection_id,
-        roomNumber: roomNumber.trim(),
-        floorNumber: parseInt(floorNumber.trim(), 10),
-        areaType: areaType,
-        description: description.trim(),
-        crackRecords: []
-      };
-
-      await LocationService.createLocation(locationData);
-
-      showMessage({
-        message: "Success",
-        description: "Location created successfully",
-        type: "success",
-        position: "top",
-        duration: 2000,
-      });
-
-      setTimeout(() => {
-        if (onGoBack) {
-          onGoBack();
-        }
-        navigation.goBack();
-      }, 500);
-    } catch (error) {
-      console.error('Error saving location data:', error);
-      showMessage({
-        message: "Error",
-        description: "Failed to save location information",
-        type: "danger",
-        position: "top",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const getAreaTypeIcon = (type: string) => {
+  const getAreaTypeIcon = (type: AreaType): any => {
     switch(type) {
       case 'Wall':
         return 'grid-outline';
@@ -97,11 +48,96 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
       case 'Ceiling':
         return 'layers-outline';
       case 'column':
-        return 'rectangle-outline';
+        return 'square';
       case 'Other':
         return 'ellipsis-horizontal';
       default:
         return 'grid';
+    }
+  };
+
+  const handleSubmitLocation = async () => {
+    if (!roomNumber.trim() || !floorNumber.trim()) {
+      showMessage({
+        message: "Missing Information",
+        description: "Please fill in the required fields (Room and Floor)",
+        type: "warning",
+        icon: "warning",
+        duration: 3000,
+        backgroundColor: "#FF9500",
+        color: "#FFFFFF",
+      });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      
+      // Log what we're about to send
+      const floorNum = parseInt(floorNumber.trim(), 10);
+      
+      const locationData = {
+        buildingDetailId: initialData.buildingDetailId,
+        inspection_id: initialData.inspection_id,
+        roomNumber: roomNumber.trim(),
+        floorNumber: floorNum,
+        areaType: areaType,
+        description: description.trim()
+      };
+      
+      console.log('Submitting location with data:', JSON.stringify(locationData));
+
+      const response = await LocationService.createLocation(locationData);
+      console.log('API response:', JSON.stringify(response));
+
+      showMessage({
+        message: "Success",
+        description: "Location created successfully",
+        type: "success",
+        icon: "success",
+        duration: 2000,
+        backgroundColor: "#4CD964",
+        color: "#FFFFFF",
+      });
+
+      setTimeout(() => {
+        if (onGoBack) {
+          onGoBack();
+        }
+        navigation.goBack();
+      }, 500);
+    } catch (error: any) {
+      console.error('Error saving location data:', error);
+      // Log more detailed error information
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('Error data:', JSON.stringify(error.response.data));
+        console.error('Error status:', error.response.status);
+        console.error('Error headers:', JSON.stringify(error.response.headers));
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('Error request:', JSON.stringify(error.request));
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Error message:', error.message);
+      }
+
+      // Convert array error message to string to avoid prop type warning
+      const errorMessage = error.response?.data?.message;
+      const errorDescription = Array.isArray(errorMessage) ? errorMessage.join(', ') : errorMessage || "Failed to save location information";
+
+      showMessage({
+        message: "Error",
+        description: errorDescription,
+        type: "danger",
+        icon: "danger",
+        duration: 3000,
+        backgroundColor: "#FF3B30",
+        color: "#FFFFFF",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -155,14 +191,17 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Area Type</Text>
             <View style={styles.areaTypeContainer}>
-              {['Wall', 'Floor', 'Ceiling', 'column', 'Other'].map((type) => (
+              {VALID_AREA_TYPES.map((type) => (
                 <TouchableOpacity 
                   key={type}
                   style={[
                     styles.areaTypeButton, 
                     areaType === type && styles.selectedAreaType
                   ]}
-                  onPress={() => setAreaType(type as any)}
+                  onPress={() => {
+                    setAreaType(type);
+                    console.log(`Selected area type: ${type} (${typeof type})`);
+                  }}
                 >
                   <Ionicons 
                     name={getAreaTypeIcon(type)} 
@@ -202,7 +241,7 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
             styles.saveButton,
             (!roomNumber.trim() || !floorNumber.trim() || isSubmitting) && styles.disabledButton
           ]}
-          onPress={handleSaveLocation}
+          onPress={handleSubmitLocation}
           disabled={!roomNumber.trim() || !floorNumber.trim() || isSubmitting}
         >
           {isSubmitting ? (
