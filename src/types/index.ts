@@ -680,3 +680,27 @@ export interface CrackRecordListResponse {
   };
 }
 
+// Feedback Types
+export interface Feedback {
+  feedback_id: string;
+  task_id: string;
+  feedback_by: string;
+  comments: string;
+  rating: number;
+  created_at: string;
+  updated_at: string;
+  status: string;
+}
+
+export interface FeedbackResponse {
+  isSuccess: boolean;
+  message: string;
+  data: Feedback[];
+}
+
+export interface FeedbackPayload {
+  task_id: string;
+  comments: string;
+  rating: number;
+}
+

@@ -18,7 +18,9 @@ import {
   VITE_GET_STAFF_INFORMATION,
   VITE_POST_CHATBOT,
   VITE_GET_CHATBOT,
-  VITE_GET_HISTORY_CRACK
+  VITE_GET_HISTORY_CRACK,
+  VITE_GET_FEEDBACK_BY_USER_ID,
+  VITE_GET_FEEDBACK_BY_TASK_ID
 } from '@env';
 
 // Tạo instance axios với baseURL từ biến môi trường
@@ -256,6 +258,32 @@ export const getUserCrackReports = async (userId: string) => {
     return response.data;
   } catch (error) {
     console.error('Error getting user crack reports:', error);
+    throw error;
+  }
+};
+
+// Lấy danh sách feedback của người dùng
+export const getUserFeedbacks = async (userId: string) => {
+  try {
+    const response = await instance.get(
+      `${VITE_GET_FEEDBACK_BY_USER_ID.replace('{feedback_by}', userId)}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error getting user feedbacks:', error);
+    throw error;
+  }
+};
+
+// Lấy feedback theo task_id
+export const getFeedbackByTaskId = async (taskId: string) => {
+  try {
+    const response = await instance.get(
+      `${VITE_GET_FEEDBACK_BY_TASK_ID.replace('{task_id}', taskId)}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error getting feedback by task ID:', error);
     throw error;
   }
 };

@@ -14,10 +14,12 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { WorkLogService, WorkLog } from "../service/WorkLog";
 import { showMessage } from "react-native-flash-message";
 import instance from "../service/Auth";
+import { getUserFeedbacks, getFeedbackByTaskId } from "../service/Auth";
+import { Feedback } from "../types";
 
 interface WorkProgressScreenParams {
   crackReportId: string;
@@ -57,11 +59,55 @@ const WorkProgressScreen = () => {
     enabled: !!crackReportId,
   });
 
+  const getTaskId = (): string => {
+    if (!worklogsData) return "";
+    
+    if (worklogsData.task_id) {
+      return worklogsData.task_id;
+    } 
+    
+    if (worklogsData.taskAssignments && worklogsData.taskAssignments.length > 0) {
+      const assignment = worklogsData.taskAssignments[0];
+      if (assignment && assignment.task_id) {
+        return assignment.task_id;
+      }
+    }
+    
+    return crackReportId; // Fallback
+  };
+
+  const taskId = getTaskId();
+
+  const { data: taskFeedback, isLoading: isFeedbackLoading } = useQuery({
+    queryKey: ['taskFeedback', taskId],
+    queryFn: async () => {
+      if (!taskId) return { data: [] };
+      const response = await getFeedbackByTaskId(taskId);
+      console.log(`Fetched feedback for task ${taskId}:`, response);
+      return response;
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: !!taskId, // Only run if we have a taskId
+  });
+
+  const hasFeedback = (): boolean => {
+    if (!taskFeedback?.data || taskFeedback.data.length === 0) {
+      console.log('No feedback found for this task');
+      return false;
+    }
+    
+    const hasExistingFeedback = taskFeedback.data.length > 0;
+    console.log(`Task ${taskId} has feedback: ${hasExistingFeedback}`);
+    return hasExistingFeedback;
+  };
+
   const handleCreateFeedback = () => {
     setRating(5);
     setComment("");
     setFeedbackModalVisible(true);
   };
+
+  const queryClient = useQueryClient();
 
   const submitFeedback = async () => {
     if (!worklogsData) return;
@@ -91,37 +137,16 @@ const WorkProgressScreen = () => {
         throw new Error("User ID not found");
       }
       
-      // Lấy task_id theo cách đơn giản và an toàn hơn
-      let taskId = "";
+      // Lấy taskId từ hàm getTaskId
+      const currentTaskId = getTaskId();
       
-      // Kiểm tra từ properties cơ bản trước
-      if (worklogsData.task_id) {
-        // Nếu có task_id trực tiếp
-        taskId = worklogsData.task_id;
-      } else if (worklogsData.taskAssignments && worklogsData.taskAssignments.length > 0) {
-        // Nếu có assignments, lấy task_id từ assignment đầu tiên
-        const assignment = worklogsData.taskAssignments[0];
-        if (assignment && assignment.task_id) {
-          taskId = assignment.task_id;
-        }
-      }
-      
-      // Nếu vẫn không tìm thấy, có thể đi vào một số trường hợp khác
-      if (!taskId) {
-        console.log("Không tìm thấy task_id theo cách thông thường, tìm cách khác...");
-        console.log("Worklog data structure:", JSON.stringify(worklogsData, null, 2));
-        
-        // Tạo tạm task_id từ crackReportId nếu không tìm thấy
-        taskId = crackReportId;
-      }
-      
-      if (!taskId) {
+      if (!currentTaskId) {
         throw new Error("Không thể xác định task ID để gửi feedback");
       }
       
       // Prepare the feedback data as required by the API
       const feedbackData = {
-        task_id: taskId,
+        task_id: currentTaskId,
         feedback_by: userId,
         comments: comment,
         rating: rating
@@ -149,6 +174,9 @@ const WorkProgressScreen = () => {
           marginTop: 40,
         },
       });
+      
+      // Refetch the feedback data
+      queryClient.invalidateQueries({ queryKey: ['taskFeedback', currentTaskId] });
       
     } catch (error) {
       console.error('Error submitting feedback:', error);
@@ -329,7 +357,7 @@ const WorkProgressScreen = () => {
           <Text style={styles.timelineLabel}>Completed</Text>
         </View>
         
-        {status === "Completed" && (
+        {status === "Completed" && !hasFeedback() && (
           <View style={styles.feedbackContainer}>
             <Text style={styles.feedbackText}>
               Work has been completed. Please provide your feedback.
@@ -341,6 +369,15 @@ const WorkProgressScreen = () => {
               <Icon name="star" size={20} color="#FFFFFF" />
               <Text style={styles.feedbackButtonText}>Rate Repair Work</Text>
             </TouchableOpacity>
+          </View>
+        )}
+        
+        {status === "Completed" && hasFeedback() && (
+          <View style={[styles.feedbackContainer, { backgroundColor: "#E8F5E9", borderLeftColor: "#4CAF50" }]}>
+            <Icon name="check-circle" size={24} color="#4CAF50" />
+            <Text style={[styles.feedbackText, { marginTop: 8 }]}>
+              Thank you! You have already provided feedback for this work.
+            </Text>
           </View>
         )}
       </View>

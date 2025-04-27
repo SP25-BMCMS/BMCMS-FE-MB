@@ -84,7 +84,7 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
         areaType: areaType,
         description: description.trim()
       };
-      
+
       console.log('Submitting location with data:', JSON.stringify(locationData));
 
       const response = await LocationService.createLocation(locationData);

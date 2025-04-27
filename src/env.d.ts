@@ -34,6 +34,8 @@ declare module '@env'{
   export const VITE_POST_CHATBOT: string;
   export const VITE_GET_CHATBOT: string;
   export const VITE_GET_HISTORY_CRACK: string;
+  export const VITE_GET_FEEDBACK_BY_USER_ID: string;
+  export const VITE_GET_FEEDBACK_BY_TASK_ID: string;
   export const VITE_GET_LOCATION_BY_ID: string;
   export const VITE_PUT_LOCATION_BY_ID: string;
   export const VITE_CREATE_CRACK_RECORD: string;
