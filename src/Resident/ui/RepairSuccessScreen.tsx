@@ -21,7 +21,7 @@ import { NativeStackScreenProps } from "react-native-screens/lib/typescript/nati
         source={require("../../../assets/congratulation.png")} 
         style={styles.image}
       />
-      <Text style={styles.text}>Yêu cầu của bạn đã được gửi thành công!</Text>
+      <Text style={styles.text}>Your request has been sent successfully!</Text>
     </View>
   );
 };

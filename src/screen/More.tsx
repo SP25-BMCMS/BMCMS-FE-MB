@@ -14,6 +14,8 @@ import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AuthService } from '../service/Auth';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type MoreScreenNavigationProp = StackNavigationProp<RootStackParamList, "More">;
 
@@ -22,6 +24,43 @@ const MoreScreen = () => {
   const [userData, setUserData] = React.useState<any>(null);
 
   const [anim] = useState(new Animated.Value(0));
+
+  // Hàm lấy màu sắc dựa trên vị trí của staff
+  const getPositionColor = () => {
+    // Nếu không có thông tin người dùng hoặc không phải staff
+    if (!userData || !userData.role) return "#B77F2E";
+    
+    // Kiểm tra vị trí từ role
+    const position = userData.role.toLowerCase();
+    
+    if (position.includes('leader') || position.includes('1')) {
+      return '#4CAF50'; // Xanh lá cho Leader
+    } else if (position.includes('maintenance') || position.includes('2')) {
+      return '#1976D2'; // Xanh dương cho Maintenance
+    } else {
+      return '#FF9800'; // Cam cho các vị trí khác
+    }
+  };
+
+  const getGradientColors = () => {
+    const baseColor = getPositionColor();
+    
+    if (baseColor === '#4CAF50') { // Leader - Green
+      return ['#43A047', '#2E7D32', '#1B5E20'] as const;
+    } else if (baseColor === '#1976D2') { // Maintenance - Blue
+      return ['#1E88E5', '#1565C0', '#0D47A1'] as const;
+    } else { // Orange - Default or other
+      return ['#FFA726', '#F57C00', '#E65100'] as const;
+    }
+  };
+
+  // Tạo avatar chữ từ tên người dùng
+  const getInitials = (name: string) => {
+    if (!name) return 'U';
+    const parts = name.split(' ');
+    if (parts.length === 1) return name.charAt(0).toUpperCase();
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+  };
 
   React.useEffect(() => {
     const fetchUserData = async () => {
@@ -37,7 +76,6 @@ const MoreScreen = () => {
 
     fetchUserData();
   }, []);
-
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
@@ -59,10 +97,12 @@ const MoreScreen = () => {
 
   const handleLogout = async () => {
     try {
-      await AsyncStorage.removeItem("userData");
+      await AuthService.logout();
+      // Clear userType and ensure we navigate to resident interface
+      await AsyncStorage.removeItem('userType');
       navigation.navigate("MainApp");
     } catch (error) {
-      console.error("Lỗi khi đăng xuất:", error);
+      console.error("Error logging out:", error);
     }
   };
 
@@ -73,7 +113,12 @@ const MoreScreen = () => {
         {
           opacity: anim,
           transform: [
-            { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [-50, 0] }) },
+            {
+              translateY: anim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [-50, 0],
+              }),
+            },
           ],
         },
       ]}
@@ -89,12 +134,19 @@ const MoreScreen = () => {
       <ScrollView style={styles.content}>
         {userData && (
           <View style={styles.userHeader}>
-            <View style={styles.avatar}>
+            <LinearGradient
+              colors={getGradientColors()}
+              style={styles.avatarGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
               <Text style={styles.avatarText}>
-                {userData.name ? userData.name.charAt(0).toUpperCase() : "U"}
+                {getInitials(userData.username || "U")}
               </Text>
-            </View>
-            <Text style={styles.userName}>{userData.name || "Người dùng"}</Text>
+            </LinearGradient>
+            <Text style={styles.userName}>
+              {userData.username || "Resident"}
+            </Text>
           </View>
         )}
 
@@ -107,40 +159,73 @@ const MoreScreen = () => {
             </View>
             <Text style={styles.menuText}>Language</Text>
             <Text style={styles.menuValue}>English</Text>
-            <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
+            <Icon
+              name="chevron-right"
+              size={24}
+              color="#666"
+              style={styles.chevron}
+            />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
-            <View style={[styles.iconContainer, { backgroundColor: "#EDE7F6" }]}>
+            <View
+              style={[styles.iconContainer, { backgroundColor: "#EDE7F6" }]}
+            >
               <Icon name="help-outline" size={24} color="#A084E8" />
             </View>
             <Text style={styles.menuText}>FAQ</Text>
-            <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
+            <Icon
+              name="chevron-right"
+              size={24}
+              color="#666"
+              style={styles.chevron}
+            />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
-            <View style={[styles.iconContainer, { backgroundColor: "#FFF3E0" }]}>
+            <View
+              style={[styles.iconContainer, { backgroundColor: "#FFF3E0" }]}
+            >
               <Icon2 name="book" size={24} color="#F4C27F" />
             </View>
             <Text style={styles.menuText}>How to Use</Text>
-            <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
+            <Icon
+              name="chevron-right"
+              size={24}
+              color="#666"
+              style={styles.chevron}
+            />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
-            <View style={[styles.iconContainer, { backgroundColor: "#EFEBE9" }]}>
+            <View
+              style={[styles.iconContainer, { backgroundColor: "#EFEBE9" }]}
+            >
               <Icon name="info-outline" size={24} color="#B77F2E" />
             </View>
             <Text style={styles.menuText}>About Us</Text>
-            <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
+            <Icon
+              name="chevron-right"
+              size={24}
+              color="#666"
+              style={styles.chevron}
+            />
           </TouchableOpacity>
 
           {userData && (
             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-              <View style={[styles.iconContainer, { backgroundColor: "#F5F5F5" }]}>
+              <View
+                style={[styles.iconContainer, { backgroundColor: "#F5F5F5" }]}
+              >
                 <Icon name="logout" size={24} color="#E8D6C1" />
               </View>
               <Text style={styles.menuText}>Log Out</Text>
-              <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
+              <Icon
+                name="chevron-right"
+                size={24}
+                color="#666"
+                style={styles.chevron}
+              />
             </TouchableOpacity>
           )}
         </View>
@@ -194,6 +279,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
+  avatarGradient: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
   avatarText: {
     color: "white",
     fontSize: 32,
@@ -238,11 +331,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#999",
   },
-  menuValue:{
+  menuValue: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     marginRight: 8,
-  }
+  },
 });
 
 export default MoreScreen;

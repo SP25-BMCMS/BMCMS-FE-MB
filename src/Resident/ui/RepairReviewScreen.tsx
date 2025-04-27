@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,58 +6,96 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
-} from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import { Property } from "../../types";
-import Icon from "react-native-vector-icons/MaterialIcons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+  Alert,
+  ActivityIndicator
+} from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import {
+  useNavigation,
+  useRoute,
+  NavigationProp,
+  RouteProp
+} from '@react-navigation/native';
+import { CrackService } from '../../service/crackService';
+import { Property, CRACK_POSITIONS, OUTDOOR_CRACK_POSITIONS } from '../../types';
 
-const RepairReviewScreen = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
-  const { property, description, images } = route.params as {
+type RootStackParamList = {
+  RepairReview: {
     property: Property;
     description: string;
     images: string[];
+    buildingDetailId?: string;
+    selectedRoom?: keyof typeof CRACK_POSITIONS | keyof typeof OUTDOOR_CRACK_POSITIONS;
+    selectedPosition?: string;
+    isPrivatesAsset?: boolean;
   };
-  const handleSubmit = async () => {
-    const userData = await AsyncStorage.getItem("userData");
-    const user = userData ? JSON.parse(userData) : null;
-    if (!user) return;
-  
-    const userKey = user.phone.toString(); // phone là số => chuyển thành string
-  
-    const reportKey = `myReports_${userKey}`;
-    const notiKey = `notifications_${userKey}`;
-  
-    const report = {
-      property,
-      description,
-      images,
-      date: new Date().toISOString(),
-    };
-  
-    const existingReports = await AsyncStorage.getItem(reportKey);
-    const parsedReports = existingReports ? JSON.parse(existingReports) : [];
-    parsedReports.push(report);
-    await AsyncStorage.setItem(reportKey, JSON.stringify(parsedReports));
-  
-    const now = new Date();
-    const newNotification = {
-      id: `${now.getTime()}`,
-      message: "Report của bạn đang được xử lý, vui lòng đợi phản hồi.",
-      timestamp: now.toLocaleString(),
-    };
-    const existingNoti = await AsyncStorage.getItem(notiKey);
-    const notiList = existingNoti ? JSON.parse(existingNoti) : [];
-    notiList.unshift(newNotification);
-    await AsyncStorage.setItem(notiKey, JSON.stringify(notiList));
-  
-    //@ts-ignore
-    navigation.navigate("RepairSuccess");
-  };
-  
+  RepairSuccess: undefined;
+};
 
+const RepairReviewScreen = () => {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'RepairReview'>>();
+  const {
+    property,
+    description,
+    images,
+    buildingDetailId,
+    selectedRoom,
+    selectedPosition,
+    isPrivatesAsset = true,
+  } = route.params;
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmitCrackReport = async () => {
+    try {
+      setIsSubmitting(true);
+
+      if (!buildingDetailId) {
+        Alert.alert('Error', 'Building information not found');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Đảm bảo position đúng định dạng "area/building/floor/direction"
+      let formattedPosition = selectedPosition;
+      if (selectedPosition && selectedPosition.split('/').length < 4) {
+        // Nếu position đang ở dạng "kitchen/floor", chuyển thành "kitchen/building/1/floor"
+        const [area, direction] = selectedPosition.split('/');
+        formattedPosition = `${area}/building/1/${direction}`;
+        console.log('🔍 Formatted position:', formattedPosition);
+      }
+
+      // Detailed report log
+      console.log('Submission details:', {
+        buildingDetailId,
+        description,
+        position: formattedPosition,
+        images,
+        isPrivatesAsset: property.status === 'Tenant'
+      });
+
+      const response = await CrackService.reportCrack({
+        buildingDetailId,
+        description,
+        position: formattedPosition,
+        files: images,
+        isPrivatesAsset: property.status === 'Tenant'
+      });
+
+      // Successful report
+      if (response && response.isSuccess) {
+        navigation.navigate('RepairSuccess');
+      } else {
+        // Failed report
+        Alert.alert('Error', 'Could not submit crack report');
+      }
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to submit report');
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -69,118 +107,134 @@ const RepairReviewScreen = () => {
         >
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Kiểm tra thông tin</Text>
+        <Text style={styles.headerTitle}>Review Report</Text>
       </View>
 
       {/* Thông tin căn hộ */}
-      <View style={styles.propertyCard}>
-        <Text style={styles.propertyName}>LUMIÈRE</Text>
-        <Text style={styles.propertySubname}>Boulevard</Text>
-        <Text style={styles.apartmentCode}>
-          {property.building} {property.unit}
+      <View style={styles.propertyInfo}>
+        <Text style={styles.unitCode}>{property.building}</Text>
+        <Text style={styles.subTitle}>
+          Building {property.description} | Apartment {property.unit}
         </Text>
-        <Text style={styles.buildingInfo}>
-          Tòa {property.building} | Tầng {property.floor}
-        </Text>
-        <View style={styles.statusButton}>
-          <Text style={styles.statusText}>{property.status}</Text>
-        </View>
       </View>
 
-      {/* Miêu tả */}
-      <Text style={styles.label}>Chi tiết mô tả</Text>
-      <Text style={styles.descriptionBox}>{description}</Text>
+      {/* Chi tiết báo cáo */}
+      <View style={styles.reportDetails}>
+        <Text style={styles.label}>Description</Text>
+        <Text style={styles.description}>{description}</Text>
 
-      {/* Danh sách ảnh */}
-      <Text style={styles.label}>Hình ảnh đính kèm</Text>
-      <View style={styles.imageContainer}>
-        {images.map((image, index) => (
-          <Image key={index} source={{ uri: image }} style={styles.image} />
-        ))}
+        <Text style={styles.label}>Location</Text>
+        <Text style={styles.position}>
+          {selectedRoom ? selectedRoom.replace(/_/g, ' ') + ' - ' 
+            + selectedPosition?.split('/').pop()?.replace(/_/g, ' ')
+            : 'Not specified'}
+        </Text>
+
+        <Text style={styles.label}>Photos</Text>
+        <ScrollView horizontal style={styles.imageContainer}>
+          {images.map((image, index) => (
+            <Image 
+              key={index} 
+              source={{ uri: image }} 
+              style={styles.image} 
+            />
+          ))}
+        </ScrollView>
       </View>
 
-      {/* Nút Gửi yêu cầu */}
-      <TouchableOpacity style={styles.sendButton} onPress={handleSubmit}>
-        <Text style={styles.sendButtonText}>Gửi yêu cầu</Text>
+      {/* Nút gửi báo cáo */}
+      <TouchableOpacity
+        style={styles.submitButton}
+        onPress={handleSubmitCrackReport}
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.submitButtonText}>Submit Report</Text>
+        )}
       </TouchableOpacity>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFF", padding: 16 },
-  header: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
-  backButton: { padding: 10, marginRight: 10 },
+  container: {
+    flex: 1,
+    backgroundColor: '#FFF',
+    padding: 16,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  backButton: {
+    padding: 10,
+    marginRight: 10,
+  },
   headerTitle: {
     fontSize: 20,
-    fontWeight: "bold",
-    flex: 1,
-    textAlign: "center",
+    fontWeight: 'bold',
   },
-  propertyCard: {
-    alignItems: "center",
-    padding: 20,
+  propertyInfo: {
+    padding: 16,
+    backgroundColor: '#FDF7F0',
+    borderRadius: 10,
     marginBottom: 20,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
-  propertyName: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#0d5c3f",
-    letterSpacing: 1,
-  },
-  propertySubname: {
-    fontSize: 16,
-    color: "#0d5c3f",
-  },
-  apartmentCode: {
+  unitCode: {
     fontSize: 24,
-    fontWeight: "bold",
-    marginTop: 10,
+    color: '#B77F2E',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    marginBottom: 6,
   },
-  buildingInfo: {
-    fontSize: 16,
-    color: "#333",
-    marginBottom: 10,
+  subTitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    color: '#666',
   },
-  statusButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: "#B77F2E",
-    borderRadius: 20,
-  },
-  statusText: {
-    color: "#B77F2E",
-    fontWeight: "bold",
-  },
-  label: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
-  descriptionBox: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
+  reportDetails: {
     marginBottom: 20,
-    minHeight: 100,
-    textAlignVertical: "top",
-    backgroundColor: "#f9f9f9",
   },
-  imageContainer: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  image: { width: 100, height: 100, borderRadius: 8 },
-  sendButton: {
-    marginTop: 20,
-    backgroundColor: "#B77F2E",
+  label: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  description: {
+    backgroundColor: '#F5F5F5',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  position: {
+    backgroundColor: '#F5F5F5',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  imageContainer: {
+    flexDirection: 'row',
+  },
+  image: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    marginRight: 10,
+  },
+  submitButton: {
+    backgroundColor: '#B77F2E',
     padding: 15,
     borderRadius: 8,
-    alignItems: "center",
+    alignItems: 'center',
   },
-  sendButtonText: { color: "#FFF", fontSize: 18, fontWeight: "bold" },
+  submitButtonText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
 });
 
 export default RepairReviewScreen;
