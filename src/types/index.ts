@@ -51,6 +51,9 @@ export type RootStackParamList = {
   CreateInspection: { 
     taskDetail: TaskAssignmentDetail;
   };
+  CreateResidentInspection: { 
+    taskDetail: TaskAssignmentDetail;
+  };
   CreateStaffInspection: { 
     taskDetail: TaskAssignmentDetail;
   };

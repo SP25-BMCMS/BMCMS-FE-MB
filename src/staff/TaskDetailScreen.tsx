@@ -365,6 +365,22 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
               </TouchableOpacity>
             )}
 
+            {/* Only show Create Resident Inspection button when status is Confirmed */}
+            {taskDetail.status === 'Confirmed' && (
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.residentInspectionButton]}
+                onPress={() => {
+                  navigation.navigate('CreateResidentInspection', { 
+                    taskDetail: taskDetail 
+                  });
+                }}
+              >
+                <Text style={styles.buttonText}>
+                  Create Inspection (Resident)
+                </Text>
+              </TouchableOpacity>
+            )}
+
             {/* Only show this button when status is not Confirmed */}
             {taskDetail.status !== 'Confirmed' && (
               <TouchableOpacity 
@@ -626,6 +642,10 @@ const styles = StyleSheet.create({
   },
   maintenanceButton: {
     backgroundColor: '#5AC8FA',
+    marginBottom: 12,
+  },
+  residentInspectionButton: {
+    backgroundColor: '#4CD964',
     marginBottom: 12,
   },
   buttonText: {

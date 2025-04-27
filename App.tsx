@@ -18,6 +18,7 @@ import FlashMessage from "react-native-flash-message";
 import StaffProfileScreen from './src/staff/StaffProfileScreen';
 import TaskDetailScreen from './src/staff/TaskDetailScreen';
 import CreateInspectionScreen from './src/staff/ui/CreateInspectionScreen';
+import CreateResidentInspectionScreen from './src/staff/ui/CreateResidentInspectionScreen';
 import CreateLocationScreen from './src/staff/ui/CreateLocationScreen';
 import InspectionListScreen from './src/staff/ui/InspectionListScreen';
 import InspectionDetailScreen from './src/staff/ui/InspectionDetailScreen';
@@ -61,6 +62,7 @@ const App = () => {
           <Stack.Screen name='StaffTaskDetail' component={StaffTaskDetailScreen}/>
           <Stack.Screen name='CreateTaskAssignment' component={CreateTaskAssignmentScreen}/>
           <Stack.Screen name='CreateInspection' component={CreateInspectionScreen}/>
+          <Stack.Screen name='CreateResidentInspection' component={CreateResidentInspectionScreen}/>
           <Stack.Screen name='CreateStaffInspection' component={CreateStaffInspectionScreen}/>
           <Stack.Screen name='CreateLocation' component={CreateLocationScreen}/>
           <Stack.Screen name='InspectionList' component={InspectionListScreen} />
