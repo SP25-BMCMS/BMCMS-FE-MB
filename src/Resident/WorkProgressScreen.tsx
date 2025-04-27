@@ -17,7 +17,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import { WorkLogService, WorkLog } from "../service/WorkLog";
 import { showMessage } from "react-native-flash-message";
-import axios from "axios";
+import instance from "../service/Auth";
 
 interface WorkProgressScreenParams {
   crackReportId: string;
@@ -129,18 +129,8 @@ const WorkProgressScreen = () => {
       
       console.log("Gửi feedback:", feedbackData);
       
-      // Get the API base URL from .env file
-      const apiUrl = process.env.VITE_API_URL || '';
-      const feedbackEndpoint = process.env.VITE_POST_FEEDBACK || '/feedbacks';
-      
-      // Send the feedback to the API
-      const token = await AsyncStorage.getItem("token");
-      const response = await axios.post(`${apiUrl}${feedbackEndpoint}`, feedbackData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      // Use the instance from Auth.ts which already handles authentication
+      const response = await instance.post('/feedbacks', feedbackData);
       
       // Close the modal
       setFeedbackModalVisible(false);
