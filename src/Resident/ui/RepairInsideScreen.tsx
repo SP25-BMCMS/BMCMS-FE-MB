@@ -133,13 +133,13 @@ const RepairInsideScreen = () => {
           }
           
           // Bọc trong một try-catch để xử lý lỗi từ launchImageLibraryAsync
-          const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
             quality: 0.5,
             allowsEditing: Platform.OS === 'ios', // Chỉ cho phép chỉnh sửa trên iOS
             aspect: [4, 3],
-          });
-          
+    });
+
           if (!result.canceled && result.assets && result.assets.length > 0) {
             // Cập nhật state images
             setImages(prevImages => [...prevImages, result.assets[0].uri]);
@@ -183,12 +183,12 @@ const RepairInsideScreen = () => {
           }
           
           // Bọc trong một try-catch để xử lý lỗi từ launchCameraAsync
-          const result = await ImagePicker.launchCameraAsync({
+    const result = await ImagePicker.launchCameraAsync({
             quality: 0.5,
             allowsEditing: Platform.OS === 'ios', // Chỉ cho phép chỉnh sửa trên iOS
             aspect: [4, 3],
-          });
-          
+    });
+
           if (!result.canceled && result.assets && result.assets.length > 0) {
             // Cập nhật state images sử dụng functional update để tránh race condition
             setImages(prevImages => [...prevImages, result.assets[0].uri]);
@@ -435,7 +435,7 @@ const RepairInsideScreen = () => {
             >
               <View style={styles.modalContent}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Select photo source</Text>
+                <Text style={styles.modalTitle}>Select photo source</Text>
                   <TouchableOpacity 
                     onPress={closeImageSourceModal}
                     style={styles.closeModalButton}

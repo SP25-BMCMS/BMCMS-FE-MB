@@ -203,8 +203,10 @@ const TaskScreen = () => {
         return '#FFA500'; // Orange
       case 'InProgress':
         return '#007AFF'; // Blue
-      case 'Confirmed':
+      case 'Completed':
         return '#4CD964'; // Green
+      case 'Assigned':
+        return '#5AC8FA'; // Light blue
       case 'Canceled':
         return '#FF3B30'; // Red
       case 'Verified':
@@ -213,6 +215,8 @@ const TaskScreen = () => {
         return '#FF9500'; // Orange
       case 'Reviewing':
         return '#5856D6'; // Purple
+      case 'Confirmed':
+        return '#9C27B0'; // Purple
       default:
         return '#8E8E93'; // Gray
     }
@@ -320,8 +324,8 @@ const TaskScreen = () => {
   };
 
   const renderReviewingButton = (assignment: TaskAssignment) => {
-    // Nếu không phải Confirmed, không hiển thị gì cả
-    if (String(assignment.status) !== 'Confirmed') {
+    // Nếu không phải Confirmed hoặc task đã hoàn thành, không hiển thị gì cả
+    if (String(assignment.status) !== 'Confirmed' || assignment.task?.status === 'Completed') {
       return null;
     }
     
@@ -366,8 +370,8 @@ const TaskScreen = () => {
 
   // Hàm mới để hiển thị nút Reviewing cho schedule job
   const renderScheduleReviewingButton = (assignment: TaskAssignment) => {
-    // Nếu không phải Confirmed, không hiển thị gì cả
-    if (String(assignment.status) !== 'Confirmed') {
+    // Nếu không phải Confirmed hoặc task đã hoàn thành, không hiển thị gì cả
+    if (String(assignment.status) !== 'Confirmed' || assignment.task?.status === 'Completed') {
       return null;
     }
     
@@ -852,8 +856,8 @@ const TaskScreen = () => {
                     {assignment.description}
                   </Text>
                   <View style={styles.statusContainer}>
-                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(assignment.status) }]}>
-                      <Text style={styles.statusText}>{getStatusText(assignment.status)}</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(assignment.task?.status || assignment.status) }]}>
+                      <Text style={styles.statusText}>{getStatusText(assignment.task?.status || assignment.status)}</Text>
                     </View>
                     
                     {/* Display Reviewing chip when status is Confirmed and button has been pressed */}
@@ -872,6 +876,13 @@ const TaskScreen = () => {
                     <Text style={styles.taskInfoLabel}>Created: </Text>
                     {formatDate(assignment.created_at)}
                   </Text>
+                  
+                  {/* Hiển thị Assignment status */}
+                  {assignment.task?.status !== assignment.status && (
+                    <View style={[styles.assignmentStatusBadge, { backgroundColor: getStatusColor(assignment.status) }]}>
+                      <Text style={styles.assignmentStatusText}>Assignment: {getStatusText(assignment.status)}</Text>
+                    </View>
+                  )}
                   
                   {/* Display task type */}
                   <View style={styles.taskTypeBadge}>
@@ -1224,6 +1235,20 @@ const styles = StyleSheet.create({
     marginTop: 8,
     flexWrap: 'wrap',
     gap: 8,
+  },
+  assignmentStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+  },
+  assignmentStatusText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
 
