@@ -37,6 +37,22 @@ interface EnhancedInspection extends Inspection {
   confirmed_by?: string | null;
 }
 
+// Helper function to get color based on report status
+const getReportStatusColor = (status: string): string => {
+  switch (status) {
+    case 'Pending':
+      return '#FF9500'; // Orange
+    case 'Approved':
+      return '#4CD964'; // Green
+    case 'Rejected':
+      return '#FF3B30'; // Red
+    case 'NoPending':
+      return '#007AFF'; // Blue
+    default:
+      return '#8E8E93'; // Gray
+  }
+};
+
 const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
   const { taskAssignmentId, taskDescription } = route.params;
   const [submitting, setSubmitting] = useState(false);
@@ -61,7 +77,7 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
     queryKey: inspectionsQueryKey,
     queryFn: async () => {
       const response = await TaskService.getInspectionsByTaskAssignmentId(taskAssignmentId);
-      return response.data;
+      return response.data || []; // Ensure we always return an array, even if data is undefined
     },
     enabled: !!taskAssignmentId,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -173,10 +189,14 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
     
     // Additional status for report status
     let reportStatusBadge = null;
-    if (item.report_status === 'Pending') {
+    if (item.isprivateasset && item.report_status) {
+      // For private assets, always show the report_status
       reportStatusBadge = (
-        <View style={styles.reportStatusBadge}>
-          <Text style={styles.reportStatusText}>Pending Review</Text>
+        <View style={[
+          styles.reportStatusBadge, 
+          { backgroundColor: getReportStatusColor(item.report_status) }
+        ]}>
+          <Text style={styles.reportStatusText}>{item.report_status}</Text>
         </View>
       );
     }
@@ -230,7 +250,9 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
             </View>
           </View>
           
-          {reportStatusBadge}
+          <View style={styles.statusContainer}>
+            {reportStatusBadge}
+          </View>
           
           {isEligible && (
             <TouchableOpacity
@@ -285,21 +307,9 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#B77F2E" />
         </View>
-      ) : isError ? (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>
-            {error instanceof Error ? error.message : 'Unable to load inspections. Please try again.'}
-          </Text>
-          <TouchableOpacity 
-            style={styles.retryButton}
-            onPress={() => refetch()}
-          >
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
       ) : (
         <FlatList
-          data={data}
+          data={data || []}
           renderItem={renderInspectionItem}
           keyExtractor={(item) => item.inspection_id}
           contentContainerStyle={styles.listContainer}
@@ -478,14 +488,13 @@ const styles = StyleSheet.create({
   reportStatusBadge: {
     marginTop: 8,
     alignSelf: 'flex-start',
-    backgroundColor: '#FFECB3',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
   reportStatusText: {
     fontSize: 12,
-    color: '#FF9800',
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   noCostText: {
@@ -677,6 +686,10 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     backgroundColor: '#CCCCCC',
+  },
+  statusContainer: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
   },
 });
 

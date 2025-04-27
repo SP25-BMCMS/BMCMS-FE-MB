@@ -550,6 +550,59 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 : "No cost assigned"}
             </Text>
           </View>
+          
+          {/* Add Private Asset Status */}
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Asset Type:</Text>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: currentInspection.isprivateasset ? "#007AFF" : "#4CD964" }
+              ]}
+            >
+              <Text style={styles.statusText}>
+                {currentInspection.isprivateasset ? "Private Asset" : "Regular Asset"}
+              </Text>
+            </View>
+          </View>
+          
+          {/* Add Report Status */}
+          {currentInspection.report_status && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Report Status:</Text>
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: getStatusColor(currentInspection.report_status) }
+                ]}
+              >
+                <Text style={styles.statusText}>
+                  {currentInspection.report_status}
+                </Text>
+              </View>
+            </View>
+          )}
+          
+          {/* Only show Confirmed By and Reason when there is a cost */}
+          {parseInt(currentInspection.total_cost) > 0 && (
+            <>
+              {/* Add Confirmed By information */}
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Confirmed By:</Text>
+                <Text style={styles.infoValue}>
+                  {currentInspection.confirmed_by || "Not confirmed yet"}
+                </Text>
+              </View>
+              
+              {/* Add Manager's Reason */}
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Manager Reason:</Text>
+                <Text style={styles.infoValue}>
+                  {currentInspection.reason || "No reason by manager"}
+                </Text>
+              </View>
+            </>
+          )}
 
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Description:</Text>
@@ -924,17 +977,31 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 const getStatusColor = (status: string): string => {
   switch (status) {
     case "Pending":
-      return "#FF9500";
+      return "#FF9500"; // Orange
     case "Assigned":
-      return "#007AFF";
+      return "#007AFF"; // Blue
     case "InProgress":
-      return "#5856D6";
+      return "#5856D6"; // Purple
     case "Completed":
-      return "#4CD964";
+      return "#4CD964"; // Green
     case "Canceled":
-      return "#FF3B30";
+      return "#FF3B30"; // Red
+    case "Verified":
+      return "#4CD964"; // Green
+    case "Unverified": 
+      return "#FF9500"; // Orange
+    case "Confirmed":
+      return "#4CD964"; // Green
+    case "Rejected":
+      return "#FF3B30"; // Red
+    case "Reviewing":
+      return "#5856D6"; // Purple
+    case "InFixing":
+      return "#5AC8FA"; // Light blue
+    case "Approved":
+      return "#4CD964"; // Green
     default:
-      return "#8E8E93";
+      return "#8E8E93"; // Gray
   }
 };
 
