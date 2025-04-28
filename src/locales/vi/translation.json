@@ -1,0 +1,60 @@
+{
+  "common": {
+    "more": "Thêm",
+    "language": "Ngôn ngữ",
+    "faq": "Câu hỏi thường gặp",
+    "howToUse": "Hướng dẫn sử dụng",
+    "aboutUs": "Về chúng tôi",
+    "logout": "Đăng xuất",
+    "copyright": "Bản quyền©2023",
+    "rights": "Bản quyền thuộc về BMCMS"
+  },
+  "languages": {
+    "english": "Tiếng Anh",
+    "vietnamese": "Tiếng Việt"
+  },
+  "signIn": {
+    "title": "Đăng nhập",
+    "resident": "Cư dân",
+    "staff": "Nhân viên",
+    "phoneNumber": "Số điện thoại",
+    "username": "Tên đăng nhập",
+    "password": "Mật khẩu",
+    "loginButton": "Đăng nhập",
+    "noAccount": "Chưa có tài khoản?",
+    "signUp": "Đăng ký",
+    "errors": {
+      "enterPhonePassword": "Vui lòng nhập số điện thoại và mật khẩu.",
+      "enterUsernamePassword": "Vui lòng nhập tên đăng nhập và mật khẩu.",
+      "accountNotActivated": "Tài khoản chưa kích hoạt",
+      "checkEmail": "Tài khoản của bạn chưa được kích hoạt. Vui lòng kiểm tra email để kích hoạt.",
+      "loginFailed": "Đăng nhập thất bại",
+      "invalidCredentials": "Số điện thoại hoặc mật khẩu không đúng.",
+      "invalidStaffCredentials": "Tên đăng nhập hoặc mật khẩu không đúng.",
+      "unexpectedError": "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại."
+    }
+  },
+  "property": {
+    "title": "Căn Hộ",
+    "owned": "Sở hữu",
+    "building": "Tòa nhà",
+    "project": "Dự án",
+    "noProperties": "Bạn chưa có Căn hộ nào",
+    "contactInfo": "Liên hệ với chúng tôi để biết thêm thông tin về Căn hộ của bạn",
+    "loading": "Đang tải..."
+  },
+  "guestProperty": {
+    "title": "Căn Hộ",
+    "question": "Bạn sở hữu sản phẩm Masterise?",
+    "description": "Đăng nhập để quản lý tất cả Căn hộ của bạn ngay bây giờ.",
+    "signUp": "Đăng ký"
+  },
+  "navigation": {
+    "home": "Trang chủ",
+    "property": "Căn hộ", 
+    "notification": "Thông báo",
+    "account": "Tài khoản",
+    "taskAssignment": "Quản lý công việc",
+    "staffAssign": "Phân công nhân viên"
+  }
+}

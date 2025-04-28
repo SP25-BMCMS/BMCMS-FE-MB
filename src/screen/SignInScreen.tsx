@@ -10,11 +10,13 @@ import { RootStackParamList } from '../types';
 import { AuthService } from '../service/Auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showMessage } from 'react-native-flash-message';
+import { useTranslation } from 'react-i18next';
 
 type SignInScreenNavigationProp = StackNavigationProp<RootStackParamList, 'SignIn'>;
 
 const SignInScreen = () => {
   const navigation = useNavigation<SignInScreenNavigationProp>();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('resident');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -32,7 +34,7 @@ const SignInScreen = () => {
 
     if (activeTab === 'resident') {
       if (!phone || !password) {
-        setErrorMessage("Please enter phone number and password.");
+        setErrorMessage(t('signIn.errors.enterPhonePassword'));
         return;
       }
 
@@ -52,16 +54,16 @@ const SignInScreen = () => {
         if (error.response && error.response.status === 401) {
           if (error.response.data?.message?.includes("kích hoạt")) {
             showMessage({
-              message: "Account Not Activated",
-              description: "Your account is not activated. Please check your email for activation link.",
+              message: t('signIn.errors.accountNotActivated'),
+              description: t('signIn.errors.checkEmail'),
               type: "warning",
               icon: "warning",
               duration: 3000,
             });
           } else {
             showMessage({
-              message: "Login Failed",
-              description: "Invalid phone number or password.",
+              message: t('signIn.errors.loginFailed'),
+              description: t('signIn.errors.invalidCredentials'),
               type: "danger",
               icon: "danger",
               duration: 3000,
@@ -70,8 +72,8 @@ const SignInScreen = () => {
           }
         } else {
           showMessage({
-            message: "Error",
-            description: "An unexpected error occurred. Please try again.",
+            message: t('signIn.errors.loginFailed'),
+            description: t('signIn.errors.unexpectedError'),
             type: "danger",
             icon: "danger",
             duration: 3000,
@@ -82,7 +84,7 @@ const SignInScreen = () => {
       }
     } else {
       if (!email || !password) {
-        setErrorMessage("Please enter username and password.");
+        setErrorMessage(t('signIn.errors.enterUsernamePassword'));
         return;
       }
       
@@ -105,16 +107,16 @@ const SignInScreen = () => {
       } catch (error: any) {
         if (error.response && error.response.status === 401) {
           showMessage({
-            message: "Login Failed",
-            description: "Invalid username or password.",
+            message: t('signIn.errors.loginFailed'),
+            description: t('signIn.errors.invalidStaffCredentials'),
             type: "danger",
             icon: "danger",
             duration: 3000,
           });
         } else {
           showMessage({
-            message: "Error",
-            description: "An unexpected error occurred. Please try again.",
+            message: t('signIn.errors.loginFailed'),
+            description: t('signIn.errors.unexpectedError'),
             type: "danger",
             icon: "danger",
             duration: 3000,
@@ -137,7 +139,7 @@ const SignInScreen = () => {
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <Icon name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Sign In</Text>
+          <Text style={styles.headerTitle}>{t('signIn.title')}</Text>
         </View>
 
         <View style={styles.formContainer}>
@@ -147,7 +149,7 @@ const SignInScreen = () => {
               onPress={() => setActiveTab('resident')}
             >
               <Text style={activeTab === 'resident' ? styles.activeTabText : styles.inactiveTabText}>
-                Resident
+                {t('signIn.resident')}
               </Text>
             </TouchableOpacity>
 
@@ -156,7 +158,7 @@ const SignInScreen = () => {
               onPress={() => setActiveTab('staff')}
             >
               <Text style={activeTab === 'staff' ? styles.activeTabText : styles.inactiveTabText}>
-                Staff
+                {t('signIn.staff')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -164,7 +166,7 @@ const SignInScreen = () => {
           <View style={styles.inputSection}>
             <View style={styles.inputWrapper}>
               <Text style={styles.inputLabel}>
-                {activeTab === 'resident' ? "Phone Number" : "Username"}
+                {activeTab === 'resident' ? t('signIn.phoneNumber') : t('signIn.username')}
               </Text>
 
               {activeTab === 'resident' ? (
@@ -185,7 +187,7 @@ const SignInScreen = () => {
                   <Icon name="person" size={20} color="#B77F2E" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="Enter your username"
+                    placeholder={t('signIn.username')}
                     value={email}
                     onChangeText={(text) => { setEmail(text); setErrorMessage(''); }}
                     autoCapitalize="none"
@@ -196,12 +198,12 @@ const SignInScreen = () => {
             </View>
 
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>Password</Text>
+              <Text style={styles.inputLabel}>{t('signIn.password')}</Text>
               <View style={styles.inputContainer}>
                 <Icon name="lock" size={20} color="#B77F2E" style={styles.inputIcon} />
                 <TextInput
                   style={styles.passwordInput}
-                  placeholder="Enter your password"
+                  placeholder={t('signIn.password')}
                   value={password}
                   onChangeText={(text) => { setPassword(text); setErrorMessage(''); }}
                   secureTextEntry={!showPassword}
@@ -229,15 +231,15 @@ const SignInScreen = () => {
             {loading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
-              <Text style={styles.loginButtonText}>Sign In</Text>
+              <Text style={styles.loginButtonText}>{t('signIn.loginButton')}</Text>
             )}
           </TouchableOpacity>
 
           {activeTab === 'resident' && (
             <View style={styles.signupContainer}>
-              <Text style={styles.signupText}>Don't have an account? </Text>
+              <Text style={styles.signupText}>{t('signIn.noAccount')} </Text>
               <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-                <Text style={styles.signupLink}>Sign Up</Text>
+                <Text style={styles.signupLink}>{t('signIn.signUp')}</Text>
               </TouchableOpacity>
             </View>
           )}

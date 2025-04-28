@@ -1,0 +1,60 @@
+{
+  "common": {
+    "more": "More",
+    "language": "Language",
+    "faq": "FAQ",
+    "howToUse": "How to Use",
+    "aboutUs": "About Us",
+    "logout": "Log Out",
+    "copyright": "Copyright©2023",
+    "rights": "All rights reserved by BMCMS"
+  },
+  "languages": {
+    "english": "English",
+    "vietnamese": "Vietnamese"
+  },
+  "signIn": {
+    "title": "Sign In",
+    "resident": "Resident",
+    "staff": "Staff",
+    "phoneNumber": "Phone Number",
+    "username": "Username",
+    "password": "Password",
+    "loginButton": "Sign In",
+    "noAccount": "Don't have an account?",
+    "signUp": "Sign Up",
+    "errors": {
+      "enterPhonePassword": "Please enter phone number and password.",
+      "enterUsernamePassword": "Please enter username and password.",
+      "accountNotActivated": "Account Not Activated",
+      "checkEmail": "Your account is not activated. Please check your email for activation link.",
+      "loginFailed": "Login Failed",
+      "invalidCredentials": "Invalid phone number or password.",
+      "invalidStaffCredentials": "Invalid username or password.",
+      "unexpectedError": "An unexpected error occurred. Please try again."
+    }
+  },
+  "property": {
+    "title": "PROPERTIES",
+    "owned": "Owned",
+    "building": "Building",
+    "project": "Project",
+    "noProperties": "You don't have any properties yet",
+    "contactInfo": "Contact us for more information about your properties",
+    "loading": "Loading..."
+  },
+  "guestProperty": {
+    "title": "PROPERTY",
+    "question": "You own any Masterise product?",
+    "description": "Sign in to manage all your properties now.",
+    "signUp": "Sign Up"
+  },
+  "navigation": {
+    "home": "Home",
+    "property": "Property", 
+    "notification": "Notification",
+    "account": "Account",
+    "taskAssignment": "Task Assignment",
+    "staffAssign": "Staff Assign"
+  }
+}

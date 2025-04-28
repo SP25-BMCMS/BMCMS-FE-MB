@@ -4,11 +4,13 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Apartment } from '../types';
 import { PropertyService } from '../service/propertyService';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 const ResidentPropertyScreen = () => {
   const navigation = useNavigation();
   const [apartments, setApartments] = useState<Apartment[]>([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
 
   useEffect(() => {
     fetchProperties();
@@ -52,20 +54,20 @@ const ResidentPropertyScreen = () => {
           <View style={styles.cardBodyRow}>
             <Icon name="apartment" size={20} color="#B77F2E" style={styles.icon} />
             <Text style={styles.cardBodyText}>
-              Tòa: {item.building?.description || item.buildingId}
+              {t('property.building')}: {item.building?.description || item.buildingId}
             </Text>
           </View>
           <View style={styles.cardBodyRow}>
             <Icon name="location-city" size={20} color="#B77F2E" style={styles.icon} />
             <Text style={styles.cardBodyText}>
-              Dự án: {item.building?.name}
+              {t('property.project')}: {item.building?.name}
             </Text>
           </View>
         </View>
         
         <View style={styles.cardFooter}>
           <View style={styles.statusBadge}>
-            <Text style={styles.statusBadgeText}>Owned</Text>
+            <Text style={styles.statusBadgeText}>{t('property.owned')}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -77,6 +79,7 @@ const ResidentPropertyScreen = () => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#B77F2E" />
+        <Text style={{ marginTop: 10, color: '#666' }}>{t('property.loading')}</Text>
       </View>
     );
   }
@@ -84,7 +87,7 @@ const ResidentPropertyScreen = () => {
   return (
     <View style={styles.container}>
        <View style={styles.header}>
-        <Text style={styles.headerTitle}>PROPERTYS</Text>
+        <Text style={styles.headerTitle}>{t('property.title')}</Text>
       </View>
       {apartments.length > 0 ? (
         <FlatList
@@ -101,9 +104,9 @@ const ResidentPropertyScreen = () => {
             resizeMode="contain"
           />
 
-          <Text style={styles.title}>You don't have any properties yet</Text>
+          <Text style={styles.title}>{t('property.noProperties')}</Text>
           <Text style={styles.description}>
-            Contact us for more information about your properties
+            {t('property.contactInfo')}
           </Text>
         </>
       )}

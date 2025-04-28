@@ -7,6 +7,7 @@ import {
   ScrollView,
   Animated,
   Easing,
+  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import Icon2 from "react-native-vector-icons/AntDesign";
@@ -16,14 +17,16 @@ import { RootStackParamList } from "../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthService } from '../service/Auth';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
+import '../i18n';
 
 type MoreScreenNavigationProp = StackNavigationProp<RootStackParamList, "More">;
 
 const MoreScreen = () => {
   const navigation = useNavigation<MoreScreenNavigationProp>();
   const [userData, setUserData] = React.useState<any>(null);
-
   const [anim] = useState(new Animated.Value(0));
+  const { t, i18n } = useTranslation();
 
   // Hàm lấy màu sắc dựa trên vị trí của staff
   const getPositionColor = () => {
@@ -106,6 +109,28 @@ const MoreScreen = () => {
     }
   };
 
+  const changeLanguage = async () => {
+    // Switch between English and Vietnamese
+    const newLang = i18n.language === 'en' ? 'vi' : 'en';
+    
+    try {
+      // Change language in i18n
+      await i18n.changeLanguage(newLang);
+      // Save to AsyncStorage for persistence
+      await AsyncStorage.setItem('userLanguage', newLang);
+      
+      // Optional: Show confirmation message
+      Alert.alert(
+        t('common.language'),
+        newLang === 'en' 
+          ? 'Language changed to English' 
+          : 'Đã chuyển sang Tiếng Việt'
+      );
+    } catch (error) {
+      console.error('Error changing language:', error);
+    }
+  };
+
   return (
     <Animated.View
       style={[
@@ -127,7 +152,7 @@ const MoreScreen = () => {
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>More</Text>
+        <Text style={styles.headerTitle}>{t('common.more')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -151,14 +176,18 @@ const MoreScreen = () => {
         )}
 
         <View style={styles.menuOptions}>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={changeLanguage}>
             <View
               style={[styles.iconContainer, { backgroundColor: "#E3F2FD" }]}
             >
               <Icon name="language" size={24} color="#4CB5F5" />
             </View>
-            <Text style={styles.menuText}>Language</Text>
-            <Text style={styles.menuValue}>English</Text>
+            <Text style={styles.menuText}>{t('common.language')}</Text>
+            <Text style={styles.menuValue}>
+              {i18n.language === 'en' 
+                ? t('languages.english') 
+                : t('languages.vietnamese')}
+            </Text>
             <Icon
               name="chevron-right"
               size={24}
@@ -173,7 +202,7 @@ const MoreScreen = () => {
             >
               <Icon name="help-outline" size={24} color="#A084E8" />
             </View>
-            <Text style={styles.menuText}>FAQ</Text>
+            <Text style={styles.menuText}>{t('common.faq')}</Text>
             <Icon
               name="chevron-right"
               size={24}
@@ -188,7 +217,7 @@ const MoreScreen = () => {
             >
               <Icon2 name="book" size={24} color="#F4C27F" />
             </View>
-            <Text style={styles.menuText}>How to Use</Text>
+            <Text style={styles.menuText}>{t('common.howToUse')}</Text>
             <Icon
               name="chevron-right"
               size={24}
@@ -203,7 +232,7 @@ const MoreScreen = () => {
             >
               <Icon name="info-outline" size={24} color="#B77F2E" />
             </View>
-            <Text style={styles.menuText}>About Us</Text>
+            <Text style={styles.menuText}>{t('common.aboutUs')}</Text>
             <Icon
               name="chevron-right"
               size={24}
@@ -219,7 +248,7 @@ const MoreScreen = () => {
               >
                 <Icon name="logout" size={24} color="#E8D6C1" />
               </View>
-              <Text style={styles.menuText}>Log Out</Text>
+              <Text style={styles.menuText}>{t('common.logout')}</Text>
               <Icon
                 name="chevron-right"
                 size={24}
@@ -232,8 +261,8 @@ const MoreScreen = () => {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Text style={styles.copyrightText}>Copyright©2023</Text>
-        <Text style={styles.copyrightText}>Bản quyền thuộc về BMCMS</Text>
+        <Text style={styles.copyrightText}>{t('common.copyright')}</Text>
+        <Text style={styles.copyrightText}>{t('common.rights')}</Text>
       </View>
     </Animated.View>
   );
