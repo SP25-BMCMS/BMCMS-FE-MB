@@ -57,7 +57,8 @@ const MyReportScreen = () => {
           setReports([]);
         }
       } catch (error) {
-        console.error("Error loading crack reports:", error);
+        // Tắt báo lỗi trong console
+        // console.error("Error loading crack reports:", error);
         setReports([]);
       } finally {
         setLoading(false);
