@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Platform,
   Alert,
   FlatList,
+  BackHandler,
 } from "react-native";
 import Modal from "react-native-modal";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -18,11 +19,13 @@ import {
   useNavigation,
   useRoute,
   NavigationProp,
+  RouteProp,
 } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { Property } from "../../types";
 import { OUTDOOR_CRACK_POSITIONS } from "../../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTranslation } from 'react-i18next';
 
 // Define route params type
 type RootStackParamList = {
@@ -39,6 +42,7 @@ type RootStackParamList = {
 };
 
 const RepairOutsideScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute();
   const { property } = route.params as { property: Property };
@@ -180,7 +184,7 @@ const RepairOutsideScreen = () => {
   const renderAreaDropdown = () => {
     return (
       <>
-        <Text style={styles.label}>Select area</Text>
+        <Text style={styles.label}>{t('repair.outside.selectArea')}</Text>
         <TouchableOpacity 
           style={styles.dropdownButton}
           onPress={() => {
@@ -188,8 +192,10 @@ const RepairOutsideScreen = () => {
             setIsPositionDropdownOpen(false);
           }}
         >
-          <Icon name="place" size={20} color="#B77F2E" style={styles.dropdownIcon} />
-          <Text style={styles.dropdownButtonText}>{areaDisplayText}</Text>
+          <Icon name="location-on" size={20} color="#B77F2E" style={styles.dropdownIcon} />
+          <Text style={styles.dropdownButtonText}>
+            {selectedArea ? selectedArea.replace(/_/g, ' ') : t('repair.outside.selectArea')}
+          </Text>
           <Icon 
             name={isAreaDropdownOpen ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
             size={24} 
@@ -231,7 +237,7 @@ const RepairOutsideScreen = () => {
     
     return (
       <>
-        <Text style={styles.label}>Select position</Text>
+        <Text style={styles.label}>{t('repair.outside.selectPosition')}</Text>
         <TouchableOpacity 
           style={styles.dropdownButton}
           onPress={() => {
@@ -276,7 +282,7 @@ const RepairOutsideScreen = () => {
 
         {selectedPosition && (
           <View style={styles.selectedInfo}>
-            <Text style={styles.selectedInfoLabel}>Selected position:</Text>
+            <Text style={styles.selectedInfoLabel}>{t('repair.outside.selectedPosition')}:</Text>
             <Text style={styles.selectedInfoValue}>
               {selectedPosition
                 .split('/')
@@ -294,17 +300,17 @@ const RepairOutsideScreen = () => {
       case 1:
         return (
           <>
-            {/* Nhập mô tả */}
-            <Text style={styles.label}>Details</Text>
+            {/* Description input */}
+            <Text style={styles.label}>{t('repair.outside.details')}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter description"
+              placeholder={t('repair.outside.description')}
               value={description}
               onChangeText={setDescription}
               multiline
             />
             {!isDescriptionValid && (
-              <Text style={styles.warningText}>Enter at least 5 characters of description</Text>
+              <Text style={styles.warningText}>{t('repair.outside.descriptionWarning')}</Text>
             )}
 
             {/* Custom Area Dropdown */}
@@ -313,7 +319,7 @@ const RepairOutsideScreen = () => {
             {/* Custom Position Dropdown */}
             {renderPositionDropdown()}
 
-            {/* Nút Tiếp tục */}
+            {/* Continue Button */}
             <TouchableOpacity
               style={[
                 styles.continueButton,
@@ -327,7 +333,7 @@ const RepairOutsideScreen = () => {
               disabled={!(isDescriptionValid && isPositionValid)}
               onPress={() => setCurrentStep(2)}
             >
-              <Text style={styles.continueButtonText}>Continue</Text>
+              <Text style={styles.continueButtonText}>{t('repair.outside.continue')}</Text>
             </TouchableOpacity>
           </>
         );
@@ -335,42 +341,42 @@ const RepairOutsideScreen = () => {
       case 2:
         return (
           <>
-            {/* Thêm hình ảnh */}
-            <Text style={styles.label}>Add photos</Text>
+            {/* Add photos */}
+            <Text style={styles.label}>{t('repair.outside.addPhotos')}</Text>
             <TouchableOpacity
               style={styles.imagePicker}
               onPress={openImageSourceModal}
             >
               <Icon name="add-a-photo" size={30} color="#B77F2E" />
-              <Text>Choose photo</Text>
+              <Text>{t('repair.outside.choosePhoto')}</Text>
             </TouchableOpacity>
 
-            {/* Modal chọn nguồn ảnh */}
+            {/* Photo source modal */}
             <Modal
               isVisible={isImageSourceModalVisible}
               onBackdropPress={closeImageSourceModal}
               style={styles.modal}
             >
               <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Select photo source</Text>
+                <Text style={styles.modalTitle}>{t('repair.outside.photoSourceTitle')}</Text>
                 <TouchableOpacity
                   style={styles.modalOption}
                   onPress={takePhoto}
                 >
                   <Icon name="camera-alt" size={24} color="#B77F2E" />
-                  <Text style={styles.modalOptionText}>Take photo</Text>
+                  <Text style={styles.modalOptionText}>{t('repair.outside.takePhoto')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.modalOption}
                   onPress={pickImageFromLibrary}
                 >
                   <Icon name="photo-library" size={24} color="#B77F2E" />
-                  <Text style={styles.modalOptionText}>Choose from library</Text>
+                  <Text style={styles.modalOptionText}>{t('repair.outside.chooseFromLibrary')}</Text>
                 </TouchableOpacity>
               </View>
             </Modal>
 
-            {/* Hiển thị ảnh đã chọn */}
+            {/* Display chosen images */}
             <View style={styles.imageContainer}>
               {images.map((image, index) => (
                 <View key={index} style={styles.imageWrapper}>
@@ -386,11 +392,11 @@ const RepairOutsideScreen = () => {
             </View>
             {images.length === 0 && (
               <Text style={styles.warningText}>
-                Please add at least 1 photo
+                {t('repair.outside.photoWarning')}
               </Text>
             )}
 
-            {/* Nút điều hướng */}
+            {/* Navigation buttons */}
             <TouchableOpacity
               style={[
                 styles.continueButton,
@@ -399,7 +405,7 @@ const RepairOutsideScreen = () => {
               disabled={!isImagesValid}
               onPress={handleContinueToReview}
             >
-              <Text style={styles.continueButtonText}>Continue</Text>
+              <Text style={styles.continueButtonText}>{t('repair.outside.continue')}</Text>
             </TouchableOpacity>
           </>
         );
@@ -419,7 +425,7 @@ const RepairOutsideScreen = () => {
         >
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Repair outside</Text>
+        <Text style={styles.headerTitle}>{t('repair.outside.title')}</Text>
         <Text style={styles.stepIndicator}>
           <Text style={{ color: "#000" }}>Step </Text>
           <Text style={{ color: "#B77F2E" }}>{currentStep}</Text>
@@ -443,6 +449,53 @@ const RepairOutsideScreen = () => {
         <Text style={styles.noticeText}>
           This report will be sent to the building manager to repair the public area
         </Text>
+      </View>
+
+      {/* Progress indicator */}
+      <View style={styles.progressContainer}>
+        <View style={styles.stepIndicator}>
+          <View
+            style={[
+              styles.stepCircle,
+              {
+                backgroundColor: currentStep >= 1 ? "#B77F2E" : "#E0E0E0",
+              },
+            ]}
+          >
+            <Text style={styles.stepText}>1</Text>
+          </View>
+          <Text
+            style={[
+              styles.stepLabel,
+              { color: currentStep >= 1 ? "#B77F2E" : "#999" },
+            ]}
+          >
+            {t('repair.outside.details')}
+          </Text>
+        </View>
+
+        <View style={styles.stepLine} />
+
+        <View style={styles.stepIndicator}>
+          <View
+            style={[
+              styles.stepCircle,
+              {
+                backgroundColor: currentStep >= 2 ? "#B77F2E" : "#E0E0E0",
+              },
+            ]}
+          >
+            <Text style={styles.stepText}>2</Text>
+          </View>
+          <Text
+            style={[
+              styles.stepLabel,
+              { color: currentStep >= 2 ? "#B77F2E" : "#999" },
+            ]}
+          >
+            {t('repair.outside.addPhotos')}
+          </Text>
+        </View>
       </View>
 
       {/* Dynamic Step Rendering */}
@@ -472,12 +525,42 @@ const styles = StyleSheet.create({
   },
   stepIndicator: {
     position: "absolute",
-    fontWeight: "bold",
     right: 0,
     fontSize: 14,
     backgroundColor: "#F8EDDC",
     padding: 10,
     borderRadius: 15,
+    fontWeight: "bold",
+  },
+  progressContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  stepCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#E0E0E0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 5,
+  },
+  stepText: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  stepLabel: {
+    fontSize: 14,
+    marginTop: 5,
+    textAlign: "center",
+  },
+  stepLine: {
+    width: 30,
+    height: 2,
+    backgroundColor: "#E0E0E0",
   },
   propertyInfo: {
     padding: 16,

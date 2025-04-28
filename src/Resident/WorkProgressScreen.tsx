@@ -20,6 +20,7 @@ import { showMessage } from "react-native-flash-message";
 import instance from "../service/Auth";
 import { getUserFeedbacks, getFeedbackByTaskId } from "../service/Auth";
 import { Feedback } from "../types";
+import { useTranslation } from "react-i18next";
 
 interface WorkProgressScreenParams {
   crackReportId: string;
@@ -29,6 +30,7 @@ const WorkProgressScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { crackReportId } = route.params as WorkProgressScreenParams;
+  const { t } = useTranslation();
   
   // Feedback state
   const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
@@ -115,8 +117,8 @@ const WorkProgressScreen = () => {
     // Validate comment
     if (!comment.trim()) {
       showMessage({
-        message: "Comment Required",
-        description: "Please add a comment about your experience",
+        message: t('workProgress.feedback.required'),
+        description: t('workProgress.feedback.description'),
         type: "warning",
         backgroundColor: "#FF9800",
         color: "#FFFFFF",
@@ -162,8 +164,8 @@ const WorkProgressScreen = () => {
       
       // Show success message
       showMessage({
-        message: "Feedback Submitted",
-        description: `Thank you for your ${rating}-star rating!`,
+        message: t('workProgress.feedback.submitted'),
+        description: t('workProgress.feedback.thanks', { rating: rating }),
         type: "success",
         icon: "success",
         backgroundColor: "#4CAF50",
@@ -181,8 +183,8 @@ const WorkProgressScreen = () => {
     } catch (error) {
       console.error('Error submitting feedback:', error);
       showMessage({
-        message: "Error",
-        description: "Failed to submit feedback. Please try again.",
+        message: t('workProgress.feedback.error'),
+        description: t('workProgress.feedback.failed'),
         type: "danger",
         icon: "danger",
         backgroundColor: "#F44336",
@@ -198,21 +200,49 @@ const WorkProgressScreen = () => {
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return '#FF9800';
+      case 'inprogress':
+      case 'in progress':
+        return '#2196F3';
+      case 'completed':
+        return '#4CAF50';
+      case 'rejected':
+        return '#F44336';
+      default:
+        return '#757575';
+    }
+  };
+
+  const getStatusTranslation = (status: string) => {
+    const normalizedStatus = status.toLowerCase();
+    if (normalizedStatus === 'inprogress' || normalizedStatus === 'in progress') {
+      return t('workProgress.status.inProgress');
+    } else if (normalizedStatus === 'pending') {
+      return t('workProgress.status.pending');
+    } else if (normalizedStatus === 'completed') {
+      return t('workProgress.status.completed');
+    } else if (normalizedStatus === 'rejected') {
+      return t('workProgress.status.rejected');
+    }
+    return status;
+  };
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#B77F2E" />
-        <Text style={styles.loadingText}>Loading work progress...</Text>
       </View>
     );
   }
 
-  if (isError) {
+  if (isError || !worklogsData) {
     return (
       <View style={styles.errorContainer}>
-        <Icon name="error-outline" size={64} color="#F44336" />
-        <Text style={styles.errorTitle}>Error Loading Data</Text>
-        <Text style={styles.errorText}>{(error as Error).message}</Text>
+        <Icon name="error-outline" size={48} color="#B77F2E" />
+        <Text style={styles.errorText}>Error loading work progress</Text>
         <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
@@ -220,315 +250,221 @@ const WorkProgressScreen = () => {
     );
   }
 
-  if (!worklogsData) {
-    return (
-      <View style={styles.emptyContainer}>
-        <Icon name="assignment-late" size={64} color="#FFC107" />
-        <Text style={styles.emptyTitle}>No Work Progress Found</Text>
-        <Text style={styles.emptyText}>
-          No work progress information is available for this crack report.
-        </Text>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backButtonText}>Go Back</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  const { crackReport, status, description, taskAssignments } = worklogsData;
-
-  // Helper function to get status color
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Completed":
-        return "#4CAF50";
-      case "InProgress":
-        return "#2196F3";
-      case "Assigned":
-        return "#FF9800";
-      case "Pending":
-        return "#757575";
-      default:
-        return "#757575";
-    }
-  };
-
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Work Progress</Text>
+        <Text style={styles.headerTitle}>{t('workProgress.title')}</Text>
       </View>
 
-      <View style={styles.progressSection}>
-        <Text style={styles.sectionTitle}>Progress Timeline</Text>
-        <View style={styles.timeline}>
-          <View
-            style={[
-              styles.timelineStep,
-              { backgroundColor: "#4CAF50" },
-              status === "Pending" && styles.timelineStepInactive,
-            ]}
-          >
-            <Icon
-              name="report-problem"
-              size={24}
-              color={status === "Pending" ? "#757575" : "#FFFFFF"}
-            />
+      {/* Crack Information */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t('workProgress.crackInfo')}</Text>
+        <View style={styles.crackDetails}>
+          <View style={styles.locationContainer}>
+            <Icon name="location-on" size={24} color="#B77F2E" style={styles.locationIcon} />
+            <Text style={styles.locationText}>
+              {worklogsData.crackReport?.position || "Unknown location"}
+            </Text>
           </View>
-          <View
-            style={[
-              styles.timelineConnector,
-              status !== "Pending" && styles.timelineConnectorActive,
-            ]}
-          />
-          <View
-            style={[
-              styles.timelineStep,
-              status !== "Pending" && { backgroundColor: "#2196F3" },
-              (status === "Pending") && styles.timelineStepInactive,
-            ]}
-          >
-            <Icon
-              name="assignment"
-              size={24}
-              color={status === "Pending" ? "#757575" : "#FFFFFF"}
-            />
-          </View>
-          <View
-            style={[
-              styles.timelineConnector,
-              (status === "InProgress" || status === "Completed") &&
-                styles.timelineConnectorActive,
-            ]}
-          />
-          <View
-            style={[
-              styles.timelineStep,
-              (status === "InProgress" || status === "Completed") && {
-                backgroundColor: "#FF9800",
-              },
-              (status === "Pending" || status === "Assigned") &&
-                styles.timelineStepInactive,
-            ]}
-          >
-            <Icon
-              name="build"
-              size={24}
-              color={
-                status === "InProgress" || status === "Completed"
-                  ? "#FFFFFF"
-                  : "#757575"
-              }
-            />
-          </View>
-          <View
-            style={[
-              styles.timelineConnector,
-              status === "Completed" && styles.timelineConnectorActive,
-            ]}
-          />
-          <View
-            style={[
-              styles.timelineStep,
-              status === "Completed" && { backgroundColor: "#4CAF50" },
-              status !== "Completed" && styles.timelineStepInactive,
-            ]}
-          >
-            <Icon
-              name="check-circle"
-              size={24}
-              color={status === "Completed" ? "#FFFFFF" : "#757575"}
-            />
-          </View>
+          
+          <Text style={styles.crackDescription}>
+            {worklogsData.crackReport?.description || "No description provided"}
+          </Text>
+          
+          {worklogsData.crackReport?.crackDetails && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScrollView}>
+              {worklogsData.crackReport.crackDetails.map((detail: any, index: number) => (
+                <Image
+                  key={index}
+                  source={{ uri: detail.photoUrl }}
+                  style={styles.crackImage}
+                />
+              ))}
+            </ScrollView>
+          )}
         </View>
-        <View style={styles.timelineLabels}>
-          <Text style={styles.timelineLabel}>Reported</Text>
-          <Text style={styles.timelineLabel}>Assigned</Text>
-          <Text style={styles.timelineLabel}>In Progress</Text>
-          <Text style={styles.timelineLabel}>Completed</Text>
+      </View>
+      
+      {/* Task Details */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t('workProgress.taskDetails')}</Text>
+        <View style={styles.taskStatusContainer}>
+          <View style={styles.statusBadge}>
+            <Text style={[styles.statusText, { color: getStatusColor(worklogsData.status || 'Pending') }]}>
+              {getStatusTranslation(worklogsData.status || 'Pending')}
+            </Text>
+          </View>
+          
+          {worklogsData.task?.completedAt && (
+            <Text style={styles.completedText}>
+              {t('workProgress.completedOn')}: {new Date(worklogsData.task.completedAt).toLocaleString()}
+            </Text>
+          )}
         </View>
         
-        {status === "Completed" && !hasFeedback() && (
+        <View style={styles.techniciansContainer}>
+          <Text style={styles.technicianTitle}>{t('workProgress.technician')}:</Text>
+          {worklogsData.taskAssignments && worklogsData.taskAssignments.length > 0 ? (
+            worklogsData.taskAssignments.map((assignment: any, index: number) => (
+              <View key={index} style={styles.technicianItem}>
+                <Icon name="person" size={20} color="#B77F2E" />
+                <Text style={styles.technicianName}>{assignment.username || "Unknown"}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.noTechniciansText}>{t('workProgress.noTechnicians')}</Text>
+          )}
+        </View>
+      </View>
+
+      {/* Status History */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t('workProgress.statusHistory')}</Text>
+        <View style={styles.timelineContainer}>
+          {worklogsData?.task?.statusHistories && worklogsData.task.statusHistories.length > 0 ? (
+            worklogsData.task.statusHistories.map((history: any, index: number) => (
+              <View key={index} style={styles.timelineItem}>
+                <View style={[styles.timelineDot, { backgroundColor: getStatusColor(history.status) }]} />
+                <View style={styles.timelineContent}>
+                  <Text style={styles.timelineStatus}>{getStatusTranslation(history.status)}</Text>
+                  <Text style={styles.timelineDate}>{new Date(history.timestamp).toLocaleString()}</Text>
+                  {history.notes && <Text style={styles.timelineNotes}>{history.notes}</Text>}
+                </View>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.noDataText}>No status history available</Text>
+          )}
+        </View>
+      </View>
+
+      {/* Maintenance History */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t('workProgress.maintenanceHistory')}</Text>
+        <View style={styles.maintenanceContainer}>
+          {worklogsData?.task?.maintenanceRecords && worklogsData.task.maintenanceRecords.length > 0 ? (
+            worklogsData.task.maintenanceRecords.map((record: any, index: number) => (
+              <View key={index} style={styles.maintenanceItem}>
+                <View style={styles.maintenanceHeader}>
+                  <Text style={styles.maintenanceDate}>
+                    {t('workProgress.date')}: {new Date(record.date).toLocaleDateString()}
+                  </Text>
+                  <Text style={styles.maintenanceTechnician}>
+                    {t('workProgress.technician')}: {record.technicianName || "Unknown"}
+                  </Text>
+                </View>
+                <Text style={styles.maintenanceDescription}>{record.description}</Text>
+                {record.photoUrls && (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.maintenanceImagesContainer}>
+                    {record.photoUrls.map((url: string, photoIndex: number) => (
+                      <Image key={photoIndex} source={{ uri: url }} style={styles.maintenanceImage} />
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+            ))
+          ) : (
+            <Text style={styles.noDataText}>{t('workProgress.noMaintenanceRecords')}</Text>
+          )}
+        </View>
+      </View>
+
+      {/* Feedback Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t('workProgress.feedback.title')}</Text>
+        
+        {isFeedbackLoading ? (
+          <ActivityIndicator size="small" color="#B77F2E" />
+        ) : hasFeedback() ? (
           <View style={styles.feedbackContainer}>
-            <Text style={styles.feedbackText}>
-              Work has been completed. Please provide your feedback.
-            </Text>
-            <TouchableOpacity
+            <Text style={styles.feedbackTitle}>{t('workProgress.feedback.yourFeedback')}:</Text>
+            {taskFeedback?.data && taskFeedback.data.length > 0 && (
+              <>
+                <View style={styles.ratingContainer}>
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <Icon 
+                      key={star}
+                      name="star" 
+                      size={24} 
+                      color={star <= taskFeedback.data[0].rating ? "#FFC107" : "#E0E0E0"} 
+                    />
+                  ))}
+                </View>
+                <Text style={styles.feedbackComment}>{taskFeedback.data[0].comments}</Text>
+                <Text style={styles.feedbackDate}>
+                  {new Date(taskFeedback.data[0].createdAt).toLocaleString()}
+                </Text>
+              </>
+            )}
+          </View>
+        ) : (
+          worklogsData.status === 'Completed' && (
+            <TouchableOpacity 
               style={styles.feedbackButton}
               onPress={handleCreateFeedback}
             >
               <Icon name="star" size={20} color="#FFFFFF" />
-              <Text style={styles.feedbackButtonText}>Rate Repair Work</Text>
+              <Text style={styles.feedbackButtonText}>{t('workProgress.feedback.giveFeedback')}</Text>
             </TouchableOpacity>
-          </View>
-        )}
-        
-        {status === "Completed" && hasFeedback() && (
-          <View style={[styles.feedbackContainer, { backgroundColor: "#E8F5E9", borderLeftColor: "#4CAF50" }]}>
-            <Icon name="check-circle" size={24} color="#4CAF50" />
-            <Text style={[styles.feedbackText, { marginTop: 8 }]}>
-              Thank you! You have already provided feedback for this work.
-            </Text>
-          </View>
+          )
         )}
       </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Crack Report Details</Text>
-        <View style={styles.card}>
-          <View style={styles.cardRow}>
-            <Text style={styles.cardLabel}>Position:</Text>
-            <Text style={styles.cardValue}>{crackReport.position.split('/').join(' - ')}</Text>
-          </View>
-          <View style={styles.cardRow}>
-            <Text style={styles.cardLabel}>Reported:</Text>
-            <Text style={styles.cardValue}>
-              {new Date(crackReport.createdAt).toLocaleDateString()} by{" "}
-              {crackReport.reportedBy.username}
-            </Text>
-          </View>
-          <View style={styles.cardRow}>
-            <Text style={styles.cardLabel}>Description:</Text>
-            <Text style={styles.cardValue}>{crackReport.description}</Text>
-          </View>
-          <View style={styles.cardRow}>
-            <Text style={styles.cardLabel}>Status:</Text>
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: getStatusColor(crackReport.status) + "20" },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.statusText,
-                  { color: getStatusColor(crackReport.status) },
-                ]}
-              >
-                {crackReport.status}
-              </Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Task Information</Text>
-        <View style={styles.card}>
-          
-          <View style={styles.cardRow}>
-            <Text style={styles.cardLabel}>Description:</Text>
-            <Text style={styles.cardValue}>{description}</Text>
-          </View>
-          <View style={styles.cardRow}>
-            <Text style={styles.cardLabel}>Status:</Text>
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: getStatusColor(status) + "20" },
-              ]}
-            >
-              <Text
-                style={[styles.statusText, { color: getStatusColor(status) }]}
-              >
-                {status}
-              </Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {crackReport.crackDetails && crackReport.crackDetails.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Reported Images</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {crackReport.crackDetails.map((detail, index) => (
-              <View key={index} style={styles.imageContainer}>
-                <Image
-                  source={{ uri: detail.photoUrl }}
-                  style={styles.crackImage}
-                  resizeMode="cover"
-                />
-                <Text style={styles.imageSeverity}>
-                  Severity: {detail.severity}
-                </Text>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      )}
 
       {/* Feedback Modal */}
       <Modal
         visible={feedbackModalVisible}
         transparent={true}
-        animationType="fade"
-        onRequestClose={() => setFeedbackModalVisible(false)}
+        animationType="slide"
       >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.feedbackModalContent}>
-            <Text style={styles.feedbackModalTitle}>Rate Repair Work</Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{t('workProgress.feedback.title')}</Text>
             
-            <Text style={styles.ratingLabel}>Select Rating:</Text>
+            <Text style={styles.ratingTitle}>{t('workProgress.feedback.rating')}</Text>
             <View style={styles.ratingContainer}>
-              {[1, 2, 3, 4, 5].map((value) => (
-                <TouchableOpacity
-                  key={value}
-                  onPress={() => setRating(value)}
-                  style={[
-                    styles.ratingButton,
-                    rating === value && styles.ratingButtonSelected
-                  ]}
-                >
-                  <Icon
-                    name="star"
-                    size={24}
-                    color={rating >= value ? "#FFC107" : "#E0E0E0"}
+              {[1, 2, 3, 4, 5].map(star => (
+                <TouchableOpacity key={star} onPress={() => setRating(star)}>
+                  <Icon 
+                    name="star" 
+                    size={32} 
+                    color={star <= rating ? "#FFC107" : "#E0E0E0"} 
+                    style={styles.starIcon}
                   />
                 </TouchableOpacity>
               ))}
             </View>
             
-            <Text style={styles.commentLabel}>Add Comment: <Text style={styles.requiredField}>*</Text></Text>
+            <Text style={styles.commentTitle}>{t('workProgress.feedback.comment')}</Text>
             <TextInput
               style={styles.commentInput}
-              placeholder="Share your experience about the repair work..."
-              value={comment}
-              onChangeText={setComment}
               multiline
               numberOfLines={4}
+              placeholder={t('workProgress.feedback.placeholder')}
+              value={comment}
+              onChangeText={setComment}
             />
             
-            <View style={styles.modalButtonContainer}>
+            <View style={styles.modalButtonsContainer}>
               <TouchableOpacity
-                style={styles.modalCancelButton}
+                style={styles.cancelButton}
                 onPress={() => setFeedbackModalVisible(false)}
                 disabled={isSubmitting}
               >
-                <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>{t('workProgress.feedback.cancel')}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
-                style={[
-                  styles.modalSubmitButton,
-                  {backgroundColor: isSubmitting ? '#999' : '#4CAF50'}
-                ]}
+                style={styles.submitButton}
                 onPress={submitFeedback}
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.modalSubmitButtonText}>Submit</Text>
+                  <Text style={styles.submitButtonText}>{t('workProgress.feedback.submit')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -552,23 +488,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#F5F5F5",
   },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#666",
-  },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
     backgroundColor: "#F5F5F5",
-  },
-  errorTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 12,
   },
   errorText: {
     fontSize: 14,
@@ -588,36 +513,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-    backgroundColor: "#F5F5F5",
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 12,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
-    marginTop: 8,
-    marginBottom: 20,
-  },
-  backButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-  },
-  backButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -625,6 +520,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
     marginTop: 50,
+  },
+  backButton: {
+    padding: 8,
   },
   headerTitle: {
     fontSize: 20,
@@ -641,32 +539,39 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     color: "#B77F2E",
   },
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+  crackDetails: {
     padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
   },
-  cardRow: {
+  locationContainer: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     marginBottom: 12,
   },
-  cardLabel: {
-    width: 100,
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#666",
+  locationIcon: {
+    marginRight: 8,
   },
-  cardValue: {
+  locationText: {
     flex: 1,
     fontSize: 14,
     color: "#333",
+  },
+  crackDescription: {
+    fontSize: 14,
+    color: "#666",
+  },
+  imageScrollView: {
+    marginTop: 12,
+  },
+  crackImage: {
+    width: width * 0.4,
+    height: 150,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  taskStatusContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -678,62 +583,94 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "bold",
   },
-  imageContainer: {
-    marginRight: 12,
-    marginBottom: 8,
-    width: width * 0.4,
+  completedText: {
+    fontSize: 14,
+    color: "#666",
+    marginLeft: 12,
   },
-  crackImage: {
-    width: "100%",
+  techniciansContainer: {
+    marginTop: 12,
+  },
+  technicianTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#666",
+    marginBottom: 8,
+  },
+  technicianItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  technicianName: {
+    fontSize: 14,
+    color: "#333",
+  },
+  noTechniciansText: {
+    fontSize: 14,
+    color: "#666",
+  },
+  timelineContainer: {
+    marginTop: 12,
+  },
+  timelineItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  timelineDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#E0E0E0",
+    marginRight: 8,
+  },
+  timelineContent: {
+    flex: 1,
+  },
+  timelineStatus: {
+    fontSize: 14,
+    color: "#333",
+  },
+  timelineDate: {
+    fontSize: 12,
+    color: "#666",
+  },
+  timelineNotes: {
+    fontSize: 12,
+    color: "#666",
+  },
+  maintenanceContainer: {
+    marginTop: 12,
+  },
+  maintenanceItem: {
+    marginBottom: 12,
+  },
+  maintenanceHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  maintenanceDate: {
+    fontSize: 14,
+    color: "#333",
+  },
+  maintenanceTechnician: {
+    fontSize: 14,
+    color: "#666",
+  },
+  maintenanceDescription: {
+    fontSize: 14,
+    color: "#666",
+  },
+  maintenanceImagesContainer: {
+    marginTop: 8,
+  },
+  maintenanceImage: {
+    width: width * 0.4,
     height: 150,
     borderRadius: 8,
-  },
-  imageSeverity: {
-    marginTop: 4,
-    fontSize: 12,
-    color: "#666",
-    textAlign: "center",
-  },
-  progressSection: {
-    marginVertical: 20,
-    paddingHorizontal: 16,
-  },
-  timeline: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-  },
-  timelineStep: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#757575",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  timelineStepInactive: {
-    backgroundColor: "#E0E0E0",
-  },
-  timelineConnector: {
-    flex: 1,
-    height: 3,
-    backgroundColor: "#E0E0E0",
-  },
-  timelineConnectorActive: {
-    backgroundColor: "#4CAF50",
-  },
-  timelineLabels: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 8,
-    paddingHorizontal: 0,
-  },
-  timelineLabel: {
-    fontSize: 12,
-    color: "#666",
-    textAlign: "center",
-    width: 70,
+    marginRight: 12,
   },
   feedbackContainer: {
     marginTop: 24,
@@ -744,11 +681,26 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: "#FFC107",
   },
-  feedbackText: {
+  feedbackTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 12,
+  },
+  ratingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  feedbackComment: {
     fontSize: 14,
     color: "#333",
     textAlign: "center",
     marginBottom: 12,
+  },
+  feedbackDate: {
+    fontSize: 12,
+    color: "#666",
   },
   feedbackButton: {
     flexDirection: "row",
@@ -763,15 +715,14 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginLeft: 8,
   },
-  // Modal styles
-  modalBackdrop: {
+  modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
-  feedbackModalContent: {
+  modalContent: {
     backgroundColor: 'white',
     borderRadius: 16,
     padding: 22,
@@ -783,41 +734,57 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  feedbackModalTitle: {
+  modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
     marginBottom: 20,
   },
-  ratingLabel: {
+  ratingTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#555',
     marginBottom: 10,
   },
-  ratingContainer: {
+  commentTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#555',
+    marginBottom: 10,
+  },
+  modalButtonsContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 20,
+    justifyContent: 'space-between',
   },
-  ratingButton: {
-    padding: 8,
-    marginHorizontal: 4,
+  cancelButton: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
   },
-  ratingButtonSelected: {
-    backgroundColor: '#FFF9E5',
-    borderRadius: 20,
-  },
-  commentLabel: {
-    fontSize: 16,
+  cancelButtonText: {
+    color: '#333',
     fontWeight: '600',
-    color: '#555',
-    marginBottom: 10,
+    fontSize: 16,
   },
-  requiredField: {
-    color: '#FF3B30',
-    fontWeight: 'bold',
+  submitButton: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#4CAF50',
+    alignItems: 'center',
+    flex: 1,
+    marginLeft: 8,
+  },
+  submitButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  starIcon: {
+    marginRight: 8,
   },
   commentInput: {
     borderWidth: 1,
@@ -829,35 +796,11 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     marginBottom: 20,
   },
-  modalButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  modalCancelButton: {
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: '#F5F5F5',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 8,
-  },
-  modalCancelButtonText: {
-    color: '#333',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  modalSubmitButton: {
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: '#4CAF50',
-    alignItems: 'center',
-    flex: 1,
-    marginLeft: 8,
-  },
-  modalSubmitButtonText: {
-    color: 'white',
-    fontWeight: '600',
-    fontSize: 16,
+  noDataText: {
+    fontSize: 14,
+    color: "#666",
+    fontStyle: "italic",
+    textAlign: "center",
   },
 });
 
