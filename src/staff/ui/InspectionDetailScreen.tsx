@@ -353,8 +353,10 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   // Submit crack record form
+  
   const handleSubmitCrackRecord = async () => {
     try {
+      //@ts-ignore
       const submissionData: CrackRecordPayload = {
         ...crackRecordData,
         length: parseFloat(crackRecordData.length) || 0,
