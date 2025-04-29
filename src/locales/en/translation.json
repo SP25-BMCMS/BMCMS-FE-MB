@@ -58,7 +58,7 @@
   },
   "navigation": {
     "home": "Home",
-    "property": "Property", 
+    "property": "Property",
     "notification": "Notification",
     "account": "Account",
     "taskAssignment": "Task Assignment",
@@ -172,7 +172,7 @@
       "landscape": "Landscape",
       "other": "Other",
       "wall": "Wall",
-      "foundation": "Foundation", 
+      "foundation": "Foundation",
       "roof": "Roof",
       "stairs": "Stairs",
       "corridor": "Corridor",
@@ -278,6 +278,13 @@
         "areas": "Areas",
         "buildings": "Buildings",
         "totalFloors": "Total Floors"
+      },
+      "areas": {
+        "title": "Areas",
+        "viewAll": "View All",
+        "buildings": "Buildings",
+        "floors": "floors",
+        "operational": "Operational"
       }
     },
     "account": {
@@ -705,7 +712,7 @@
     "areaType": "Area Type",
     "crackTypes": {
       "Vertical": "Vertical",
-      "Horizontal": "Horizontal", 
+      "Horizontal": "Horizontal",
       "Diagonal": "Diagonal",
       "Structural": "Structural",
       "NonStructural": "Non-Structural",

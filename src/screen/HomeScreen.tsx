@@ -280,7 +280,7 @@ const HomeScreen = () => {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t('screens.home.areas.title')}</Text>
             <TouchableOpacity style={styles.viewAllButton}>
-              <Text style={styles.viewAllText}>{t('screens.home.areas.viewAll')}</Text>
+              <Text style={styles.viewAllText}>{t('screens.home.viewAll')}</Text>
             </TouchableOpacity>
           </View>
           
