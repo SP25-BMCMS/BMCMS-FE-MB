@@ -22,6 +22,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { showMessage } from 'react-native-flash-message';
 import Modal from 'react-native-modal';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useTranslation } from 'react-i18next';
 
 type MaintenanceHistoryScreenRouteProp = RouteProp<RootStackParamList, 'MaintenanceHistory'>;
 type MaintenanceHistoryScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MaintenanceHistory'>;
@@ -175,6 +176,7 @@ interface MaintenanceFormData {
 }
 
 const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
+  const { t } = useTranslation();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { scheduleJobId, buildingName } = route.params;
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
@@ -507,7 +509,7 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Maintenance History</Text>
+        <Text style={styles.headerTitle}>{t('maintenanceHistory.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -518,67 +520,66 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
       ) : isError ? (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>
-            {error instanceof Error ? error.message : 'Failed to load maintenance history.'}
+            {error instanceof Error ? error.message : t('maintenanceHistory.loadError')}
           </Text>
           <TouchableOpacity 
             style={styles.retryButton}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.retryButtonText}>Go Back</Text>
+            <Text style={styles.retryButtonText}>{t('common.goBack')}</Text>
           </TouchableOpacity>
         </View>
       ) : scheduleJobData && scheduleJobData.data ? (
         <ScrollView style={styles.scrollView}>
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Building Information</Text>
+            <Text style={styles.sectionTitle}>{t('maintenanceHistory.buildingInfo')}</Text>
             <View style={styles.infoContainer}>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Building Name:</Text>
+                <Text style={styles.infoLabel}>{t('maintenanceHistory.buildingName')}:</Text>
                 <Text style={styles.infoValue}>
                   {scheduleJobData.data.buildingDetail?.building?.name || buildingName || 'N/A'}
                 </Text>
               </View>
               
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Building Detail:</Text>
+                <Text style={styles.infoLabel}>{t('maintenanceHistory.buildingDetail')}:</Text>
                 <Text style={styles.infoValue}>
                   {scheduleJobData.data.buildingDetail?.name || 'N/A'}
                 </Text>
               </View>
               
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Area:</Text>
+                <Text style={styles.infoLabel}>{t('maintenanceHistory.area')}:</Text>
                 <Text style={styles.infoValue}>
                   {scheduleJobData.data.buildingDetail?.building?.area?.name || 'N/A'}
                 </Text>
               </View>
               
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Floors:</Text>
+                <Text style={styles.infoLabel}>{t('maintenanceHistory.floors')}:</Text>
                 <Text style={styles.infoValue}>
                   {scheduleJobData.data.buildingDetail?.building?.numberFloor || 'N/A'}
                 </Text>
               </View>
               
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Status:</Text>
+                <Text style={styles.infoLabel}>{t('maintenanceHistory.status')}:</Text>
                 <View style={[styles.statusBadge, { 
                   backgroundColor: scheduleJobData.data.status === 'Completed' ? '#4CD964' : 
                                    scheduleJobData.data.status === 'InProgress' ? '#007AFF' : '#FF9500' 
                 }]}>
-                  <Text style={styles.statusText}>{scheduleJobData.data.status || 'N/A'}</Text>
+                  <Text style={styles.statusText}>{t(`maintenanceHistory.statusTypes.${scheduleJobData.data.status}`)}</Text>
                 </View>
               </View>
 
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Scheduled Date:</Text>
+                <Text style={styles.infoLabel}>{t('maintenanceHistory.scheduledDate')}:</Text>
                 <Text style={styles.infoValue}>
                   {formatDate(scheduleJobData.data.run_date)}
                 </Text>
               </View>
             </View>
             
-            {/* Add button to navigate to Technical Records */}
             <TouchableOpacity 
               style={styles.viewTechnicalRecordsButton}
               onPress={() => navigation.navigate('TechnicalRecord', {
@@ -587,13 +588,13 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
               })}
             >
               <Ionicons name="document-text-outline" size={18} color="#FFFFFF" style={styles.buttonIcon} />
-              <Text style={styles.viewTechnicalRecordsText}>View Technical Records</Text>
+              <Text style={styles.viewTechnicalRecordsText}>{t('maintenanceHistory.viewTechnicalRecords')}</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Devices for Maintenance</Text>
-            <Text style={styles.sectionSubtitle}>Tap on a device to view its maintenance history</Text>
+            <Text style={styles.sectionTitle}>{t('maintenanceHistory.devicesForMaintenance')}</Text>
+            <Text style={styles.sectionSubtitle}>{t('maintenanceHistory.tapDeviceHint')}</Text>
             
             {scheduleJobData.data.buildingDetail?.device && 
              scheduleJobData.data.buildingDetail.device.length > 0 ? (
@@ -607,7 +608,7 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
             ) : (
               <View style={styles.emptyContainer}>
                 <Ionicons name="construct-outline" size={50} color="#CCCCCC" />
-                <Text style={styles.emptyText}>No devices found for this maintenance task</Text>
+                <Text style={styles.emptyText}>{t('maintenanceHistory.noDevices')}</Text>
               </View>
             )}
           </View>
@@ -659,7 +660,7 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
       ) : (
         <View style={styles.emptyContainer}>
           <Ionicons name="alert-circle-outline" size={50} color="#CCCCCC" />
-          <Text style={styles.emptyText}>No maintenance history available</Text>
+          <Text style={styles.emptyText}>{t('maintenanceHistory.noHistory')}</Text>
         </View>
       )}
       
@@ -671,21 +672,19 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
         avoidKeyboard
       >
         <View style={styles.createModalContent}>
-          <Text style={styles.createModalTitle}>Add Maintenance Record</Text>
+          <Text style={styles.createModalTitle}>{t('maintenanceHistory.addRecord')}</Text>
           
-          {/* Device Selection */}
           <TouchableOpacity 
             style={styles.deviceSelectButton}
             onPress={openDeviceSelectModal}
           >
             <Text style={styles.deviceSelectLabel}>
-              {formData.device_name ? formData.device_name : 'Select Device'}
+              {formData.device_name ? formData.device_name : t('maintenanceHistory.selectDevice')}
             </Text>
             <Ionicons name="chevron-down" size={20} color="#555" />
           </TouchableOpacity>
           
-          {/* Date Selection */}
-          <Text style={styles.inputLabel}>Maintenance Date</Text>
+          <Text style={styles.inputLabel}>{t('maintenanceHistory.maintenanceDate')}</Text>
           <TouchableOpacity 
             style={styles.datePickerButton}
             onPress={() => setShowDatePicker(true)}
@@ -696,43 +695,30 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
             <Ionicons name="calendar" size={20} color="#555" />
           </TouchableOpacity>
           
-          {showDatePicker && (
-            <DateTimePicker
-              value={formData.date_performed}
-              mode="date"
-              display="default"
-              onChange={onDateChange}
-              maximumDate={new Date()}
-            />
-          )}
-          
-          {/* Description */}
-          <Text style={styles.inputLabel}>Description</Text>
+          <Text style={styles.inputLabel}>{t('maintenanceHistory.description')}</Text>
           <TextInput
             style={styles.descriptionInput}
-            placeholder="Enter maintenance description"
+            placeholder={t('maintenanceHistory.enterDescription')}
             value={formData.description}
             onChangeText={(text) => setFormData({...formData, description: text})}
             multiline
           />
           
-          {/* Cost */}
-          <Text style={styles.inputLabel}>Cost (VND)</Text>
+          <Text style={styles.inputLabel}>{t('maintenanceHistory.cost')} (VND)</Text>
           <TextInput
             style={styles.costInput}
-            placeholder="Enter cost amount"
+            placeholder={t('maintenanceHistory.enterCost')}
             value={formData.cost}
             onChangeText={(text) => setFormData({...formData, cost: text})}
             keyboardType="numeric"
           />
           
-          {/* Action Buttons */}
           <View style={styles.actionButtonsContainer}>
             <TouchableOpacity 
               style={[styles.actionButton, styles.cancelButton]}
               onPress={closeCreateModal}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -747,7 +733,7 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
               {isSubmitting ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.submitButtonText}>Submit</Text>
+                <Text style={styles.submitButtonText}>{t('common.submit')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -761,18 +747,18 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
         style={styles.modal}
       >
         <View style={styles.deviceModalContent}>
-          <Text style={styles.deviceModalTitle}>Select Device</Text>
+          <Text style={styles.deviceModalTitle}>{t('maintenanceHistory.selectDevice')}</Text>
           
           {isDeviceListLoading ? (
             <ActivityIndicator size="large" color="#B77F2E" style={styles.deviceListLoading} />
           ) : isDeviceListError ? (
             <View style={styles.deviceListError}>
-              <Text style={styles.deviceListErrorText}>Failed to load devices</Text>
+              <Text style={styles.deviceListErrorText}>{t('maintenanceHistory.failedLoadDevices')}</Text>
               <TouchableOpacity 
                 style={styles.retryButton}
                 onPress={() => queryClient.invalidateQueries({ queryKey: ['devicesList'] })}
               >
-                <Text style={styles.retryButtonText}>Retry</Text>
+                <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
               </TouchableOpacity>
             </View>
           ) : deviceListData && deviceListData.data ? (
@@ -788,7 +774,7 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
                 <View style={styles.emptyDeviceList}>
                   <Ionicons name="alert-circle-outline" size={40} color="#CCCCCC" />
                   <Text style={styles.emptyDeviceListText}>
-                    No devices found for this building
+                    {t('maintenanceHistory.noDevicesFound')}
                   </Text>
                 </View>
               }
@@ -799,14 +785,14 @@ const MaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
               }
             />
           ) : (
-            <Text style={styles.emptyDeviceListText}>No devices available</Text>
+            <Text style={styles.emptyDeviceListText}>{t('maintenanceHistory.noDevicesAvailable')}</Text>
           )}
           
           <TouchableOpacity 
             style={styles.closeModalButton}
             onPress={closeDeviceSelectModal}
           >
-            <Text style={styles.closeModalText}>Cancel</Text>
+            <Text style={styles.closeModalText}>{t('common.cancel')}</Text>
           </TouchableOpacity>
         </View>
       </Modal>

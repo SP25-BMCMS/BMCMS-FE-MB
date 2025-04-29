@@ -16,6 +16,7 @@ import { LocationService } from "../../service/Location";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from 'react-i18next';
 
 // Define route and navigation props
 interface LocationDetailScreenProps {
@@ -27,6 +28,7 @@ const LocationDetailScreen: React.FC<LocationDetailScreenProps> = ({
   route,
   navigation,
 }) => {
+  const { t } = useTranslation();
   const { locationDetailId } = route.params;
   const queryClient = useQueryClient();
 
@@ -73,7 +75,7 @@ const LocationDetailScreen: React.FC<LocationDetailScreenProps> = ({
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#B77F2E" />
-        <Text style={styles.loadingText}>Loading location details...</Text>
+        <Text style={styles.loadingText}>{t('locationDetail.loading')}</Text>
       </SafeAreaView>
     );
   }
@@ -82,12 +84,12 @@ const LocationDetailScreen: React.FC<LocationDetailScreenProps> = ({
     return (
       <SafeAreaView style={styles.errorContainer}>
         <Ionicons name="alert-circle" size={64} color="#FF3B30" />
-        <Text style={styles.errorText}>Error loading location details</Text>
+        <Text style={styles.errorText}>{t('locationDetail.error')}</Text>
         <TouchableOpacity
           style={styles.retryButton}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.retryButtonText}>Go Back</Text>
+          <Text style={styles.retryButtonText}>{t('common.goBack')}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -102,7 +104,7 @@ const LocationDetailScreen: React.FC<LocationDetailScreenProps> = ({
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Location Details</Text>
+        <Text style={styles.headerTitle}>{t('locationDetail.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -114,19 +116,19 @@ const LocationDetailScreen: React.FC<LocationDetailScreenProps> = ({
               <View style={styles.card}>
                 <View style={styles.cardHeader}>
                   <Ionicons name="business" size={24} color="#B77F2E" />
-                  <Text style={styles.cardTitle}>Building Information</Text>
+                  <Text style={styles.cardTitle}>{t('locationDetail.buildingInfo')}</Text>
                 </View>
                 <View style={styles.divider} />
 
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Building:</Text>
+                  <Text style={styles.infoLabel}>{t('locationDetail.building')}:</Text>
                   <Text style={styles.infoValue}>
                     {locationDetail.buildingDetail.name}
                   </Text>
                 </View>
 
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Total Apartments:</Text>
+                  <Text style={styles.infoLabel}>{t('locationDetail.totalApartments')}:</Text>
                   <Text style={styles.infoValue}>
                     {locationDetail.buildingDetail.total_apartments}
                   </Text>
@@ -137,26 +139,26 @@ const LocationDetailScreen: React.FC<LocationDetailScreenProps> = ({
             <View style={styles.card}>
               <View style={styles.cardHeader}>
                 <Ionicons name="location" size={24} color="#B77F2E" />
-                <Text style={styles.cardTitle}>Location Information</Text>
+                <Text style={styles.cardTitle}>{t('locationDetail.locationInfo')}</Text>
               </View>
               <View style={styles.divider} />
 
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Room:</Text>
+                <Text style={styles.infoLabel}>{t('locationDetail.room')}:</Text>
                 <Text style={styles.infoValue}>
                   {locationDetail.roomNumber}
                 </Text>
               </View>
 
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Floor:</Text>
+                <Text style={styles.infoLabel}>{t('locationDetail.floor')}:</Text>
                 <Text style={styles.infoValue}>
                   {locationDetail.floorNumber}
                 </Text>
               </View>
 
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Area Type:</Text>
+                <Text style={styles.infoLabel}>{t('locationDetail.areaType')}:</Text>
                 <View style={styles.areaTypeBadge}>
                   <Text style={styles.areaTypeText}>
                     {locationDetail.areaType}
@@ -165,9 +167,9 @@ const LocationDetailScreen: React.FC<LocationDetailScreenProps> = ({
               </View>
 
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Description:</Text>
+                <Text style={styles.infoLabel}>{t('locationDetail.description')}:</Text>
                 <Text style={styles.infoValue}>
-                  {locationDetail.description || "No description provided"}
+                  {locationDetail.description || t('locationDetail.noDescription')}
                 </Text>
               </View>
             </View>
@@ -177,7 +179,7 @@ const LocationDetailScreen: React.FC<LocationDetailScreenProps> = ({
               <View style={styles.cardHeader}>
                 <Ionicons name="construct" size={24} color="#B77F2E" />
                 <Text style={styles.cardTitle}>
-                  Crack Records{" "}
+                  {t('locationDetail.crackRecords')}{" "}
                   {locationDetail.crackRecords &&
                   locationDetail.crackRecords.length > 0
                     ? `(${locationDetail.crackRecords.length})`
@@ -209,25 +211,25 @@ const LocationDetailScreen: React.FC<LocationDetailScreenProps> = ({
                         <Text style={styles.measurementValue}>
                           {record.length}m
                         </Text>
-                        <Text style={styles.measurementLabel}>Length</Text>
+                        <Text style={styles.measurementLabel}>{t('locationDetail.length')}</Text>
                       </View>
                       <View style={styles.measurementItem}>
                         <Text style={styles.measurementValue}>
                           {record.width}m
                         </Text>
-                        <Text style={styles.measurementLabel}>Width</Text>
+                        <Text style={styles.measurementLabel}>{t('locationDetail.width')}</Text>
                       </View>
                       <View style={styles.measurementItem}>
                         <Text style={styles.measurementValue}>
                           {record.depth}m
                         </Text>
-                        <Text style={styles.measurementLabel}>Depth</Text>
+                        <Text style={styles.measurementLabel}>{t('locationDetail.depth')}</Text>
                       </View>
                     </View>
 
                     <View style={styles.crackDescriptionContainer}>
                       <Text style={styles.crackDescriptionLabel}>
-                        Description:
+                        {t('locationDetail.description')}:
                       </Text>
                       <Text style={styles.crackDescriptionText}>
                         {record.description}
@@ -247,7 +249,7 @@ const LocationDetailScreen: React.FC<LocationDetailScreenProps> = ({
                     color="#999"
                   />
                   <Text style={styles.noCrackRecordText}>
-                    No Crack Records Available
+                    {t('locationDetail.noCrackRecords')}
                   </Text>
                 </View>
               )}
@@ -257,7 +259,7 @@ const LocationDetailScreen: React.FC<LocationDetailScreenProps> = ({
           <View style={styles.emptyContainer}>
             <Ionicons name="alert-circle-outline" size={64} color="#999" />
             <Text style={styles.noDetailsText}>
-              No Location Details Available
+              {t('locationDetail.noLocationInfo')}
             </Text>
           </View>
         )}

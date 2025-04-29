@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { VITE_REASSIGN_STAFF_TASK_ASSIGNMENT} from '@env';
 import instance from '../../service/Auth';
+import { useTranslation } from 'react-i18next';
 
 type StaffInspectionListScreenRouteProp = RouteProp<RootStackParamList, 'StaffInspectionList'>;
 type StaffInspectionListScreenNavigationProp = StackNavigationProp<RootStackParamList, 'StaffInspectionList'>;
@@ -32,6 +33,7 @@ type Props = {
 };
 
 const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { t } = useTranslation();
   const { taskAssignmentId, taskDescription } = route.params;
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -143,16 +145,16 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
       try {
         await TaskService.updateStatusAndCreateWorklog(selectedInspection?.task_assignment_id || '', 'Confirmed');
         showMessage({
-          message: 'Success',
-          description: 'Task status has been updated successfully',
+          message: t('common.success'),
+          description: t('staffInspectionList.statusUpdateSuccess'),
           type: 'success',
           duration: 3000,
         });
         navigation.goBack();
       } catch (error) {
         showMessage({
-          message: 'Error',
-          description: 'Failed to update task status',
+          message: t('common.error'),
+          description: t('staffInspectionList.statusUpdateFailed'),
           type: 'danger',
           duration: 3000,
         });
@@ -163,8 +165,8 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
   const handleReassign = async () => {
     if (!reassignReason.trim()) {
       showMessage({
-        message: 'Error',
-        description: 'Please enter a reason for reassignment',
+        message: t('common.error'),
+        description: t('staffInspectionList.enterReassignReason'),
         type: 'warning',
         duration: 3000,
       });
@@ -196,8 +198,8 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
     } catch (error) {
       console.error('Error fetching employees:', error);
       showMessage({
-        message: 'Error',
-        description: 'Failed to load available employees',
+        message: t('common.error'),
+        description: t('staffInspectionList.failedLoadEmployees'),
         type: 'danger',
         duration: 3000,
       });
@@ -209,8 +211,8 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
   const handleEmployeeSelect = async () => {
     if (!selectedEmployeeId) {
       showMessage({
-        message: 'Error',
-        description: 'Please select an employee',
+        message: t('common.error'),
+        description: t('staffInspectionList.selectEmployee'),
         type: 'warning',
         duration: 3000,
       });
@@ -224,8 +226,8 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
       });
 
       showMessage({
-        message: 'Success',
-        description: 'Task has been reassigned successfully',
+        message: t('common.success'),
+        description: t('staffInspectionList.reassignSuccess'),
         type: 'success',
         duration: 3000,
       });
@@ -238,15 +240,15 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
       if (error.response && error.response.status === 400 && 
           error.response.data.message.includes('New employee is the same as the old employee')) {
         showMessage({
-          message: 'Error',
-          description: 'Error reassigning task assignment: New employee is the same as the old employee please choose another employee',
+          message: t('common.error'),
+          description: t('staffInspectionList.sameEmployeeError'),
           type: 'danger',
           duration: 4000,
         });
       } else {
         showMessage({
-          message: 'Error',
-          description: 'Failed to reassign task',
+          message: t('common.error'),
+          description: t('staffInspectionList.reassignFailed'),
           type: 'danger',
           duration: 3000,
         });
@@ -260,9 +262,6 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
       onPress={() => handleInspectionPress(item)}
     >
       <View style={styles.inspectionHeader}>
-        <Text style={styles.inspectionId} numberOfLines={1}>
-          ID: {item.inspection_id.substring(0, 8)}...
-        </Text>
         <Text style={styles.totalCost}>
           {parseInt(item.total_cost) > 0 ? `${item.total_cost} VND` : 'No cost'}
         </Text>
@@ -295,12 +294,12 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
   const renderEmptyList = () => (
     <View style={styles.emptyContainer}>
       <Ionicons name="document-text-outline" size={60} color="#CCCCCC" />
-      <Text style={styles.emptyText}>No inspections found for this task</Text>
+      <Text style={styles.emptyText}>{t('staffInspectionList.noInspections')}</Text>
       <TouchableOpacity 
         style={styles.createButton}
         onPress={() => navigation.goBack()}
       >
-        <Text style={styles.createButtonText}>Go Back</Text>
+        <Text style={styles.createButtonText}>{t('common.goBack')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -314,7 +313,7 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Staff Inspections</Text>
+        <Text style={styles.headerTitle}>{t('staffInspectionList.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
       
@@ -322,9 +321,7 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
         <Text style={styles.taskTitle} numberOfLines={2}>
           {taskDescription}
         </Text>
-        <Text style={styles.taskId}>
-          Task ID: {taskAssignmentId.substring(0, 8)}...
-        </Text>
+        
       </View>
 
       {loading && !refreshing ? (
@@ -338,7 +335,7 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
             style={styles.retryButton}
             onPress={fetchInspections}
           >
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -359,7 +356,7 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
                 style={styles.changeStatusButton}
                 onPress={() => handleChangeStatus(inspections[0])}
               >
-                <Text style={styles.changeStatusButtonText}>Change Status</Text>
+                <Text style={styles.changeStatusButtonText}>{t('staffInspectionList.changeStatus')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -377,24 +374,24 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
         style={styles.modal}
       >
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Select Action</Text>
+          <Text style={styles.modalTitle}>{t('staffInspectionList.selectAction')}</Text>
           <TouchableOpacity
             style={styles.modalButton}
             onPress={() => handleStatusSelect('Reassigned')}
           >
-            <Text style={styles.modalButtonText}>Reassigned</Text>
+            <Text style={styles.modalButtonText}>{t('staffInspectionList.reassign')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.modalButton}
             onPress={() => handleStatusSelect('Confirmed')}
           >
-            <Text style={styles.modalButtonText}>Confirmed</Text>
+            <Text style={styles.modalButtonText}>{t('staffInspectionList.confirm')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.modalButton, styles.cancelButton]}
             onPress={() => setShowStatusModal(false)}
           >
-            <Text style={styles.modalButtonText}>Cancel</Text>
+            <Text style={styles.modalButtonText}>{t('common.cancel')}</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -410,12 +407,12 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
         style={styles.modal}
       >
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Enter Reassignment Reason</Text>
+          <Text style={styles.modalTitle}>{t('staffInspectionList.enterReassignReason')}</Text>
           <TextInput
             style={styles.reasonInput}
             multiline
             numberOfLines={4}
-            placeholder="Enter the reason for reassignment..."
+            placeholder={t('staffInspectionList.reassignReasonPlaceholder')}
             value={reassignReason}
             onChangeText={setReassignReason}
           />
@@ -423,7 +420,7 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
             style={styles.modalButton}
             onPress={handleReassign}
           >
-            <Text style={styles.modalButtonText}>Submit</Text>
+            <Text style={styles.modalButtonText}>{t('common.submit')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.modalButton, styles.cancelButton]}
@@ -432,7 +429,7 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
               setReassignReason('');
             }}
           >
-            <Text style={styles.modalButtonText}>Cancel</Text>
+            <Text style={styles.modalButtonText}>{t('common.cancel')}</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -448,7 +445,7 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
         style={styles.modal}
       >
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Chọn nhân viên mới</Text>
+          <Text style={styles.modalTitle}>{t('staffInspectionList.selectNewEmployee')}</Text>
           
           {loadingEmployees ? (
             <ActivityIndicator size="large" color="#B77F2E" />
@@ -475,7 +472,7 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
                 style={styles.modalButton}
                 onPress={handleEmployeeSelect}
               >
-                <Text style={styles.modalButtonText}>Xác nhận</Text>
+                <Text style={styles.modalButtonText}>{t('common.confirm')}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -485,7 +482,7 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
                   setSelectedEmployeeId('');
                 }}
               >
-                <Text style={styles.modalButtonText}>Hủy</Text>
+                <Text style={styles.modalButtonText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
             </>
           )}

@@ -13,6 +13,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useNavigation } from "@react-navigation/native";
 import { getUserCrackReports } from "../service/Auth";
+import { useTranslation } from "react-i18next";
 
 const MyReportScreen = () => {
   const [reports, setReports] = useState<any[]>([]);
@@ -20,6 +21,7 @@ const MyReportScreen = () => {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const navigation = useNavigation();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const loadReports = async () => {
@@ -57,7 +59,8 @@ const MyReportScreen = () => {
           setReports([]);
         }
       } catch (error) {
-        console.error("Error loading crack reports:", error);
+        // Tắt báo lỗi trong console
+        // console.error("Error loading crack reports:", error);
         setReports([]);
       } finally {
         setLoading(false);
@@ -90,6 +93,11 @@ const MyReportScreen = () => {
     }
   };
 
+  // Translate status
+  const getTranslatedStatus = (status: string) => {
+    return t(`myReport.status.${status}`);
+  };
+
   // Get filtered reports based on status filter
   const filteredReports = statusFilter
     ? reports.filter(report => report.status === statusFilter)
@@ -106,7 +114,7 @@ const MyReportScreen = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>My Reports ({reports.length})</Text>
+        <Text style={styles.title}>{t('myReport.title')} ({reports.length})</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity 
             style={styles.filterButton}
@@ -114,14 +122,14 @@ const MyReportScreen = () => {
           >
             <Icon name="filter-list" size={20} color="#B77F2E" />
             <Text style={styles.filterText}>
-              {statusFilter ? `${statusFilter}` : "Filter"}
+              {statusFilter ? getTranslatedStatus(statusFilter) : t('myReport.filter')}
             </Text>
           </TouchableOpacity>
           
           {reports.length > 0 && (
             <TouchableOpacity onPress={handleClearAll} style={styles.clearBtn}>
               <Icon name="delete" size={20} color="#B77F2E" />
-              <Text style={styles.clearText}>Clear all</Text>
+              <Text style={styles.clearText}>{t('myReport.clearAll')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -130,7 +138,7 @@ const MyReportScreen = () => {
       {statusFilter && (
         <View style={styles.activeFilterContainer}>
           <Text style={styles.activeFilterText}>
-            Filtered by: {statusFilter}
+            {t('myReport.filteredBy')}: {getTranslatedStatus(statusFilter)}
           </Text>
           <TouchableOpacity onPress={() => setStatusFilter(null)}>
             <Icon name="cancel" size={20} color="#B77F2E" />
@@ -146,15 +154,15 @@ const MyReportScreen = () => {
           />
           <Text style={styles.emptyText}>
             {statusFilter 
-              ? `No reports with status '${statusFilter}'` 
-              : "No reports yet."}
+              ? `${t('myReport.noReportsFiltered')} '${getTranslatedStatus(statusFilter)}'` 
+              : t('myReport.noReports')}
           </Text>
           {statusFilter && (
             <TouchableOpacity 
               style={styles.clearFilterButton}
               onPress={() => setStatusFilter(null)}
             >
-              <Text style={styles.clearFilterText}>Clear Filter</Text>
+              <Text style={styles.clearFilterText}>{t('myReport.clearFilter')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -180,7 +188,7 @@ const MyReportScreen = () => {
                 </View>
                 <View style={[styles.statusTag, { backgroundColor: statusStyle.backgroundColor }]}>
                   <Text style={[styles.statusText, { color: statusStyle.textColor }]}>
-                    {item.status}
+                    {getTranslatedStatus(item.status)}
                   </Text>
                 </View>
               </View>
@@ -206,98 +214,45 @@ const MyReportScreen = () => {
         })
       )}
 
-      {/* Filter Dropdown Modal */}
       <Modal
         visible={showFilterDropdown}
         transparent={true}
         animationType="fade"
         onRequestClose={() => setShowFilterDropdown(false)}
       >
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.modalOverlay}
-          activeOpacity={0.5}
+          activeOpacity={1}
           onPress={() => setShowFilterDropdown(false)}
         >
-          <View 
-            style={styles.dropdownContainer} 
-            onStartShouldSetResponder={() => true}
-            onTouchEnd={(e) => e.stopPropagation()}
-          >
-            <Text style={styles.dropdownTitle}>Filter by Status</Text>
-            
+          <View style={styles.modalContent}>
             <TouchableOpacity
-              style={[styles.dropdownItem, statusFilter === null && styles.dropdownItemActive]}
-              onPress={() => {
-                setStatusFilter(null);
-                setShowFilterDropdown(false);
-              }}
-            >
-              <Text style={[styles.dropdownItemText, statusFilter === null && styles.dropdownItemTextActive]}>
-                All
-              </Text>
-              {statusFilter === null && <Icon name="check" size={18} color="#B77F2E" />}
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.dropdownItem, statusFilter === 'Pending' && styles.dropdownItemActive]}
-              onPress={() => {
-                setStatusFilter('Pending');
-                setShowFilterDropdown(false);
-              }}
-            >
-              <Text style={[styles.dropdownItemText, statusFilter === 'Pending' && styles.dropdownItemTextActive]}>
-                Pending
-              </Text>
-              {statusFilter === 'Pending' && <Icon name="check" size={18} color="#B77F2E" />}
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.dropdownItem, statusFilter === 'InProgress' && styles.dropdownItemActive]}
+              style={styles.filterOption}
               onPress={() => {
                 setStatusFilter('InProgress');
                 setShowFilterDropdown(false);
               }}
             >
-              <Text style={[styles.dropdownItemText, statusFilter === 'InProgress' && styles.dropdownItemTextActive]}>
-                In Progress
-              </Text>
-              {statusFilter === 'InProgress' && <Icon name="check" size={18} color="#B77F2E" />}
+              <Text style={styles.filterOptionText}>{t('myReport.status.InProgress')}</Text>
             </TouchableOpacity>
-            
             <TouchableOpacity
-              style={[styles.dropdownItem, statusFilter === 'Reviewing' && styles.dropdownItemActive]}
+              style={styles.filterOption}
               onPress={() => {
                 setStatusFilter('Reviewing');
                 setShowFilterDropdown(false);
               }}
             >
-              <Text style={[styles.dropdownItemText, statusFilter === 'Reviewing' && styles.dropdownItemTextActive]}>
-                Reviewing
-              </Text>
-              {statusFilter === 'Reviewing' && <Icon name="check" size={18} color="#B77F2E" />}
+              <Text style={styles.filterOptionText}>{t('myReport.status.Reviewing')}</Text>
             </TouchableOpacity>
-            
             <TouchableOpacity
-              style={[styles.dropdownItem, statusFilter === 'Completed' && styles.dropdownItemActive]}
+              style={styles.filterOption}
               onPress={() => {
                 setStatusFilter('Completed');
                 setShowFilterDropdown(false);
               }}
             >
-              <Text style={[styles.dropdownItemText, statusFilter === 'Completed' && styles.dropdownItemTextActive]}>
-                Completed
-              </Text>
-              {statusFilter === 'Completed' && <Icon name="check" size={18} color="#B77F2E" />}
+              <Text style={styles.filterOptionText}>{t('myReport.status.Completed')}</Text>
             </TouchableOpacity>
-
-            <View style={styles.dropdownFooter}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setShowFilterDropdown(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -424,7 +379,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  dropdownContainer: {
+  modalContent: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
@@ -436,12 +391,7 @@ const styles = StyleSheet.create({
     width: '80%',
     maxWidth: 300,
   },
-  dropdownTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-  dropdownItem: {
+  filterOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -449,33 +399,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
-  dropdownItemActive: {
-    backgroundColor: '#FFF3E0',
-    borderRadius: 8,
-  },
-  dropdownItemText: {
+  filterOptionText: {
     color: '#333',
     fontWeight: '500',
     fontSize: 16,
-  },
-  dropdownItemTextActive: {
-    color: '#B77F2E',
-    fontWeight: 'bold',
-  },
-  dropdownFooter: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 10,
-  },
-  cancelButton: {
-    backgroundColor: '#B77F2E',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  cancelButtonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
   },
   clearFilterButton: {
     backgroundColor: '#B77F2E',

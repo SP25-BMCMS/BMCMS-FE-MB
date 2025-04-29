@@ -257,8 +257,16 @@ export const getUserCrackReports = async (userId: string) => {
     );
     return response.data;
   } catch (error) {
-    console.error('Error getting user crack reports:', error);
-    throw error;
+    // Tắt báo lỗi
+    // console.error('Error getting user crack reports:', error);
+    // Trả về một đối tượng có cấu trúc giống với kết quả thành công
+    return {
+      isSuccess: false,
+      message: "Could not fetch reports",
+      data: {
+        crackReports: []
+      }
+    };
   }
 };
 

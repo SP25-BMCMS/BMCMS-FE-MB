@@ -7,38 +7,32 @@ import StaffAssignScreen from '../../screen/StaffAssignScreen';
 import { StaffBottomTabParamList } from '../../types';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 
 const Tab = createBottomTabNavigator<StaffBottomTabParamList>();
 
 const StaffTabNavigator = () => {
   const [notificationCount, setNotificationCount] = useState(0);
-  const [isLeader, setIsLeader] = useState(true); // Default to true to ensure the tab is shown initially
+  const [isLeader, setIsLeader] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
-    const checkUserPosition = async () => {
+    const checkUserRole = async () => {
       try {
-        const userString = await AsyncStorage.getItem('userData');
-        if (!userString) return;
+        const userDataStr = await AsyncStorage.getItem('userData');
+        if (!userDataStr) return;
         
-        const userData = JSON.parse(userString);
-        console.log('User data position:', userData?.userDetails?.position);
-        
-        // Check if position name includes "Leader", case insensitive
+        const userData = JSON.parse(userDataStr);
         const positionName = userData?.userDetails?.position?.positionName || '';
         const isUserLeader = positionName.toLowerCase().includes('leader');
-        
-        console.log('Position name:', positionName);
-        console.log('Is leader?', isUserLeader);
         
         setIsLeader(isUserLeader);
       } catch (error) {
         console.error('Error checking user position:', error);
-        // If error, default to showing the tab
-        setIsLeader(true);
       }
     };
     
-    checkUserPosition();
+    checkUserRole();
   }, []);
 
   const fetchNotificationCount = async () => {
@@ -51,7 +45,7 @@ const StaffTabNavigator = () => {
     }
     
     const user = JSON.parse(userString);
-    const userKey = user.username;
+    const userKey = user.id.toString(); // Staff uses id instead of phone
     const data = await AsyncStorage.getItem(`notifications_${userKey}`);
     const parsed = data ? JSON.parse(data) : [];
     setNotificationCount(parsed.length);
@@ -102,7 +96,8 @@ const StaffTabNavigator = () => {
           name="TaskAssignment" 
           component={TaskScreen}
           options={{
-            title: 'TaskAssignment'
+            title: 'TaskAssignment',
+            tabBarLabel: t('navigation.taskAssignment')
           }}
         />
       )}
@@ -110,18 +105,26 @@ const StaffTabNavigator = () => {
         name="StaffAssign" 
         component={StaffAssignScreen}
         options={{
-          title: 'Staff Assign'
+          title: 'Staff Assign',
+          tabBarLabel: t('navigation.staffAssign')
         }}
       />
       <Tab.Screen
         name="Notification"
         options={{
+          tabBarLabel: t('navigation.notification'),
           tabBarBadge: notificationCount > 0 ? notificationCount : undefined,
         }}
       >
         {() => <NotificationScreen onReadAll={resetNotificationCount} />}
       </Tab.Screen>
-      <Tab.Screen name="Account" component={AccountScreen} />
+      <Tab.Screen 
+        name="Account" 
+        component={AccountScreen} 
+        options={{
+          tabBarLabel: t('navigation.account')
+        }}
+      />
     </Tab.Navigator>
   );
 };

@@ -20,6 +20,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { VITE_CREATE_INSPECTION } from '@env';
 import { showMessage } from 'react-native-flash-message';
+import { useTranslation } from 'react-i18next';
 
 type CreateResidentInspectionScreenRouteProp = RouteProp<RootStackParamList, 'CreateResidentInspection'>;
 type CreateResidentInspectionScreenNavigationProp = StackNavigationProp<RootStackParamList>;
@@ -30,11 +31,12 @@ type Props = {
 };
 
 const CreateResidentInspectionScreen: React.FC<Props> = ({ route }) => {
+  const { t } = useTranslation();
   const { taskDetail } = route.params;
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   
   const [description, setDescription] = useState('');
-  const [pdfFile, setPdfFile] = useState<DocumentPicker.DocumentResult | null>(null);
+  const [pdfFile, setPdfFile] = useState<DocumentPicker.DocumentPickerResult | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pdfFileName, setPdfFileName] = useState<string | null>(null);
   
@@ -56,7 +58,7 @@ const CreateResidentInspectionScreen: React.FC<Props> = ({ route }) => {
       
     } catch (err) {
       console.error('Error picking document:', err);
-      Alert.alert('Error', 'Failed to pick a document. Please try again.');
+      Alert.alert(t('common.error'), t('createResidentInspection.documentPickError'));
     }
   };
   
@@ -64,7 +66,7 @@ const CreateResidentInspectionScreen: React.FC<Props> = ({ route }) => {
   const handleSubmit = async () => {
     if (!description.trim()) {
       showMessage({
-        message: 'Please add a description',
+        message: t('createResidentInspection.addDescription'),
         type: 'danger',
       });
       return;
@@ -72,7 +74,7 @@ const CreateResidentInspectionScreen: React.FC<Props> = ({ route }) => {
     
     if (!pdfFile || pdfFile.canceled) {
       showMessage({
-        message: 'Please select a PDF file',
+        message: t('createResidentInspection.selectPdf'),
         type: 'danger',
       });
       return;
@@ -114,7 +116,7 @@ const CreateResidentInspectionScreen: React.FC<Props> = ({ route }) => {
       
       if (response.data.statusCode === 201 || response.data.success) {
         showMessage({
-          message: 'Inspection created successfully',
+          message: t('createResidentInspection.success'),
           type: 'success',
         });
         
@@ -122,16 +124,16 @@ const CreateResidentInspectionScreen: React.FC<Props> = ({ route }) => {
         navigation.navigate('TaskDetail', { assignmentId: taskDetail.assignment_id });
       } else {
         showMessage({
-          message: 'Failed to create inspection',
-          description: response.data.message || 'Please try again',
+          message: t('createResidentInspection.error'),
+          description: response.data.message || t('createResidentInspection.tryAgain'),
           type: 'danger',
         });
       }
     } catch (error) {
       console.error('Error creating inspection:', error);
       showMessage({
-        message: 'Failed to create inspection',
-        description: 'An error occurred while submitting the form',
+        message: t('createResidentInspection.error'),
+        description: t('createResidentInspection.submitError'),
         type: 'danger',
       });
     } finally {
@@ -148,31 +150,31 @@ const CreateResidentInspectionScreen: React.FC<Props> = ({ route }) => {
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Resident Inspection</Text>
+        <Text style={styles.headerTitle}>{t('createResidentInspection.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
       
       <ScrollView style={styles.scrollView}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Task Information</Text>
+          <Text style={styles.sectionTitle}>{t('createResidentInspection.taskInfo')}</Text>
           <View style={styles.infoContainer}>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Description:</Text>
+              <Text style={styles.infoLabel}>{t('createResidentInspection.description')}:</Text>
               <Text style={styles.infoValue}>{taskDetail.description}</Text>
             </View>
           </View>
         </View>
         
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Inspection Details</Text>
+          <Text style={styles.sectionTitle}>{t('createResidentInspection.inspectionDetails')}</Text>
           
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Description *</Text>
+            <Text style={styles.inputLabel}>{t('createResidentInspection.description')} *</Text>
             <TextInput
               style={styles.textInput}
               value={description}
               onChangeText={setDescription}
-              placeholder="Enter inspection description"
+              placeholder={t('createResidentInspection.enterDescription')}
               multiline
               numberOfLines={4}
               placeholderTextColor="#999"
@@ -180,14 +182,14 @@ const CreateResidentInspectionScreen: React.FC<Props> = ({ route }) => {
           </View>
           
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>PDF Document *</Text>
+            <Text style={styles.inputLabel}>{t('createResidentInspection.pdfDocument')} *</Text>
             <TouchableOpacity 
               style={styles.documentPicker}
               onPress={handleSelectPdf}
             >
               <Ionicons name="document-outline" size={24} color="#B77F2E" />
               <Text style={styles.documentPickerText}>
-                {pdfFileName ? pdfFileName : 'Select PDF Document'}
+                {pdfFileName ? pdfFileName : t('createResidentInspection.selectPdfDocument')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -205,7 +207,7 @@ const CreateResidentInspectionScreen: React.FC<Props> = ({ route }) => {
             {isSubmitting ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
-              <Text style={styles.submitButtonText}>Create Inspection</Text>
+              <Text style={styles.submitButtonText}>{t('createResidentInspection.createInspection')}</Text>
             )}
           </TouchableOpacity>
         </View>

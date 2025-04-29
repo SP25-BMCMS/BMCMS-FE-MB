@@ -12,6 +12,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showMessage } from 'react-native-flash-message';
 import { useQuery, useQueryClient, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -38,6 +39,7 @@ interface EmployeeTaskAssignment {
 }
 
 const StaffAssignScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const [tasks, setTasks] = useState<TaskWithAssignments[]>([]);
   const [employeeTasks, setEmployeeTasks] = useState<EmployeeTaskAssignment[]>([]);
@@ -266,21 +268,25 @@ const StaffAssignScreen = () => {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'Pending':
-        return 'Pending';
+        return t('inspectionDetail.statusTypes.Pending');
       case 'InProgress':
-        return 'In Progress';
+        return t('inspectionDetail.statusTypes.InProgress');
       case 'Completed':
-        return 'Completed';
+        return t('inspectionDetail.statusTypes.Completed');
       case 'Canceled':
-        return 'Canceled';
+        return t('inspectionDetail.statusTypes.Canceled');
       case 'Verified':
-        return 'Verified';
+        return t('inspectionDetail.statusTypes.Verified');
       case 'Unverified':
-        return 'Unverified';
+        return t('inspectionDetail.statusTypes.Unverified');
       case 'InFixing':
-        return 'In Fixing';
+        return t('inspectionDetail.statusTypes.InFixing');
       case 'Reassigned':
-        return 'Reassigned';
+        return t('inspectionDetail.statusTypes.Reassigned');
+      case 'Fixed':
+        return t('inspectionDetail.statusTypes.Fixed');
+      case 'Confirmed':
+        return t('inspectionDetail.statusTypes.Confirmed');
       default:
         return status;
     }
@@ -308,11 +314,11 @@ const StaffAssignScreen = () => {
         
         <View style={styles.taskInfo}>
           <Text style={styles.taskInfoText}>
-            <Text style={styles.taskInfoLabel}>Task: </Text>
+            <Text style={styles.taskInfoLabel}>{t('screens.staffAssign.task')}: </Text>
             {assignment.task.description}
           </Text>
           <Text style={styles.taskInfoText}>
-            <Text style={styles.taskInfoLabel}>Created: </Text>
+            <Text style={styles.taskInfoLabel}>{t('screens.staffAssign.created')}: </Text>
             {formatDate(assignment.created_at)}
           </Text>
         </View>
@@ -321,19 +327,15 @@ const StaffAssignScreen = () => {
   };
 
   const renderTaskAssignmentItem = (assignment: TaskAssignment) => {
-    // Không hiển thị những task assignment của chính leader (employee_id === userId)
     if (assignment.employee_id === userId) {
       return null;
     }
     
-    // Sử dụng hook để lấy tên người dùng từ employee_id
     const { 
-      data: userName = `User ${assignment.employee_id.substring(0, 8)}`, 
-      isLoading: isLoadingUserInfo,
-      isError
+      data: userName = '', 
+      isLoading: isLoadingUserInfo
     } = useUserInfo(assignment.employee_id);
     
-    // Kiểm tra xem đã có trong cache
     const userFromCache = userCache[assignment.employee_id];
     
     return (
@@ -353,25 +355,17 @@ const StaffAssignScreen = () => {
         
         <View style={styles.taskInfo}>
           <Text style={styles.taskInfoText}>
-            <Text style={styles.taskInfoLabel}>Assignment ID: </Text>
-            {assignment.assignment_id.substring(0, 8)}...
-          </Text>
-          <Text style={styles.taskInfoText}>
-            <Text style={styles.taskInfoLabel}>Assigned to: </Text>
+            <Text style={styles.taskInfoLabel}>{t('screens.staffAssign.assignedTo')}: </Text>
             {isLoadingUserInfo && !userFromCache ? (
               <View style={{flexDirection: 'row', alignItems: 'center'}}>
                 <ActivityIndicator size="small" color="#B77F2E" style={{marginRight: 5}} />
-                <Text>{assignment.employee_id.substring(0, 8)}...</Text>
               </View>
             ) : (
               userName
             )}
-            {!isError && !isLoadingUserInfo && (
-              <Text style={styles.idReference}> ({assignment.employee_id.substring(0, 8)}...)</Text>
-            )}
           </Text>
           <Text style={styles.taskInfoText}>
-            <Text style={styles.taskInfoLabel}>Created: </Text>
+            <Text style={styles.taskInfoLabel}>{t('screens.staffAssign.created')}: </Text>
             {formatDate(assignment.created_at)}
           </Text>
         </View>
@@ -456,55 +450,46 @@ const StaffAssignScreen = () => {
 
   const handleChangeStatusToConfirm = async (taskId: string, assignments: TaskAssignment[]) => {
     try {
-      // Hiển thị loading state nếu cần
       setLoading(true);
       
-      // Hiển thị dialog xác nhận
       Alert.alert(
-        "Confirm Status Change",
-        "Are you sure you want to change the status of this main task to Confirmed?",
+        t('screens.staffAssign.changeStatusToConfirm'),
+        t('screens.staffAssign.confirmStatusChange'),
         [
           {
-            text: "Cancel",
+            text: t('common.cancel'),
             style: "cancel",
             onPress: () => setLoading(false)
           },
           {
-            text: "Confirm",
+            text: t('common.submit'),
             onPress: async () => {
               try {
-                // Lấy tất cả task assignments của user hiện tại
                 const response = await TaskService.getTaskAssignmentsByUserId();
                 
-                // Tìm task assignment lớn liên quan đến taskId hiện tại
                 const mainTaskAssignment = response.data.find(
                   assignment => assignment.task_id === taskId && assignment.employee_id === userId
                 );
                 
                 if (mainTaskAssignment) {
-                  // Gọi API thay đổi trạng thái của task assignment chính và tạo worklog
                   await TaskService.updateStatusAndCreateWorklog(mainTaskAssignment.assignment_id, 'Confirmed');
                   
-                  // Cập nhật trạng thái hiển thị button cho task này
                   setButtonVisibility(prev => ({...prev, [taskId]: false}));
                   
-                  // Hiển thị thông báo thành công
                   showMessage({
-                    message: "Success",
-                    description: "Main task has been confirmed successfully",
+                    message: t('common.success'),
+                    description: t('screens.staffAssign.mainTaskConfirmed'),
                     type: "success",
                     duration: 3000
                   });
                   
-                  // Fetch lại dữ liệu nhưng button đã được ẩn ngay lập tức
                   fetchLeaderTaskAssignments();
                   
                   setLoading(false);
                 } else {
-                  // Nếu không tìm thấy task assignment chính
                   showMessage({
-                    message: "Error",
-                    description: "Could not find the main task assignment for this task",
+                    message: t('common.error'),
+                    description: t('screens.staffAssign.mainTaskAssignmentNotFound'),
                     type: "danger",
                     duration: 3000
                   });
@@ -513,8 +498,8 @@ const StaffAssignScreen = () => {
               } catch (error) {
                 console.error('Error changing task status:', error);
                 showMessage({
-                  message: "Error",
-                  description: "Failed to update task status. Please try again.",
+                  message: t('common.error'),
+                  description: t('screens.staffAssign.failedToUpdateTaskStatus'),
                   type: "danger",
                   duration: 3000
                 });
@@ -529,8 +514,8 @@ const StaffAssignScreen = () => {
       setLoading(false);
       
       showMessage({
-        message: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        message: t('common.error'),
+        description: t('screens.staffAssign.unexpectedError'),
         type: "danger",
         duration: 3000
       });
@@ -658,7 +643,7 @@ const StaffAssignScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.headerTitle}>Staff Assign</Text>
+      <Text style={styles.headerTitle}>{t('screens.staffAssign.staffAssign')}</Text>
       
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
@@ -671,7 +656,7 @@ const StaffAssignScreen = () => {
             style={styles.retryButton} 
             onPress={isLeader ? fetchLeaderTaskAssignments : fetchEmployeeTaskAssignments}
           >
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryButtonText}>{t('screens.home.retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -686,7 +671,7 @@ const StaffAssignScreen = () => {
             >
               {employeeTasks.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>No tasks assigned to you yet.</Text>
+                  <Text style={styles.emptyText}>{t('screens.staffAssign.noStaffAssigned')}</Text>
                 </View>
               ) : (
                 employeeTasks.map(renderEmployeeTaskItem)
@@ -696,7 +681,7 @@ const StaffAssignScreen = () => {
             // Hiển thị danh sách task của leader với sticky header
             tasks.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No team assignments available.</Text>
+                <Text style={styles.emptyText}>{t('screens.staffAssign.noTeamAssignments')}</Text>
               </View>
             ) : (
               <SectionList

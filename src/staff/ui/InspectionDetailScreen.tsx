@@ -32,6 +32,7 @@ import { StaffService, StaffInfo } from "../../service/Staff";
 import { CrackRecordService } from "../../service/CrackRecord";
 import { Picker } from "@react-native-picker/picker";
 import { showMessage } from "react-native-flash-message";
+import { useTranslation } from 'react-i18next';
 
 type InspectionDetailScreenRouteProp = RouteProp<
   RootStackParamList,
@@ -57,7 +58,17 @@ type Props = {
 
 const windowWidth = Dimensions.get("window").width;
 
+interface CrackRecordData {
+  locationDetailId: string;
+  crackType: "Vertical" | "Horizontal" | "Diagonal" | "Structural" | "NonStructural" | "Other";
+  length: string;
+  width: string;
+  depth: string;
+  description: string;
+}
+
 const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { t } = useTranslation();
   const { inspection } = route.params;
   const [inspectionDetail, setInspectionDetail] = useState<
     InspectionDetailResponse["data"] | null
@@ -69,12 +80,12 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [selectedLocation, setSelectedLocation] =
     useState<LocationDetail | null>(null);
   const [crackModalVisible, setCrackModalVisible] = useState<boolean>(false);
-  const [crackRecordData, setCrackRecordData] = useState<CrackRecordPayload>({
+  const [crackRecordData, setCrackRecordData] = useState<CrackRecordData>({
     locationDetailId: "",
     crackType: "Vertical",
-    length: 0,
-    width: 0,
-    depth: 0,
+    length: '',
+    width: '',
+    depth: '',
     description: "",
   });
   const [crackRecordModalVisible, setCrackRecordModalVisible] =
@@ -217,9 +228,9 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       setCrackRecordData({
         locationDetailId: "",
         crackType: "Vertical",
-        length: 0,
-        width: 0,
-        depth: 0,
+        length: '',
+        width: '',
+        depth: '',
         description: "",
       });
       
@@ -334,48 +345,70 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     setCrackRecordData({
       locationDetailId: "",
       crackType: "Vertical",
-      length: 0,
-      width: 0,
-      depth: 0,
+      length: '',
+      width: '',
+      depth: '',
       description: "",
     });
   };
 
   // Submit crack record form
-  const handleSubmitCrackRecord = () => {
-    // Validate fields
-    if (
-      crackRecordData.length <= 0 ||
-      crackRecordData.width <= 0 ||
-      crackRecordData.depth <= 0
-    ) {
+  
+  const handleSubmitCrackRecord = async () => {
+    try {
+      //@ts-ignore
+      const submissionData: CrackRecordPayload = {
+        ...crackRecordData,
+        length: parseFloat(crackRecordData.length) || 0,
+        width: parseFloat(crackRecordData.width) || 0,
+        depth: parseFloat(crackRecordData.depth) || 0,
+      };
+
+      // Validate fields
+      if (
+        submissionData.length <= 0 ||
+        submissionData.width <= 0 ||
+        submissionData.depth <= 0
+      ) {
+        showMessage({
+          message: "Validation Error",
+          description: "All measurements must be greater than 0",
+          type: "warning",
+          icon: "warning",
+          duration: 3000,
+          backgroundColor: "#FF9500",
+          color: "#FFFFFF",
+        });
+        return;
+      }
+
+      if (!submissionData.description.trim()) {
+        showMessage({
+          message: "Validation Error",
+          description: "Description is required",
+          type: "warning",
+          icon: "warning",
+          duration: 3000,
+          backgroundColor: "#FF9500",
+          color: "#FFFFFF",
+        });
+        return;
+      }
+
+      // Submit the crack record
+      createRecordMutation.mutate(submissionData);
+    } catch (error) {
+      console.error("Error submitting crack record:", error);
       showMessage({
-        message: "Validation Error",
-        description: "All measurements must be greater than 0",
-        type: "warning",
-        icon: "warning",
+        message: "Error",
+        description: "Failed to submit crack record",
+        type: "danger",
+        icon: "danger",
         duration: 3000,
-        backgroundColor: "#FF9500",
+        backgroundColor: "#FF3B30",
         color: "#FFFFFF",
       });
-      return;
     }
-
-    if (!crackRecordData.description.trim()) {
-      showMessage({
-        message: "Validation Error",
-        description: "Description is required",
-        type: "warning",
-        icon: "warning",
-        duration: 3000,
-        backgroundColor: "#FF9500",
-        color: "#FFFFFF",
-      });
-      return;
-    }
-
-    // Submit the crack record
-    createRecordMutation.mutate(crackRecordData);
   };
 
   // Function to handle opening crack record modal
@@ -412,6 +445,22 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     navigation.navigate("LocationDetail", { locationDetailId: locationId });
   };
 
+  // Add this validation function near the top of the component
+  const validateFloatInput = (value: string) => {
+    if (value === '') return true;
+    const floatRegex = /^\d*\.?\d{0,2}$/;
+    return floatRegex.test(value);
+  };
+
+  const handleFloatInputChange = (value: string, field: 'length' | 'width' | 'depth') => {
+    if (validateFloatInput(value)) {
+      setCrackRecordData(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -422,12 +471,12 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           >
             <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Inspection Details</Text>
+          <Text style={styles.headerTitle}>{t('inspectionDetail.title')}</Text>
           <View style={{ width: 24 }} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#B77F2E" />
-          <Text style={styles.loadingText}>Loading inspection details...</Text>
+          <Text style={styles.loadingText}>{t('inspectionDetail.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -449,6 +498,53 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const hasMoreLocations = hasLocations && locationData.length > 3;
 
+  // Helper function to get status color
+  const getStatusColor = (status: string): string => {
+    switch (status) {
+      case t('inspectionDetail.statusTypes.Pending'):
+      case 'Pending':
+        return '#FF9500';
+      case t('inspectionDetail.statusTypes.Approved'):
+      case 'Approved':
+        return '#4CD964';
+      case t('inspectionDetail.statusTypes.Rejected'):
+      case 'Rejected':
+        return '#FF3B30';
+      case t('inspectionDetail.statusTypes.NoPending'):
+      case 'NoPending':
+        return '#007AFF';
+      case t('inspectionDetail.statusTypes.InProgress'):
+      case 'InProgress':
+        return '#5856D6';
+      case t('inspectionDetail.statusTypes.Completed'):
+      case 'Completed':
+        return '#4CD964';
+      case t('inspectionDetail.statusTypes.Fixed'):
+      case 'Fixed':
+        return '#4CD964';
+      case t('inspectionDetail.statusTypes.Reassigned'):
+      case 'Reassigned':
+        return '#FF9500';
+      case t('inspectionDetail.statusTypes.InFixing'):
+      case 'InFixing':
+        return '#5AC8FA';
+      case t('inspectionDetail.statusTypes.Verified'):
+      case 'Verified':
+        return '#4CD964';
+      case t('inspectionDetail.statusTypes.Confirmed'):
+      case 'Confirmed':
+        return '#4CD964';
+      case t('inspectionDetail.statusTypes.Unverified'):
+      case 'Unverified':
+        return '#FF9500';
+      case t('inspectionDetail.statusTypes.Reviewing'):
+      case 'Reviewing':
+        return '#5856D6';
+      default:
+        return '#5AC8FA';
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -458,19 +554,19 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Inspection Details</Text>
+        <Text style={styles.headerTitle}>{t('inspectionDetail.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.scrollView}>
-        {/* Task Information Card - Moved to top */}
+        {/* Task Information Card */}
         {inspectionDetail?.taskAssignment?.task && (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Task Information</Text>
+            <Text style={styles.cardTitle}>{t('inspectionDetail.taskInfo')}</Text>
             <View style={styles.divider} />
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Task Status:</Text>
+              <Text style={styles.infoLabel}>{t('inspectionDetail.taskStatus')}:</Text>
               <View
                 style={[
                   styles.statusBadge,
@@ -482,20 +578,20 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 ]}
               >
                 <Text style={styles.statusText}>
-                  {inspectionDetail.taskAssignment.task.status}
+                  {t(`inspectionDetail.statusTypes.${inspectionDetail.taskAssignment.task.status}`) || inspectionDetail.taskAssignment.task.status}
                 </Text>
               </View>
             </View>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Task Description:</Text>
+              <Text style={styles.infoLabel}>{t('inspectionDetail.taskDescription')}:</Text>
               <Text style={styles.infoValue}>
                 {inspectionDetail.taskAssignment.task.description}
               </Text>
             </View>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Inspected By:</Text>
+              <Text style={styles.infoLabel}>{t('inspectionDetail.inspectedBy')}:</Text>
               <Text style={styles.infoValue}>
                 {staffInfo?.username || currentInspection.inspected_by}
               </Text>
@@ -506,11 +602,11 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         {/* Crack Information Card */}
         {inspectionDetail?.crackInfo?.data[0] && (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Crack Information</Text>
+            <Text style={styles.cardTitle}>{t('inspectionDetail.crackInfo')}</Text>
             <View style={styles.divider} />
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Status:</Text>
+              <Text style={styles.infoLabel}>{t('inspectionDetail.status')}:</Text>
               <View
                 style={[
                   styles.statusBadge,
@@ -522,28 +618,28 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 ]}
               >
                 <Text style={styles.statusText}>
-                  {inspectionDetail.crackInfo.data[0].status}
+                  {t(`inspectionDetail.statusTypes.${inspectionDetail.crackInfo.data[0].status}`) || inspectionDetail.crackInfo.data[0].status}
                 </Text>
               </View>
             </View>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Reported By:</Text>
+              <Text style={styles.infoLabel}>{t('inspectionDetail.reportedBy')}:</Text>
               <Text style={styles.infoValue}>
                 {inspectionDetail.crackInfo.data[0].reportedBy.username}
               </Text>
             </View>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Verified By:</Text>
+              <Text style={styles.infoLabel}>{t('inspectionDetail.verifiedBy')}:</Text>
               <Text style={styles.infoValue}>
                 {inspectionDetail.crackInfo.data[0].verifiedBy?.username ||
-                  "Not verified"}
+                  t('inspectionDetail.notVerified')}
               </Text>
             </View>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Description:</Text>
+              <Text style={styles.infoLabel}>{t('inspectionDetail.description')}:</Text>
               <Text style={styles.infoValue}>
                 {inspectionDetail.crackInfo.data[0].description}
               </Text>
@@ -553,37 +649,34 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
         {/* Inspection Details Card */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Inspection Details</Text>
+          <Text style={styles.cardTitle}>{t('inspectionDetail.inspectionDetails')}</Text>
           <View style={styles.divider} />
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Created:</Text>
+            <Text style={styles.infoLabel}>{t('inspectionDetail.created')}:</Text>
             <Text style={styles.infoValue}>
               {formatDate(currentInspection.created_at)}
             </Text>
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Updated:</Text>
+            <Text style={styles.infoLabel}>{t('inspectionDetail.updated')}:</Text>
             <Text style={styles.infoValue}>
               {formatDate(currentInspection.updated_at)}
             </Text>
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Total Cost:</Text>
+            <Text style={styles.infoLabel}>{t('inspectionDetail.totalCost')}:</Text>
             <Text style={[styles.infoValue, styles.costValue]}>
               {parseInt(currentInspection.total_cost) > 0
-                ? `${parseInt(
-                    currentInspection.total_cost
-                  ).toLocaleString()} VND`
-                : "No cost assigned"}
+                ? `${parseInt(currentInspection.total_cost).toLocaleString()} VND`
+                : t('inspectionDetail.noCost')}
             </Text>
           </View>
           
-          {/* Add Private Asset Status */}
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Asset Type:</Text>
+            <Text style={styles.infoLabel}>{t('inspectionDetail.assetType')}:</Text>
             <View
               style={[
                 styles.statusBadge,
@@ -591,60 +684,57 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               ]}
             >
               <Text style={styles.statusText}>
-                {currentInspection.isprivateasset ? "Private Asset" : "Regular Asset"}
+                {currentInspection.isprivateasset ? t('inspectionDetail.privateAsset') : t('inspectionDetail.regularAsset')}
               </Text>
             </View>
           </View>
           
-          {/* Add Report Status */}
           {currentInspection.report_status && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Report Status:</Text>
+              <Text style={styles.infoLabel}>{t('inspectionDetail.reportStatus')}:</Text>
               <View
                 style={[
                   styles.statusBadge,
-                  { backgroundColor: getStatusColor(currentInspection.report_status) }
+                  { backgroundColor: getStatusColor(currentInspection.report_status || '') }
                 ]}
               >
                 <Text style={styles.statusText}>
-                  {currentInspection.report_status}
+                  {t(`inspectionDetail.statusTypes.${currentInspection.report_status}`) || currentInspection.report_status}
                 </Text>
               </View>
             </View>
           )}
           
-          {/* Only show Confirmed By and Reason when there is a cost */}
           {parseInt(currentInspection.total_cost) > 0 && (
             <>
-              {/* Add Confirmed By information */}
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Confirmed By:</Text>
+                <Text style={styles.infoLabel}>{t('inspectionDetail.confirmedBy')}:</Text>
                 <Text style={styles.infoValue}>
-                  {currentInspection.confirmed_by || "Not confirmed yet"}
+                  {currentInspection.confirmed_by || t('inspectionDetail.notConfirmed')}
                 </Text>
               </View>
               
-              {/* Add Manager's Reason */}
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Manager Reason:</Text>
+                <Text style={styles.infoLabel}>{t('inspectionDetail.managerReason')}:</Text>
                 <Text style={styles.infoValue}>
-                  {currentInspection.reason || "No reason by manager"}
+                  {currentInspection.reason || t('inspectionDetail.noReason')}
                 </Text>
               </View>
             </>
           )}
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Description:</Text>
+            <Text style={styles.infoLabel}>{t('inspectionDetail.description')}:</Text>
             <Text style={styles.infoValue}>
-              {currentInspection.description || "No description provided."}
+              {currentInspection.description || t('inspectionDetail.noDescription')}
             </Text>
           </View>
         </View>
-        {/* Images Card - Moved to bottom */}
+
+        {/* Images Card */}
         {imageUrls.length > 0 && (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Images ({imageUrls.length})</Text>
+            <Text style={styles.cardTitle}>{t('inspectionDetail.images')} ({imageUrls.length})</Text>
             <View style={styles.divider} />
 
             <View style={styles.imageGrid}>
@@ -664,11 +754,12 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             </View>
           </View>
         )}
+
         {/* Location Information Card */}
         <View style={styles.card}>
           <View style={styles.cardTitleContainer}>
             <Text style={styles.cardTitle}>
-              Location Information{" "}
+              {t('inspectionDetail.locationInfo')}{" "}
               {hasLocations ? `(${locationData.length})` : ""}
             </Text>
             <TouchableOpacity onPress={handleAddLocation}>
@@ -681,13 +772,13 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             <View style={styles.locationLoadingContainer}>
               <ActivityIndicator size="small" color="#B77F2E" />
               <Text style={styles.locationLoadingText}>
-                Loading locations...
+                {t('inspectionDetail.loadingLocations')}
               </Text>
             </View>
           ) : locationsError ? (
             <View style={styles.locationErrorContainer}>
               <Text style={styles.locationErrorText}>
-                Failed to load locations
+                {t('inspectionDetail.failedToLoad')}
               </Text>
               <TouchableOpacity
                 style={styles.retryButton}
@@ -697,7 +788,7 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                   });
                 }}
               >
-                <Text style={styles.retryButtonText}>Retry</Text>
+                <Text style={styles.retryButtonText}>{t('inspectionDetail.retry')}</Text>
               </TouchableOpacity>
             </View>
           ) : hasLocations ? (
@@ -712,7 +803,7 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 >
                   <View style={styles.locationHeader}>
                     <Text style={styles.locationTitle}>
-                      Room {location.roomNumber}, Floor {location.floorNumber}
+                      {t('inspectionDetail.room')} {location.roomNumber}, {t('inspectionDetail.floor')} {location.floorNumber}
                     </Text>
                     <View style={styles.locationActions}>
                       <View style={styles.areaTypeBadge}>
@@ -721,7 +812,6 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                         </Text>
                       </View>
 
-                      {/* Show badge if location has crack records */}
                       {crackRecordsMap &&
                         crackRecordsMap[location.locationDetailId] && (
                           <View style={styles.crackRecordBadge}>
@@ -744,7 +834,6 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                         />
                       </TouchableOpacity>
 
-                      {/* Add crack record button - always show it */}
                       <TouchableOpacity
                         style={styles.crackButton}
                         onPress={() => handleOpenCrackRecordModal(location)}
@@ -777,8 +866,8 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 >
                   <Text style={styles.seeMoreButtonText}>
                     {showAllLocations
-                      ? "See less"
-                      : `See all ${locationData.length} locations`}
+                      ? t('inspectionDetail.seeLess')
+                      : `${t('inspectionDetail.seeAll')} ${locationData.length} ${t('inspectionDetail.locations')}`}
                   </Text>
                   <Ionicons
                     name={showAllLocations ? "chevron-up" : "chevron-down"}
@@ -791,50 +880,12 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           ) : (
             <View style={styles.emptyLocationContainer}>
               <Text style={styles.emptyLocationText}>
-                No location information available
+                {t('inspectionDetail.noLocationInfo')}
               </Text>
             </View>
           )}
         </View>
       </ScrollView>
-
-      {/* Image Modal */}
-      <Modal
-        isVisible={selectedImageIndex !== -1}
-        onBackdropPress={closeModal}
-        onBackButtonPress={closeModal}
-        style={styles.modal}
-      >
-        <View style={styles.modalContent}>
-          <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-            <Ionicons name="close" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-
-          {selectedImageIndex !== -1 && imageUrls.length > 0 && (
-            <>
-              {imageLoading && (
-                <ActivityIndicator
-                  size="large"
-                  color="#FFFFFF"
-                  style={styles.imageLoader}
-                />
-              )}
-
-              <Image
-                source={{ uri: imageUrls[selectedImageIndex] }}
-                style={styles.fullImage}
-                resizeMode="contain"
-                onLoadStart={() => setImageLoading(true)}
-                onLoadEnd={() => setImageLoading(false)}
-              />
-
-              <Text style={styles.imageCount}>
-                {selectedImageIndex + 1} / {imageUrls.length}
-              </Text>
-            </>
-          )}
-        </View>
-      </Modal>
 
       {/* Crack Record Modal */}
       <Modal
@@ -848,74 +899,64 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           style={styles.crackModalContent}
         >
           <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-            <Text style={styles.crackModalTitle}>Create Crack Record</Text>
+            <Text style={styles.crackModalTitle}>{t('inspectionDetail.createCrackRecord')}</Text>
             {selectedLocation && (
               <Text style={styles.crackModalLocation}>
-                Room {selectedLocation.roomNumber}, Floor{" "}
+                {t('inspectionDetail.room')} {selectedLocation.roomNumber}, {t('inspectionDetail.floor')}{" "}
                 {selectedLocation.floorNumber}, {selectedLocation.areaType}
               </Text>
             )}
 
             <View style={styles.crackFormContainer}>
-              {/* Crack Type Picker */}
-              <Text style={styles.crackInputLabel}>Crack Type:</Text>
+              <Text style={styles.crackInputLabel}>{t('inspectionDetail.crackType')}:</Text>
               <View style={styles.pickerContainer}>
                 <Picker
                   selectedValue={crackRecordData.crackType}
                   onValueChange={(value) =>
-                    setCrackRecordData({ ...crackRecordData, crackType: value })
+                    setCrackRecordData({ ...crackRecordData, crackType: value as "Vertical" | "Horizontal" | "Diagonal" | "Structural" | "NonStructural" | "Other" })
                   }
                   style={styles.picker}
                 >
-                  <Picker.Item label="Vertical" value="Vertical" />
-                  <Picker.Item label="Horizontal" value="Horizontal" />
-                  <Picker.Item label="Diagonal" value="Diagonal" />
-                  <Picker.Item label="Structural" value="Structural" />
-                  <Picker.Item label="NonStructural" value="NonStructural" />
+                  <Picker.Item label={t('inspectionDetail.crackTypes.Vertical')} value="Vertical" />
+                  <Picker.Item label={t('inspectionDetail.crackTypes.Horizontal')} value="Horizontal" />
+                  <Picker.Item label={t('inspectionDetail.crackTypes.Diagonal')} value="Diagonal" />
+                  <Picker.Item label={t('inspectionDetail.crackTypes.Structural')} value="Structural" />
+                  <Picker.Item label={t('inspectionDetail.crackTypes.NonStructural')} value="NonStructural" />
+                  <Picker.Item label={t('inspectionDetail.crackTypes.Other')} value="Other" />
                 </Picker>
               </View>
 
-              {/* Measurements */}
-              <Text style={styles.crackInputLabel}>Length (m):</Text>
+              <Text style={styles.crackInputLabel}>{t('inspectionDetail.length')}:</Text>
               <TextInput
                 style={styles.crackInput}
-                keyboardType="numeric"
-                value={crackRecordData.length.toString()}
-                onChangeText={(text) =>
-                  setCrackRecordData({
-                    ...crackRecordData,
-                    length: text ? parseFloat(text) : 0,
-                  })
-                }
+                value={crackRecordData.length}
+                onChangeText={(value) => handleFloatInputChange(value, 'length')}
+                keyboardType="decimal-pad"
+                maxLength={10}
+                placeholder="0.00"
               />
 
-              <Text style={styles.crackInputLabel}>Width (m):</Text>
+              <Text style={styles.crackInputLabel}>{t('inspectionDetail.width')}:</Text>
               <TextInput
                 style={styles.crackInput}
-                keyboardType="numeric"
-                value={crackRecordData.width.toString()}
-                onChangeText={(text) =>
-                  setCrackRecordData({
-                    ...crackRecordData,
-                    width: text ? parseFloat(text) : 0,
-                  })
-                }
+                value={crackRecordData.width}
+                onChangeText={(value) => handleFloatInputChange(value, 'width')}
+                keyboardType="decimal-pad"
+                maxLength={10}
+                placeholder="0.00"
               />
 
-              <Text style={styles.crackInputLabel}>Depth (m):</Text>
+              <Text style={styles.crackInputLabel}>{t('inspectionDetail.depth')}:</Text>
               <TextInput
                 style={styles.crackInput}
-                keyboardType="numeric"
-                value={crackRecordData.depth.toString()}
-                onChangeText={(text) =>
-                  setCrackRecordData({
-                    ...crackRecordData,
-                    depth: text ? parseFloat(text) : 0,
-                  })
-                }
+                value={crackRecordData.depth}
+                onChangeText={(value) => handleFloatInputChange(value, 'depth')}
+                keyboardType="decimal-pad"
+                maxLength={10}
+                placeholder="0.00"
               />
 
-              <Text style={styles.crackInputLabel}>Description:</Text>
+              <Text style={styles.crackInputLabel}>{t('inspectionDetail.description')}:</Text>
               <TextInput
                 style={[styles.crackInput, styles.crackTextarea]}
                 multiline
@@ -935,7 +976,7 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <Text style={styles.submitButtonText}>
-                    Create Crack Record
+                    {t('inspectionDetail.submit')}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -960,40 +1001,40 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           </TouchableOpacity>
           {selectedCrackRecord ? (
             <>
-              <Text style={styles.crackModalTitle}>Crack Record Details</Text>
+              <Text style={styles.crackModalTitle}>{t('inspectionDetail.crackRecordDetails')}</Text>
               <Text style={styles.crackModalLocation}>
-                Type: {selectedCrackRecord.crackType}
+                {t('inspectionDetail.crackType')}: {selectedCrackRecord.crackType}
               </Text>
               <Text style={styles.crackModalLocation}>
-                Length: {selectedCrackRecord.length} m
+                {t('inspectionDetail.length')}: {selectedCrackRecord.length} m
               </Text>
               <Text style={styles.crackModalLocation}>
-                Width: {selectedCrackRecord.width} m
+                {t('inspectionDetail.width')}: {selectedCrackRecord.width} m
               </Text>
               <Text style={styles.crackModalLocation}>
-                Depth: {selectedCrackRecord.depth} m
+                {t('inspectionDetail.depth')}: {selectedCrackRecord.depth} m
               </Text>
               <Text style={styles.crackModalLocation}>
-                Description: {selectedCrackRecord.description}
+                {t('inspectionDetail.description')}: {selectedCrackRecord.description}
               </Text>
             </>
           ) : (
-            <Text style={styles.crackModalTitle}>No Crack Record</Text>
+            <Text style={styles.crackModalTitle}>{t('inspectionDetail.noCrackRecord')}</Text>
           )}
           {selectedLocation && (
             <>
-              <Text style={styles.crackModalTitle}>Location Details</Text>
+              <Text style={styles.crackModalTitle}>{t('inspectionDetail.locationDetails')}</Text>
               <Text style={styles.crackModalLocation}>
-                Room: {selectedLocation.roomNumber}
+                {t('inspectionDetail.room')}: {selectedLocation.roomNumber}
               </Text>
               <Text style={styles.crackModalLocation}>
-                Floor: {selectedLocation.floorNumber}
+                {t('inspectionDetail.floor')}: {selectedLocation.floorNumber}
               </Text>
               <Text style={styles.crackModalLocation}>
-                Area Type: {selectedLocation.areaType}
+                {t('inspectionDetail.areaType')}: {selectedLocation.areaType}
               </Text>
               <Text style={styles.crackModalLocation}>
-                Description: {selectedLocation.description}
+                {t('inspectionDetail.description')}: {selectedLocation.description}
               </Text>
             </>
           )}
@@ -1001,38 +1042,6 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       </Modal>
     </SafeAreaView>
   );
-};
-
-// Helper function to get status color
-const getStatusColor = (status: string): string => {
-  switch (status) {
-    case "Pending":
-      return "#FF9500"; // Orange
-    case "Assigned":
-      return "#007AFF"; // Blue
-    case "InProgress":
-      return "#5856D6"; // Purple
-    case "Completed":
-      return "#4CD964"; // Green
-    case "Canceled":
-      return "#FF3B30"; // Red
-    case "Verified":
-      return "#4CD964"; // Green
-    case "Unverified": 
-      return "#FF9500"; // Orange
-    case "Confirmed":
-      return "#4CD964"; // Green
-    case "Rejected":
-      return "#FF3B30"; // Red
-    case "Reviewing":
-      return "#5856D6"; // Purple
-    case "InFixing":
-      return "#5AC8FA"; // Light blue
-    case "Approved":
-      return "#4CD964"; // Green
-    default:
-      return "#8E8E93"; // Gray
-  }
 };
 
 const SafeAreaView = (props: any) => {

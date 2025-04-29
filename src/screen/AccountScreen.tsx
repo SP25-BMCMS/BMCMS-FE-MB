@@ -15,6 +15,8 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from "react-i18next";
+import i18next from "i18next";
 
 interface ChatMessage {
   id: string;
@@ -29,6 +31,7 @@ type AccountScreenNavigationProp = StackNavigationProp<
 >;
 
 const AccountScreen = () => {
+  const { t, i18n } = useTranslation();
   const navigation = useNavigation<AccountScreenNavigationProp>();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [headerAnim] = useState(new Animated.Value(0));
@@ -37,6 +40,7 @@ const AccountScreen = () => {
   const [userType, setUserType] = useState<string | null>(null);
   const [historyDates, setHistoryDates] = useState<string[]>([]);
   const [groupedHistory, setGroupedHistory] = useState<{[date: string]: ChatMessage[]}>({});
+  const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
@@ -98,8 +102,7 @@ const AccountScreen = () => {
   };
 
   const handleChangePassword = () => {
-    // Xử lý đổi mật khẩu
-    Alert.alert("Notification", "The password change function will be developed later");
+    Alert.alert("Notification", t('screens.account.notifications.passwordChange'));
   };
   
   // Lấy lịch sử chat
@@ -181,6 +184,13 @@ const AccountScreen = () => {
     }
   };
 
+  const toggleLanguage = () => {
+    const newLang = currentLanguage === 'en' ? 'vi' : 'en';
+    i18n.changeLanguage(newLang);
+    setCurrentLanguage(newLang);
+    AsyncStorage.setItem('language', newLang); // Save language preference
+  };
+
   return (
     <View style={styles.container}>
       {/* Header Animation */}
@@ -192,7 +202,7 @@ const AccountScreen = () => {
       >
         <View style={styles.header}>
           <Text style={styles.headerTitle}>
-            {userType === 'staff' ? 'Staff Account' : 'Account'}
+            {userType === 'staff' ? t('screens.account.title.staff') : t('screens.account.title.resident')}
           </Text>
           {isLoggedIn && (
             <TouchableOpacity onPress={navigateToMore} style={styles.menuButton}>
@@ -241,16 +251,18 @@ const AccountScreen = () => {
     return (
       <>
         <TouchableOpacity style={styles.signInButton} onPress={handleSignIn}>
-          <Text style={styles.signInText}>Sign In</Text>
+          <Text style={styles.signInText}>{t('screens.account.signIn')}</Text>
         </TouchableOpacity>
 
         <View style={styles.optionsList}>
-          <TouchableOpacity style={styles.optionItem}>
+          <TouchableOpacity style={styles.optionItem} onPress={toggleLanguage}>
             <View style={[styles.iconContainer, { backgroundColor: "#E3F2FD" }]}>
               <Icon name="language" size={24} color="#4CB5F5" />
             </View>
-            <Text style={styles.optionText}>Language</Text>
-            <Text style={styles.menuValue}>English</Text>
+            <Text style={styles.optionText}>{t('screens.account.menu.language')}</Text>
+            <Text style={styles.menuValue}>
+              {currentLanguage === 'en' ? t('languages.english') : t('languages.vietnamese')}
+            </Text>
             <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
           </TouchableOpacity>
 
@@ -258,7 +270,7 @@ const AccountScreen = () => {
             <View style={[styles.iconContainer, { backgroundColor: "#EFEBE9" }]}>
               <Icon name="info-outline" size={24} color="#B77F2E" />
             </View>
-            <Text style={styles.optionText}>About Us</Text>
+            <Text style={styles.optionText}>{t('screens.account.menu.aboutUs')}</Text>
             <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
           </TouchableOpacity>
         </View>
@@ -280,17 +292,17 @@ const AccountScreen = () => {
       <>
         <View style={styles.userInfoContainer}>
           <LinearGradient
-            colors={['#CC9544', '#B77F2E', '#8E5E20'] as const}
+            colors={['#CC9544', '#B77F2E', '#8E5E20']}
             style={styles.avatarGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
             <Text style={styles.avatarText}>
-              {getInitials(userData?.username || "R")}
+              {getInitials(userData?.username || t('screens.account.profile.resident'))}
             </Text>
           </LinearGradient>
           <View style={styles.userDetails}>
-            <Text style={styles.userName}>{userData?.username || "Resident"}</Text>
+            <Text style={styles.userName}>{userData?.username || t('screens.account.profile.resident')}</Text>
             <Text style={styles.userContact}>{userData?.phone || ""}</Text>
           </View>
         </View>
@@ -298,42 +310,36 @@ const AccountScreen = () => {
         <View style={styles.cardsContainer}>
           <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("MyReport")}>
             <Icon name="description" size={24} color="#000" />
-            <Text style={styles.cardText}>MyReport</Text>
+            <Text style={styles.cardText}>{t('screens.account.cards.myReport')}</Text>
           </TouchableOpacity>
   
           <TouchableOpacity style={styles.card} onPress={showChatHistory}>
             <Icon name="history" size={24} color="#4A90E2" />
-            <Text style={styles.cardText}>Chat History</Text>
+            <Text style={styles.cardText}>{t('screens.account.cards.chatHistory')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.card} onPress={navigateToChatBot}>
             <Icon name="forum" size={24} color="#4A90E2" />
-            <Text style={styles.cardText}>ChatBot</Text>
+            <Text style={styles.cardText}>{t('screens.account.cards.chatBot')}</Text>
           </TouchableOpacity>
         </View>
   
         <View style={styles.optionsList}>
           <TouchableOpacity style={styles.optionItem}>
             <Icon name="location-on" size={24} color="#666" />
-            <Text style={styles.optionText}>Address</Text>
+            <Text style={styles.optionText}>{t('screens.account.options.address')}</Text>
             <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
           </TouchableOpacity>
   
           <TouchableOpacity style={styles.optionItem} onPress={handleChangePassword}>
             <Icon name="lock" size={24} color="#666" />
-            <Text style={styles.optionText}>ChangePassword</Text>
-            <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.optionItem} onPress={showChatHistory}>
-            <Icon name="history" size={24} color="#4A90E2" />
-            <Text style={styles.optionText}>Chat History</Text>
+            <Text style={styles.optionText}>{t('screens.account.options.changePassword')}</Text>
             <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.optionItem} onPress={navigateToChatBot}>
             <Icon name="support-agent" size={24} color="#4A90E2" />
-            <Text style={styles.optionText}>Virtual Assistant</Text>
+            <Text style={styles.optionText}>{t('screens.account.options.virtualAssistant')}</Text>
             <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
           </TouchableOpacity>
         </View>
@@ -390,48 +396,48 @@ const AccountScreen = () => {
             end={{ x: 1, y: 1 }}
           >
             <Text style={styles.avatarText}>
-              {getInitials(userData?.username || "S")}
+              {getInitials(userData?.username || t('screens.account.profile.staff'))}
             </Text>
           </LinearGradient>
           <View style={styles.userDetails}>
-            <Text style={styles.userName}>{userData?.username || "Staff Member"}</Text>
-            <Text style={styles.userContact}>{userData?.role || "Staff"}</Text>
+            <Text style={styles.userName}>{userData?.username || t('screens.account.profile.staff')}</Text>
+            <Text style={styles.userContact}>{userData?.role || t('screens.account.profile.staff')}</Text>
           </View>
         </View>
   
         <View style={[styles.cardsContainer, { justifyContent: 'space-around' }]}>
           <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('StaffProfile')}>
             <Icon name="person" size={24} color="#000" />
-            <Text style={styles.cardText}>Profile</Text>
+            <Text style={styles.cardText}>{t('screens.account.cards.profile')}</Text>
           </TouchableOpacity>
   
           <TouchableOpacity style={styles.card}>
             <Icon name="assignment" size={24} color="#000" />
-            <Text style={styles.cardText}>My Tasks</Text>
+            <Text style={styles.cardText}>{t('screens.account.cards.myTasks')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.card}>
             <Icon name="work" size={24} color="#000" />
-            <Text style={styles.cardText}>Department</Text>
+            <Text style={styles.cardText}>{t('screens.account.cards.department')}</Text>
           </TouchableOpacity>
         </View>
   
         <View style={styles.optionsList}>
           <TouchableOpacity style={styles.optionItem}>
             <Icon name="schedule" size={24} color="#666" />
-            <Text style={styles.optionText}>Work Schedule</Text>
+            <Text style={styles.optionText}>{t('screens.account.options.workSchedule')}</Text>
             <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
           </TouchableOpacity>
   
           <TouchableOpacity style={styles.optionItem} onPress={handleChangePassword}>
             <Icon name="lock" size={24} color="#666" />
-            <Text style={styles.optionText}>Change Password</Text>
+            <Text style={styles.optionText}>{t('screens.account.options.changePassword')}</Text>
             <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.optionItem}>
             <Icon name="contact-support" size={24} color="#666" />
-            <Text style={styles.optionText}>Support</Text>
+            <Text style={styles.optionText}>{t('screens.account.options.support')}</Text>
             <Icon name="chevron-right" size={24} color="#666" style={styles.chevron} />
           </TouchableOpacity>
         </View>

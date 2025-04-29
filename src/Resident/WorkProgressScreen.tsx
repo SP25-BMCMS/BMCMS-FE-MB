@@ -20,12 +20,14 @@ import { showMessage } from "react-native-flash-message";
 import instance from "../service/Auth";
 import { getUserFeedbacks, getFeedbackByTaskId } from "../service/Auth";
 import { Feedback } from "../types";
+import { useTranslation } from 'react-i18next';
 
 interface WorkProgressScreenParams {
   crackReportId: string;
 }
 
 const WorkProgressScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute();
   const { crackReportId } = route.params as WorkProgressScreenParams;
@@ -112,11 +114,10 @@ const WorkProgressScreen = () => {
   const submitFeedback = async () => {
     if (!worklogsData) return;
     
-    // Validate comment
     if (!comment.trim()) {
       showMessage({
-        message: "Comment Required",
-        description: "Please add a comment about your experience",
+        message: t('workProgress.feedback.validation.commentRequired'),
+        description: t('workProgress.feedback.validation.commentMessage'),
         type: "warning",
         backgroundColor: "#FF9800",
         color: "#FFFFFF",
@@ -137,14 +138,12 @@ const WorkProgressScreen = () => {
         throw new Error("User ID not found");
       }
       
-      // Lấy taskId từ hàm getTaskId
       const currentTaskId = getTaskId();
       
       if (!currentTaskId) {
-        throw new Error("Không thể xác định task ID để gửi feedback");
+        throw new Error("Cannot determine task ID for feedback");
       }
       
-      // Prepare the feedback data as required by the API
       const feedbackData = {
         task_id: currentTaskId,
         feedback_by: userId,
@@ -152,18 +151,13 @@ const WorkProgressScreen = () => {
         rating: rating
       };
       
-      console.log("Gửi feedback:", feedbackData);
-      
-      // Use the instance from Auth.ts which already handles authentication
       const response = await instance.post('/feedbacks', feedbackData);
       
-      // Close the modal
       setFeedbackModalVisible(false);
       
-      // Show success message
       showMessage({
-        message: "Feedback Submitted",
-        description: `Thank you for your ${rating}-star rating!`,
+        message: t('workProgress.feedback.success.title'),
+        description: t('workProgress.feedback.success.message', { rating }),
         type: "success",
         icon: "success",
         backgroundColor: "#4CAF50",
@@ -175,14 +169,13 @@ const WorkProgressScreen = () => {
         },
       });
       
-      // Refetch the feedback data
       queryClient.invalidateQueries({ queryKey: ['taskFeedback', currentTaskId] });
       
     } catch (error) {
       console.error('Error submitting feedback:', error);
       showMessage({
-        message: "Error",
-        description: "Failed to submit feedback. Please try again.",
+        message: t('workProgress.feedback.error.title'),
+        description: t('workProgress.feedback.error.message'),
         type: "danger",
         icon: "danger",
         backgroundColor: "#F44336",
@@ -202,7 +195,7 @@ const WorkProgressScreen = () => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#B77F2E" />
-        <Text style={styles.loadingText}>Loading work progress...</Text>
+        <Text style={styles.loadingText}>{t('workProgress.loading')}</Text>
       </View>
     );
   }
@@ -211,10 +204,10 @@ const WorkProgressScreen = () => {
     return (
       <View style={styles.errorContainer}>
         <Icon name="error-outline" size={64} color="#F44336" />
-        <Text style={styles.errorTitle}>Error Loading Data</Text>
+        <Text style={styles.errorTitle}>{t('workProgress.error.title')}</Text>
         <Text style={styles.errorText}>{(error as Error).message}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
-          <Text style={styles.retryButtonText}>Retry</Text>
+          <Text style={styles.retryButtonText}>{t('workProgress.error.retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -224,15 +217,13 @@ const WorkProgressScreen = () => {
     return (
       <View style={styles.emptyContainer}>
         <Icon name="assignment-late" size={64} color="#FFC107" />
-        <Text style={styles.emptyTitle}>No Work Progress Found</Text>
-        <Text style={styles.emptyText}>
-          No work progress information is available for this crack report.
-        </Text>
+        <Text style={styles.emptyTitle}>{t('workProgress.empty.title')}</Text>
+        <Text style={styles.emptyText}>{t('workProgress.empty.message')}</Text>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.backButtonText}>Go Back</Text>
+          <Text style={styles.backButtonText}>{t('workProgress.empty.goBack')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -265,11 +256,11 @@ const WorkProgressScreen = () => {
         >
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Work Progress</Text>
+        <Text style={styles.headerTitle}>{t('workProgress.title')}</Text>
       </View>
 
       <View style={styles.progressSection}>
-        <Text style={styles.sectionTitle}>Progress Timeline</Text>
+        <Text style={styles.sectionTitle}>{t('workProgress.timeline.title')}</Text>
         <View style={styles.timeline}>
           <View
             style={[
@@ -351,23 +342,23 @@ const WorkProgressScreen = () => {
           </View>
         </View>
         <View style={styles.timelineLabels}>
-          <Text style={styles.timelineLabel}>Reported</Text>
-          <Text style={styles.timelineLabel}>Assigned</Text>
-          <Text style={styles.timelineLabel}>In Progress</Text>
-          <Text style={styles.timelineLabel}>Completed</Text>
+          <Text style={styles.timelineLabel}>{t('workProgress.timeline.reported')}</Text>
+          <Text style={styles.timelineLabel}>{t('workProgress.timeline.assigned')}</Text>
+          <Text style={styles.timelineLabel}>{t('workProgress.timeline.inProgress')}</Text>
+          <Text style={styles.timelineLabel}>{t('workProgress.timeline.completed')}</Text>
         </View>
         
         {status === "Completed" && !hasFeedback() && (
           <View style={styles.feedbackContainer}>
             <Text style={styles.feedbackText}>
-              Work has been completed. Please provide your feedback.
+              {t('workProgress.feedback.prompt')}
             </Text>
             <TouchableOpacity
               style={styles.feedbackButton}
               onPress={handleCreateFeedback}
             >
               <Icon name="star" size={20} color="#FFFFFF" />
-              <Text style={styles.feedbackButtonText}>Rate Repair Work</Text>
+              <Text style={styles.feedbackButtonText}>{t('workProgress.feedback.button')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -376,32 +367,32 @@ const WorkProgressScreen = () => {
           <View style={[styles.feedbackContainer, { backgroundColor: "#E8F5E9", borderLeftColor: "#4CAF50" }]}>
             <Icon name="check-circle" size={24} color="#4CAF50" />
             <Text style={[styles.feedbackText, { marginTop: 8 }]}>
-              Thank you! You have already provided feedback for this work.
+              {t('workProgress.feedback.submitted')}
             </Text>
           </View>
         )}
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Crack Report Details</Text>
+        <Text style={styles.sectionTitle}>{t('workProgress.details.crackReport')}</Text>
         <View style={styles.card}>
           <View style={styles.cardRow}>
-            <Text style={styles.cardLabel}>Position:</Text>
+            <Text style={styles.cardLabel}>{t('workProgress.details.position')}:</Text>
             <Text style={styles.cardValue}>{crackReport.position.split('/').join(' - ')}</Text>
           </View>
           <View style={styles.cardRow}>
-            <Text style={styles.cardLabel}>Reported:</Text>
+            <Text style={styles.cardLabel}>{t('workProgress.details.reported')}:</Text>
             <Text style={styles.cardValue}>
-              {new Date(crackReport.createdAt).toLocaleDateString()} by{" "}
+              {new Date(crackReport.createdAt).toLocaleDateString()} {t('workProgress.details.reportedBy')}{" "}
               {crackReport.reportedBy.username}
             </Text>
           </View>
           <View style={styles.cardRow}>
-            <Text style={styles.cardLabel}>Description:</Text>
+            <Text style={styles.cardLabel}>{t('workProgress.details.description')}:</Text>
             <Text style={styles.cardValue}>{crackReport.description}</Text>
           </View>
           <View style={styles.cardRow}>
-            <Text style={styles.cardLabel}>Status:</Text>
+            <Text style={styles.cardLabel}>{t('workProgress.details.status')}:</Text>
             <View
               style={[
                 styles.statusBadge,
@@ -414,7 +405,7 @@ const WorkProgressScreen = () => {
                   { color: getStatusColor(crackReport.status) },
                 ]}
               >
-                {crackReport.status}
+                {t(`workProgress.status.${crackReport.status}`)}
               </Text>
             </View>
           </View>
@@ -422,15 +413,14 @@ const WorkProgressScreen = () => {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Task Information</Text>
+        <Text style={styles.sectionTitle}>{t('workProgress.details.taskInfo')}</Text>
         <View style={styles.card}>
-          
           <View style={styles.cardRow}>
-            <Text style={styles.cardLabel}>Description:</Text>
+            <Text style={styles.cardLabel}>{t('workProgress.details.description')}:</Text>
             <Text style={styles.cardValue}>{description}</Text>
           </View>
           <View style={styles.cardRow}>
-            <Text style={styles.cardLabel}>Status:</Text>
+            <Text style={styles.cardLabel}>{t('workProgress.details.status')}:</Text>
             <View
               style={[
                 styles.statusBadge,
@@ -440,7 +430,7 @@ const WorkProgressScreen = () => {
               <Text
                 style={[styles.statusText, { color: getStatusColor(status) }]}
               >
-                {status}
+                {t(`workProgress.status.${status}`)}
               </Text>
             </View>
           </View>
@@ -449,7 +439,7 @@ const WorkProgressScreen = () => {
 
       {crackReport.crackDetails && crackReport.crackDetails.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Reported Images</Text>
+          <Text style={styles.sectionTitle}>{t('workProgress.details.reportedImages')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {crackReport.crackDetails.map((detail, index) => (
               <View key={index} style={styles.imageContainer}>
@@ -459,7 +449,7 @@ const WorkProgressScreen = () => {
                   resizeMode="cover"
                 />
                 <Text style={styles.imageSeverity}>
-                  Severity: {detail.severity}
+                  {t('workProgress.details.severity')}: {detail.severity}
                 </Text>
               </View>
             ))}
@@ -476,9 +466,9 @@ const WorkProgressScreen = () => {
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.feedbackModalContent}>
-            <Text style={styles.feedbackModalTitle}>Rate Repair Work</Text>
+            <Text style={styles.feedbackModalTitle}>{t('workProgress.feedback.modal.title')}</Text>
             
-            <Text style={styles.ratingLabel}>Select Rating:</Text>
+            <Text style={styles.ratingLabel}>{t('workProgress.feedback.modal.selectRating')}</Text>
             <View style={styles.ratingContainer}>
               {[1, 2, 3, 4, 5].map((value) => (
                 <TouchableOpacity
@@ -498,10 +488,13 @@ const WorkProgressScreen = () => {
               ))}
             </View>
             
-            <Text style={styles.commentLabel}>Add Comment: <Text style={styles.requiredField}>*</Text></Text>
+            <Text style={styles.commentLabel}>
+              {t('workProgress.feedback.modal.addComment')} 
+              <Text style={styles.requiredField}>{t('workProgress.feedback.modal.required')}</Text>
+            </Text>
             <TextInput
               style={styles.commentInput}
-              placeholder="Share your experience about the repair work..."
+              placeholder={t('workProgress.feedback.modal.placeholder')}
               value={comment}
               onChangeText={setComment}
               multiline
@@ -514,7 +507,7 @@ const WorkProgressScreen = () => {
                 onPress={() => setFeedbackModalVisible(false)}
                 disabled={isSubmitting}
               >
-                <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                <Text style={styles.modalCancelButtonText}>{t('workProgress.feedback.modal.cancel')}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -528,7 +521,7 @@ const WorkProgressScreen = () => {
                 {isSubmitting ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.modalSubmitButtonText}>Submit</Text>
+                  <Text style={styles.modalSubmitButtonText}>{t('workProgress.feedback.modal.submit')}</Text>
                 )}
               </TouchableOpacity>
             </View>

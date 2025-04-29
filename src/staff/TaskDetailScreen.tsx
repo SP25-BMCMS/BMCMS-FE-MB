@@ -16,6 +16,7 @@ import { TaskService } from '../service/Task';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 type TaskDetailScreenRouteProp = RouteProp<RootStackParamList, 'TaskDetail'>;
 type TaskDetailScreenNavigationProp = StackNavigationProp<RootStackParamList, 'TaskDetail'>;
@@ -26,6 +27,7 @@ type Props = {
 };
 
 const TaskDetailScreen: React.FC<Props> = ({ route }) => {
+  const { t } = useTranslation();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { assignmentId } = route.params;
   const [taskDetail, setTaskDetail] = useState<TaskAssignmentDetail | null>(null);
@@ -97,22 +99,7 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
   };
 
   const getStatusText = (status: string) => {
-    switch (status) {
-      case 'Pending':
-        return 'Pending';
-      case 'InProgress':
-        return 'In Progress';
-      case 'Completed':
-        return 'Completed';
-      case 'Canceled':
-        return 'Canceled';
-      case 'Verified':
-        return 'Verified';
-      case 'Unverified':
-        return 'Unverified';
-      default:
-        return status;
-    }
+    return t(`inspectionDetail.statusTypes.${status}`) || status;
   };
 
   const getSeverityColor = (severity: string) => {
@@ -129,16 +116,7 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
   };
 
   const getSeverityText = (severity: string) => {
-    switch (severity) {
-      case 'Low':
-        return 'Low';
-      case 'Medium':
-        return 'Medium';
-      case 'High':
-        return 'High';
-      default:
-        return severity;
-    }
+    return t(`staffTaskDetail.severityTypes.${severity}`) || severity;
   };
 
   const getPositionText = (position: string | null) => {
@@ -151,16 +129,16 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
       
       switch (parts[0]) {
         case 'kitchen':
-          room = 'Kitchen';
+          room = t('repair.inside.kitchen');
           break;
         case 'living-room':
-          room = 'Living Room';
+          room = t('repair.inside.livingRoom');
           break;
         case 'bedroom':
-          room = 'Bedroom';
+          room = t('repair.inside.bedroom');
           break;
         case 'bathroom':
-          room = 'Bathroom';
+          room = t('repair.inside.bathroom');
           break;
         default:
           room = parts[0];
@@ -168,13 +146,13 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
       
       switch (parts[1]) {
         case 'wall':
-          location = 'Wall';
+          room = t('repair.inside.wall');
           break;
         case 'floor':
-          location = 'Floor';
+          room = t('repair.inside.floor');
           break;
         case 'ceiling':
-          location = 'Ceiling';
+          room = t('repair.inside.ceiling');
           break;
         default:
           location = parts[1];
@@ -194,7 +172,7 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Task Details</Text>
+        <Text style={styles.headerTitle}>{t('taskDetail.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -206,31 +184,30 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchTaskDetail}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryButtonText}>{t('staffProfile.retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : taskDetail ? (
         <ScrollView style={styles.scrollView}>
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Task Information</Text>
+            <Text style={styles.sectionTitle}>{t('taskDetail.taskInfo')}</Text>
             <View style={styles.infoContainer}>
-             
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Description:</Text>
+                <Text style={styles.infoLabel}>{t('taskDetail.description')}:</Text>
                 <Text style={styles.infoValue}>{taskDetail.description}</Text>
               </View>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Status:</Text>
+                <Text style={styles.infoLabel}>{t('taskDetail.status')}:</Text>
                 <View style={[styles.statusBadge, { backgroundColor: getStatusColor(taskDetail.status) }]}>
                   <Text style={styles.statusText}>{getStatusText(taskDetail.status)}</Text>
                 </View>
               </View>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Created:</Text>
+                <Text style={styles.infoLabel}>{t('taskDetail.created')}:</Text>
                 <Text style={styles.infoValue}>{formatDate(taskDetail.created_at)}</Text>
               </View>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Updated:</Text>
+                <Text style={styles.infoLabel}>{t('taskDetail.updated')}:</Text>
                 <Text style={styles.infoValue}>{formatDate(taskDetail.updated_at)}</Text>
               </View>
             </View>
@@ -238,46 +215,45 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
 
           {taskDetail.crackInfo && taskDetail.crackInfo.data && taskDetail.crackInfo.data.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Crack Information</Text>
+              <Text style={styles.sectionTitle}>{t('taskDetail.crackInfo')}</Text>
               {taskDetail.crackInfo.data.map((crackReport, index) => (
                 <View key={index} style={styles.crackInfoContainer}>
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Description:</Text>
+                    <Text style={styles.infoLabel}>{t('taskDetail.description')}:</Text>
                     <Text style={styles.infoValue}>{crackReport.description}</Text>
                   </View>
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Location:</Text>
+                    <Text style={styles.infoLabel}>{t('taskDetail.location')}:</Text>
                     <Text style={styles.infoValue}>{getPositionText(crackReport.position)}</Text>
                   </View>
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Status:</Text>
+                    <Text style={styles.infoLabel}>{t('taskDetail.status')}:</Text>
                     <View style={[styles.statusBadge, { backgroundColor: getStatusColor(crackReport.status) }]}>
                       <Text style={styles.statusText}>{getStatusText(crackReport.status)}</Text>
                     </View>
                   </View>
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Reported by:</Text>
+                    <Text style={styles.infoLabel}>{t('taskDetail.reportedBy')}:</Text>
                     <Text style={styles.infoValue}>{crackReport.reportedBy.username}</Text>
                   </View>
                   {crackReport.verifiedBy && (
                     <View style={styles.infoRow}>
-                      <Text style={styles.infoLabel}>Verified by:</Text>
+                      <Text style={styles.infoLabel}>{t('taskDetail.verifiedBy')}:</Text>
                       <Text style={styles.infoValue}>{crackReport.verifiedBy.username}</Text>
                     </View>
                   )}
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Reported on:</Text>
+                    <Text style={styles.infoLabel}>{t('taskDetail.reportedOn')}:</Text>
                     <Text style={styles.infoValue}>{formatDate(crackReport.createdAt)}</Text>
                   </View>
 
                   {crackReport.crackDetails && crackReport.crackDetails.length > 0 && (
                     <>
-                      <Text style={styles.subSectionTitle}>Crack Details</Text>
+                      <Text style={styles.subSectionTitle}>{t('taskDetail.crackDetails')}</Text>
                       
-                      {/* Display both original and AI detection images */}
                       <View style={styles.imageComparisonContainer}>
                         <View style={styles.imageWrapper}>
-                          <Text style={styles.imageLabel}>Original Image</Text>
+                          <Text style={styles.imageLabel}>{t('taskDetail.originalImage')}</Text>
                           <Image 
                             source={{ uri: crackReport.crackDetails[selectedImageIndex].photoUrl }} 
                             style={styles.compareImage}
@@ -285,7 +261,7 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
                           />
                         </View>
                         <View style={styles.imageWrapper}>
-                          <Text style={styles.imageLabel}>AI Analysis</Text>
+                          <Text style={styles.imageLabel}>{t('taskDetail.aiAnalysis')}</Text>
                           <Image 
                             source={{ uri: crackReport.crackDetails[selectedImageIndex].aiDetectionUrl }} 
                             style={styles.compareImage}
@@ -294,7 +270,6 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
                         </View>
                       </View>
                       
-                      {/* Display thumbnails if there are multiple images */}
                       {crackReport.crackDetails.length > 1 && (
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbnailsContainer}>
                           {crackReport.crackDetails.map((detail, idx) => (
@@ -321,10 +296,9 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
                         </ScrollView>
                       )}
                       
-                      {/* Display selected image details */}
                       <View style={styles.selectedImageInfo}>
                         <View style={styles.infoRow}>
-                          <Text style={styles.infoLabel}>Severity:</Text>
+                          <Text style={styles.infoLabel}>{t('taskDetail.severity')}:</Text>
                           <View style={[
                             styles.severityBadge, 
                             { backgroundColor: getSeverityColor(crackReport.crackDetails[selectedImageIndex].severity) }
@@ -335,7 +309,7 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
                           </View>
                         </View>
                         <View style={styles.infoRow}>
-                          <Text style={styles.infoLabel}>Created on:</Text>
+                          <Text style={styles.infoLabel}>{t('taskDetail.createdOn')}:</Text>
                           <Text style={styles.infoValue}>{formatDate(crackReport.crackDetails[selectedImageIndex].createdAt)}</Text>
                         </View>
                       </View>
@@ -347,41 +321,31 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
           )}
           
           <View style={styles.buttonContainer}>
-            {/* Only show maintenance history button for scheduled maintenance tasks */}
             {taskDetail.task && taskDetail.task.crack_id === "" && taskDetail.task.schedule_job_id && (
               <TouchableOpacity 
                 style={[styles.actionButton, styles.maintenanceButton]}
                 onPress={() => {
-                  console.log('Navigating to maintenance history with ID:', taskDetail.task.schedule_job_id);
                   navigation.navigate('MaintenanceHistory', { 
                     scheduleJobId: taskDetail.task.schedule_job_id,
-                    buildingName: taskDetail.description.split(' ').pop() // Extract building name from description
+                    buildingName: taskDetail.description.split(' ').pop()
                   });
                 }}
               >
-                <Text style={styles.buttonText}>
-                  View Maintenance History
-                </Text>
+                <Text style={styles.buttonText}>{t('taskDetail.viewMaintenanceHistory')}</Text>
               </TouchableOpacity>
             )}
 
-            {/* Only show Create Resident Inspection button when status is Confirmed */}
             {taskDetail.status === 'Confirmed' && (
               <TouchableOpacity 
                 style={[styles.actionButton, styles.residentInspectionButton]}
                 onPress={() => {
-                  navigation.navigate('CreateResidentInspection', { 
-                    taskDetail: taskDetail 
-                  });
+                  navigation.navigate('CreateResidentInspection', { taskDetail: taskDetail });
                 }}
               >
-                <Text style={styles.buttonText}>
-                  Create Inspection (Resident)
-                </Text>
+                <Text style={styles.buttonText}>{t('taskDetail.createInspectionResident')}</Text>
               </TouchableOpacity>
             )}
 
-            {/* Only show this button when status is not Confirmed */}
             {taskDetail.status !== 'Confirmed' && (
               <TouchableOpacity 
                 style={[styles.actionButton, styles.completeButton]}
@@ -390,10 +354,10 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
                 }}
               >
                 <Text style={styles.buttonText}>
-                  {taskDetail.status === 'Pending' ? 'Start Task' : 
-                   taskDetail.status === 'InProgress' ? 'Complete Task' : 
-                   taskDetail.status === 'Verified' ? 'Create More Inspection' :
-                   taskDetail.status === 'Unverified' ? 'Review Task' : 'View Details'}
+                  {taskDetail.status === 'Pending' ? t('taskDetail.startTask') : 
+                   taskDetail.status === 'InProgress' ? t('taskDetail.completeTask') : 
+                   taskDetail.status === 'Verified' ? t('taskDetail.createMoreInspection') :
+                   taskDetail.status === 'Unverified' ? t('taskDetail.reviewTask') : t('taskDetail.viewDetails')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -407,15 +371,13 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
                 });
               }}
             >
-              <Text style={styles.buttonText}>
-                View Inspections
-              </Text>
+              <Text style={styles.buttonText}>{t('taskDetail.viewInspections')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
       ) : (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No details found.</Text>
+          <Text style={styles.emptyText}>{t('taskDetail.noDetailsFound')}</Text>
         </View>
       )}
     </SafeAreaView>

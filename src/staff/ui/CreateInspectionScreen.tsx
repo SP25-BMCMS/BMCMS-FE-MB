@@ -24,6 +24,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TaskService } from '../../service/Task';
 import { showMessage } from 'react-native-flash-message';
+import { useTranslation } from 'react-i18next';
 
 type CreateInspectionScreenRouteProp = RouteProp<RootStackParamList, 'CreateInspection'>;
 type CreateInspectionScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CreateInspection'>;
@@ -39,6 +40,7 @@ interface SelectedMaterial {
 }
 
 const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { t } = useTranslation();
   const { taskDetail } = route.params;
   
   // States
@@ -516,44 +518,45 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
           >
             <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Review Inspection</Text>
+          <Text style={styles.headerTitle}>{t('inspection.reviewInspection')}</Text>
           <View style={{ width: 24 }} />
         </View>
         
         <ScrollView style={styles.content}>
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Summary</Text>
+            <Text style={styles.cardTitle}>{t('inspection.summary')}</Text>
             <View style={styles.divider} />
             
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Task ID:</Text>
-              <Text style={styles.infoValue}>{taskDetail.task_id.substring(0, 8)}...</Text>
-            </View>
+           
             
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Type:</Text>
+              <Text style={styles.infoLabel}>{t('inspection.type')}:</Text>
               <View style={[styles.statusBadge, { backgroundColor: isPrivateAsset ? '#007AFF' : '#B77F2E' }]}>
-                <Text style={styles.statusText}>{isPrivateAsset ? 'Private Asset' : 'Regular Inspection'}</Text>
+                <Text style={styles.statusText}>
+                  {isPrivateAsset ? t('inspection.privateAsset') : t('inspection.regularInspection')}
+                </Text>
               </View>
             </View>
             
             {!isPrivateAsset && (
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Status:</Text>
+                <Text style={styles.infoLabel}>{t('inspection.status')}:</Text>
                 <View style={[styles.statusBadge, { backgroundColor: isVerified ? '#4CD964' : '#FF9500' }]}>
-                  <Text style={styles.statusText}>{isVerified ? 'Verified' : 'Unverified'}</Text>
+                  <Text style={styles.statusText}>
+                    {isVerified ? t('inspection.verified') : t('inspection.unverified')}
+                  </Text>
                 </View>
               </View>
             )}
             
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Images:</Text>
+              <Text style={styles.infoLabel}>{t('inspection.images')}:</Text>
               <Text style={styles.infoValue}>{images.length} added</Text>
             </View>
             
             {!isPrivateAsset && isVerified && (
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Total Cost:</Text>
+                <Text style={styles.infoLabel}>{t('inspection.totalCost')}:</Text>
                 <Text style={[styles.infoValue, styles.costText]}>
                   {calculateTotalCost().toLocaleString()} VND
                 </Text>
@@ -562,13 +565,13 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
           
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Notes</Text>
+            <Text style={styles.cardTitle}>{t('inspection.notes')}</Text>
             <View style={styles.divider} />
             <Text style={styles.notesPreview}>{notes}</Text>
           </View>
           
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Images</Text>
+            <Text style={styles.cardTitle}>{t('inspection.images')}</Text>
             <View style={styles.divider} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {images.map((image, index) => (
@@ -579,7 +582,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
           
           {!isPrivateAsset && isVerified && selectedMaterials.length > 0 && (
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Materials for Repair</Text>
+              <Text style={styles.cardTitle}>{t('inspection.materialsForRepair')}</Text>
               <View style={styles.divider} />
               {selectedMaterials.map((item, index) => (
                 <View key={index} style={styles.materialReviewItem}>
@@ -594,13 +597,13 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
                   </Text>
                   <View style={styles.materialReviewTotal}>
                     <Text style={styles.materialReviewTotalText}>
-                      Subtotal: {(parseInt(item.material.unit_price, 10) * item.quantity).toLocaleString()} VND
+                      {t('inspection.subtotal')}: {(parseInt(item.material.unit_price, 10) * item.quantity).toLocaleString()} VND
                     </Text>
                   </View>
                 </View>
               ))}
               <View style={styles.materialTotalRow}>
-                <Text style={styles.materialTotalLabel}>Total Cost:</Text>
+                <Text style={styles.materialTotalLabel}>{t('inspection.totalCost')}:</Text>
                 <Text style={styles.materialTotalValue}>
                   {calculateTotalCost().toLocaleString()} VND
                 </Text>
@@ -616,7 +619,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
             {loading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.submitButtonText}>Confirm & Submit</Text>
+              <Text style={styles.submitButtonText}>{t('inspection.confirmSubmit')}</Text>
             )}
           </TouchableOpacity>
         </ScrollView>
@@ -634,7 +637,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Inspection</Text>
+        <Text style={styles.headerTitle}>{t('inspection.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -651,21 +654,18 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
         >
           {/* Task Information Card */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Task Information</Text>
+            <Text style={styles.cardTitle}>{t('inspection.taskInformation')}</Text>
             <View style={styles.divider} />
             
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Task ID:</Text>
-              <Text style={styles.infoValue}>{taskDetail.task_id.substring(0, 8)}...</Text>
-            </View>
+           
             
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Description:</Text>
+              <Text style={styles.infoLabel}>{t('inspection.description')}:</Text>
               <Text style={styles.infoValue}>{taskDetail.description}</Text>
             </View>
             
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Status:</Text>
+              <Text style={styles.infoLabel}>{t('inspection.status')}:</Text>
               <View style={[styles.statusBadge, { backgroundColor: '#007AFF' }]}>
                 <Text style={styles.statusText}>In Progress</Text>
               </View>
@@ -674,12 +674,12 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
 
           {/* Inspection Type Selection */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Inspection Type</Text>
+            <Text style={styles.cardTitle}>{t('inspection.inspectionType')}</Text>
             <View style={styles.divider} />
             
             <View style={styles.switchRow}>
               <Text style={styles.switchLabel}>
-                {isPrivateAsset ? 'Private Asset' : 'Regular Inspection'}
+                {isPrivateAsset ? t('inspection.privateAsset') : t('inspection.regularInspection')}
               </Text>
               <Switch
                 trackColor={{ false: '#767577', true: '#B77F2E' }}
@@ -692,14 +692,14 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
             
             <Text style={styles.infoText}>
               {isPrivateAsset 
-                ? 'Private assets do not require verification or materials selection.' 
-                : 'Regular inspections can be marked as verified and may require repair materials.'}
+                ? t('inspection.privateAssetDescription')
+                : t('inspection.regularInspectionDescription')}
             </Text>
           </View>
 
           {/* Images Section */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Inspection Images</Text>
+            <Text style={styles.cardTitle}>{t('inspection.inspectionImages')}</Text>
             <View style={styles.divider} />
             
             <TouchableOpacity
@@ -707,7 +707,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
               onPress={openImageSourceModal}
             >
               <Ionicons name="camera" size={24} color="#B77F2E" />
-              <Text style={styles.imagePickerText}>Add Photos</Text>
+              <Text style={styles.imagePickerText}>{t('inspection.addPhotos')}</Text>
             </TouchableOpacity>
             
             {/* Image Source Modal */}
@@ -717,14 +717,14 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
               style={styles.modal}
             >
               <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Select Image Source</Text>
+                <Text style={styles.modalTitle}>{t('inspection.selectImageSource')}</Text>
                 
                 <TouchableOpacity
                   style={styles.modalOption}
                   onPress={takePhoto}
                 >
                   <Ionicons name="camera" size={24} color="#B77F2E" />
-                  <Text style={styles.modalOptionText}>Take Photo</Text>
+                  <Text style={styles.modalOptionText}>{t('inspection.takePhoto')}</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity
@@ -732,7 +732,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
                   onPress={pickImageFromLibrary}
                 >
                   <Ionicons name="images" size={24} color="#B77F2E" />
-                  <Text style={styles.modalOptionText}>Choose from Gallery</Text>
+                  <Text style={styles.modalOptionText}>{t('inspection.chooseFromGallery')}</Text>
                 </TouchableOpacity>
               </View>
             </Modal>
@@ -755,23 +755,22 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
             )}
             
             {images.length === 0 && (
-              <Text style={styles.warningText}>Please add at least one image</Text>
+              <Text style={styles.warningText}>{t('inspection.pleaseAddImage')}</Text>
             )}
           </View>
 
           {/* Notes Section */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Inspection Notes</Text>
+            <Text style={styles.cardTitle}>{t('inspection.inspectionNotes')}</Text>
             <View style={styles.divider} />
             
             <TextInput
               style={styles.notesInput}
-              placeholder="Enter detailed inspection notes..."
+              placeholder={t('inspection.enterNotes')}
               value={notes}
               onChangeText={setNotes}
               multiline
               onFocus={() => {
-                // Auto-scroll to this input when focused with a slight delay to ensure keyboard is visible
                 setTimeout(() => {
                   scrollViewRef.current?.scrollToEnd({animated: true});
                 }, 300);
@@ -779,19 +778,19 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
             />
             
             {notes.trim() === '' && (
-              <Text style={styles.warningText}>Please add inspection notes</Text>
+              <Text style={styles.warningText}>{t('inspection.pleaseAddNotes')}</Text>
             )}
           </View>
 
           {/* Verification Status - Only shown for regular inspections */}
           {!isPrivateAsset && (
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Verification Status</Text>
+              <Text style={styles.cardTitle}>{t('inspection.verificationStatus')}</Text>
               <View style={styles.divider} />
               
               <View style={styles.switchRow}>
                 <Text style={styles.switchLabel}>
-                  {isVerified ? 'Verified' : 'Unverified'}
+                  {isVerified ? t('inspection.verified') : t('inspection.unverified')}
                 </Text>
                 <Switch
                   trackColor={{ false: '#767577', true: '#B77F2E' }}
@@ -804,8 +803,8 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
               
               <Text style={styles.infoText}>
                 {isVerified 
-                  ? 'This crack has been verified and requires repair. Status will be set to Verified.' 
-                  : 'Status will be set to Unverified if this crack doesn\'t need immediate repair.'}
+                  ? t('inspection.verifiedDescription')
+                  : t('inspection.unverifiedDescription')}
               </Text>
             </View>
           )}
@@ -813,7 +812,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
           {/* Materials Section - Only shown when Verified and not a private asset */}
           {!isPrivateAsset && isVerified && (
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Materials for Repair</Text>
+              <Text style={styles.cardTitle}>{t('inspection.materialsForRepair')}</Text>
               <View style={styles.divider} />
               
               {materialsLoading ? (
@@ -837,7 +836,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
                               {parseInt(item.material.unit_price, 10).toLocaleString()} VND/unit
                             </Text>
                             <Text style={styles.materialSubtotal}>
-                              Subtotal: {(parseInt(item.material.unit_price, 10) * item.quantity).toLocaleString()} VND
+                              {t('inspection.subtotal')}: {(parseInt(item.material.unit_price, 10) * item.quantity).toLocaleString()} VND
                             </Text>
                           </View>
                           <View style={styles.materialActions}>
@@ -858,14 +857,14 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
                       ))}
                       
                       <View style={styles.materialTotalRow}>
-                        <Text style={styles.materialTotalLabel}>Total Cost:</Text>
+                        <Text style={styles.materialTotalLabel}>{t('inspection.totalCost')}:</Text>
                         <Text style={styles.materialTotalValue}>
                           {calculateTotalCost().toLocaleString()} VND
                         </Text>
                       </View>
                     </View>
                   ) : (
-                    <Text style={styles.noMaterialsText}>No materials added yet</Text>
+                    <Text style={styles.noMaterialsText}>{t('inspection.noMaterialsAdded')}</Text>
                   )}
                   
                   <TouchableOpacity
@@ -873,7 +872,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
                     onPress={openMaterialModal}
                   >
                     <Ionicons name="add-circle" size={24} color="#B77F2E" />
-                    <Text style={styles.addButtonText}>Add Material</Text>
+                    <Text style={styles.addButtonText}>{t('inspection.addMaterial')}</Text>
                   </TouchableOpacity>
                   
                   {/* Material Selection Modal */}
@@ -884,7 +883,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
                   >
                     <View style={styles.materialModalContent}>
                       <Text style={styles.modalTitle}>
-                        {selectedMaterialForEdit ? 'Update Material Quantity' : 'Select Material'}
+                        {selectedMaterialForEdit ? t('inspection.updateMaterial') : t('inspection.addMaterial')}
                       </Text>
                       
                       {selectedMaterialForEdit ? (
@@ -892,14 +891,14 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
                           <Text style={styles.materialUpdateTitle}>{selectedMaterialForEdit.material.name}</Text>
                           <Text style={styles.materialUpdateDescription}>{selectedMaterialForEdit.material.description}</Text>
                           <Text style={styles.materialUpdateStock}>
-                            Available: {selectedMaterialForEdit.material.stock_quantity} units
+                            {t('inspection.available')}: {selectedMaterialForEdit.material.stock_quantity} units
                           </Text>
                           <Text style={styles.materialUpdatePrice}>
-                            Unit Price: {parseInt(selectedMaterialForEdit.material.unit_price, 10).toLocaleString()} VND
+                            {t('inspection.unitPrice')}: {parseInt(selectedMaterialForEdit.material.unit_price, 10).toLocaleString()} VND
                           </Text>
                           
                           <View style={styles.quantityContainer}>
-                            <Text style={styles.quantityLabel}>Quantity:</Text>
+                            <Text style={styles.quantityLabel}>{t('inspection.quantity')}:</Text>
                             <TextInput 
                               style={styles.quantityInput}
                               value={materialQuantity}
@@ -914,14 +913,14 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
                               style={styles.materialModalButton}
                               onPress={closeMaterialModal}
                             >
-                              <Text style={styles.materialModalButtonText}>Cancel</Text>
+                              <Text style={styles.materialModalButtonText}>{t('inspection.cancel')}</Text>
                             </TouchableOpacity>
                             
                             <TouchableOpacity
                               style={[styles.materialModalButton, styles.materialModalPrimaryButton]}
                               onPress={updateMaterial}
                             >
-                              <Text style={styles.materialModalPrimaryButtonText}>Update</Text>
+                              <Text style={styles.materialModalPrimaryButtonText}>{t('inspection.update')}</Text>
                             </TouchableOpacity>
                           </View>
                         </View>
@@ -932,7 +931,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
                             <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
                             <TextInput
                               style={styles.searchInput}
-                              placeholder="Search materials..."
+                              placeholder={t('inspection.searchMaterials')}
                               value={searchText}
                               onChangeText={(text) => setSearchText(text)}
                               clearButtonMode="while-editing"
@@ -958,8 +957,6 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
                                 <TouchableOpacity
                                   style={styles.materialSelectItem}
                                   onPress={() => {
-                                    // Khi người dùng chọn vật liệu, cập nhật form 
-                                    // và hiển thị giao diện nhập số lượng
                                     setSelectedMaterialForEdit({ material: item, quantity: 1 });
                                     setMaterialQuantity('1');
                                   }}
@@ -974,7 +971,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
                                         {parseInt(item.unit_price, 10).toLocaleString()} VND/unit
                                       </Text>
                                       <Text style={styles.materialSelectStock}>
-                                        Available: {item.stock_quantity}
+                                        {t('inspection.available')}: {item.stock_quantity}
                                       </Text>
                                     </View>
                                   </View>
@@ -986,7 +983,9 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
                           ) : (
                             <View style={styles.noSearchResultsContainer}>
                               <Ionicons name="search-outline" size={48} color="#CCC" />
-                              <Text style={styles.noSearchResultsText}>No materials found matching "{searchText}"</Text>
+                              <Text style={styles.noSearchResultsText}>
+                                {t('inspection.noMaterialsFound')} "{searchText}"
+                              </Text>
                             </View>
                           )}
                           
@@ -994,7 +993,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
                             style={styles.closeMaterialModalButton}
                             onPress={closeMaterialModal}
                           >
-                            <Text style={styles.closeMaterialModalText}>Cancel</Text>
+                            <Text style={styles.closeMaterialModalText}>{t('inspection.cancel')}</Text>
                           </TouchableOpacity>
                         </View>
                       )}
@@ -1029,7 +1028,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
             {loading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.submitButtonText}>Review Inspection</Text>
+              <Text style={styles.submitButtonText}>{t('inspection.reviewInspection')}</Text>
             )}
           </TouchableOpacity>
         </ScrollView>
@@ -1045,9 +1044,9 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
         >
           <View style={styles.removeModalContainer}>
             <View style={styles.removeModalContent}>
-              <Text style={styles.removeModalTitle}>Remove Material</Text>
+              <Text style={styles.removeModalTitle}>{t('inspection.removeMaterial')}</Text>
               <Text style={styles.removeModalText}>
-                Are you sure you want to remove this material?
+                {t('inspection.confirmRemoveMaterial')}
               </Text>
               
               <View style={styles.removeModalActions}>
@@ -1055,14 +1054,14 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
                   style={[styles.removeModalButton, styles.removeModalCancelButton]}
                   onPress={cancelRemoveMaterial}
                 >
-                  <Text style={styles.removeModalCancelButtonText}>Cancel</Text>
+                  <Text style={styles.removeModalCancelButtonText}>{t('inspection.cancel')}</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity
                   style={[styles.removeModalButton, styles.removeModalRemoveButton]}
                   onPress={confirmRemoveMaterial}
                 >
-                  <Text style={styles.removeModalRemoveButtonText}>Remove</Text>
+                  <Text style={styles.removeModalRemoveButtonText}>{t('inspection.remove')}</Text>
                 </TouchableOpacity>
               </View>
             </View>

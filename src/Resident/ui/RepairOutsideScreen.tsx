@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Platform,
   Alert,
   FlatList,
+  BackHandler,
 } from "react-native";
 import Modal from "react-native-modal";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -18,27 +19,19 @@ import {
   useNavigation,
   useRoute,
   NavigationProp,
+  RouteProp,
 } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
-import { Property } from "../../types";
-import { OUTDOOR_CRACK_POSITIONS } from "../../types";
+import { Property, OUTDOOR_CRACK_POSITIONS } from "../../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTranslation } from 'react-i18next';
 
-// Define route params type
-type RootStackParamList = {
-  RepairOutside: { property: Property };
-  RepairReview: {
-    property: Property;
-    description: string;
-    images: string[];
-    buildingDetailId?: string;
-    selectedRoom?: keyof typeof OUTDOOR_CRACK_POSITIONS;
-    selectedPosition?: string;
-    isPrivatesAsset: boolean;
-  };
-};
+// Update type definitions at the top of the file
+type OutdoorArea = keyof typeof OUTDOOR_CRACK_POSITIONS;
+type AreaType = OutdoorArea | 'OTHER';
 
 const RepairOutsideScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute();
   const { property } = route.params as { property: Property };
@@ -49,15 +42,31 @@ const RepairOutsideScreen = () => {
   const [isImageSourceModalVisible, setImageSourceModalVisible] = useState(false);
   
   // State for crack reporting
-  const [selectedArea, setSelectedArea] = useState<keyof typeof OUTDOOR_CRACK_POSITIONS | ''>('');
+  const [selectedArea, setSelectedArea] = useState<AreaType>('BUILDING_EXTERIOR');
   const [selectedPosition, setSelectedPosition] = useState('');
   const [buildingDetailId, setBuildingDetailId] = useState<string | undefined>(undefined);
+  const [customArea, setCustomArea] = useState('');
+  const [customPosition, setCustomPosition] = useState('');
 
   // Dropdown states
   const [isAreaDropdownOpen, setIsAreaDropdownOpen] = useState(false);
   const [isPositionDropdownOpen, setIsPositionDropdownOpen] = useState(false);
-  const [areaDisplayText, setAreaDisplayText] = useState('Select area');
-  const [positionDisplayText, setPositionDisplayText] = useState('Select position');
+  const [areaDisplayText, setAreaDisplayText] = useState(t('repair.outside.selectArea'));
+  const [positionDisplayText, setPositionDisplayText] = useState(t('repair.outside.selectPosition'));
+
+  // Update navigation params type
+  type RootStackParamList = {
+    RepairOutside: { property: Property };
+    RepairReview: {
+      property: Property;
+      description: string;
+      images: string[];
+      buildingDetailId?: string;
+      selectedRoom: OutdoorArea | undefined;
+      selectedPosition: string;
+      isPrivatesAsset: boolean;
+    };
+  };
 
   // Fetch building detail ID when screen loads
   React.useEffect(() => {
@@ -115,62 +124,84 @@ const RepairOutsideScreen = () => {
   const isImagesValid = images.length > 0;
   const isPositionValid = selectedArea && selectedPosition;
 
-  const handleAreaSelect = (area: keyof typeof OUTDOOR_CRACK_POSITIONS) => {
+  const handleAreaSelect = (area: AreaType) => {
     setSelectedArea(area);
-    setAreaDisplayText(area.replace(/_/g, ' '));
+    const translation = area === 'OTHER' 
+      ? t('repair.outside.other')
+      : t(`repair.outside.${area === 'BUILDING_EXTERIOR' ? 'buildingExterior' : 
+          area === 'COMMON_AREA' ? 'commonArea' : 
+          area.toLowerCase()}`);
+    setAreaDisplayText(translation);
     setIsAreaDropdownOpen(false);
     
     // Reset position when area changes
-    setSelectedPosition('');
-    setPositionDisplayText('Select position');
+    if (area === 'OTHER') {
+      setSelectedPosition('other');
+      setPositionDisplayText(t('repair.outside.other'));
+    } else {
+      setSelectedPosition('');
+      setPositionDisplayText(t('repair.outside.selectPosition'));
+    }
   };
 
   const handlePositionSelect = (key: string, value: string) => {
-    setSelectedPosition(value);
-    setPositionDisplayText(key.replace(/_/g, ' '));
+    if (key === 'OTHER') {
+      setSelectedPosition('other');
+      setPositionDisplayText(t('repair.outside.other'));
+    } else {
+      setSelectedPosition(value);
+      setPositionDisplayText(t(`repair.outside.${key.toLowerCase()}`));
+    }
     setIsPositionDropdownOpen(false);
   };
 
+  const handleCustomAreaChange = (text: string) => {
+    setCustomArea(text);
+    setSelectedPosition(text);
+  };
+
+  const handleCustomPositionChange = (text: string) => {
+    setCustomPosition(text);
+    setSelectedPosition(text);
+  };
+
   const handleContinueToReview = () => {
-    // Validate all required fields
     if (!isDescriptionValid) {
-      Alert.alert("Alert", "Please enter a detailed description (minimum 5 characters)");
+      Alert.alert(t('repair.outside.alert'), t('repair.outside.descriptionAlert'));
       return;
     }
 
     if (!isPositionValid) {
-      Alert.alert("Alert", "Please select the area and crack position");
+      Alert.alert(t('repair.outside.alert'), t('repair.outside.positionAlert'));
       return;
     }
     
-    // Hiển thị thông báo xác nhận vị trí
     Alert.alert(
-      "Confirmation",
-      `Report position: ${selectedPosition
-        .split('/')
-        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(' > ')}\n\nAre you sure you want to continue?`,
+      t('repair.outside.confirmPosition'),
+      t('repair.outside.confirmPositionMessage', {
+        position: selectedPosition
+          .split('/')
+          .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(' > ')
+      }),
       [
         {
-          text: "Check again",
+          text: t('repair.outside.checkAgain'),
           style: "cancel"
         },
         { 
-          text: "Continue", 
+          text: t('repair.outside.continue'), 
           onPress: () => {
-            // Sử dụng position từ OUTDOOR_CRACK_POSITIONS
-            console.log('🔍 Position to send:', selectedPosition);
-            
-            // Navigate to review screen with all necessary data
-            navigation.navigate("RepairReview", {
+            const navigationParams = {
               property,
               description,
               images,
               buildingDetailId,
-              selectedRoom: selectedArea,
-              selectedPosition,
-              isPrivatesAsset: false // Always false for outdoor repairs
-            });
+              selectedRoom: selectedArea === 'OTHER' ? undefined : selectedArea as OutdoorArea,
+              selectedPosition: selectedArea === 'OTHER' ? 'other' : selectedPosition,
+              isPrivatesAsset: false
+            };
+            navigation.navigate("RepairReview", navigationParams);
           } 
         }
       ]
@@ -178,9 +209,17 @@ const RepairOutsideScreen = () => {
   };
 
   const renderAreaDropdown = () => {
+    const areaOptions = [
+      { key: 'BUILDING_EXTERIOR', translation: t('repair.outside.buildingExterior') },
+      { key: 'COMMON_AREA', translation: t('repair.outside.commonArea') },
+      { key: 'PARKING', translation: t('repair.outside.parking') },
+      { key: 'LANDSCAPE', translation: t('repair.outside.landscape') },
+      { key: 'OTHER', translation: t('repair.outside.other') }
+    ];
+
     return (
       <>
-        <Text style={styles.label}>Select area</Text>
+        <Text style={styles.label}>{t('repair.outside.selectArea')}</Text>
         <TouchableOpacity 
           style={styles.dropdownButton}
           onPress={() => {
@@ -188,8 +227,10 @@ const RepairOutsideScreen = () => {
             setIsPositionDropdownOpen(false);
           }}
         >
-          <Icon name="place" size={20} color="#B77F2E" style={styles.dropdownIcon} />
-          <Text style={styles.dropdownButtonText}>{areaDisplayText}</Text>
+          <Icon name="location-on" size={20} color="#B77F2E" style={styles.dropdownIcon} />
+          <Text style={styles.dropdownButtonText}>
+            {areaDisplayText}
+          </Text>
           <Icon 
             name={isAreaDropdownOpen ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
             size={24} 
@@ -200,21 +241,21 @@ const RepairOutsideScreen = () => {
         {isAreaDropdownOpen && (
           <View style={styles.dropdownMenu}>
             <ScrollView nestedScrollEnabled={true} style={styles.scrollList}>
-              {Object.keys(OUTDOOR_CRACK_POSITIONS).map((area) => (
+              {areaOptions.map(({ key, translation }) => (
                 <TouchableOpacity 
-                  key={area}
+                  key={key}
                   style={styles.dropdownItem}
-                  onPress={() => handleAreaSelect(area as keyof typeof OUTDOOR_CRACK_POSITIONS)}
+                  onPress={() => handleAreaSelect(key as AreaType)}
                 >
                   <Text 
                     style={[
                       styles.dropdownItemText,
-                      selectedArea === area ? styles.selectedDropdownItem : {}
+                      selectedArea === key ? styles.selectedDropdownItem : {}
                     ]}
                   >
-                    {area.replace(/_/g, ' ')}
+                    {translation}
                   </Text>
-                  {selectedArea === area && (
+                  {selectedArea === key && (
                     <Icon name="check" size={18} color="#B77F2E" />
                   )}
                 </TouchableOpacity>
@@ -228,10 +269,21 @@ const RepairOutsideScreen = () => {
 
   const renderPositionDropdown = () => {
     if (!selectedArea) return null;
+
+    if (selectedArea === 'OTHER') {
+      return null; // Don't show position dropdown for OTHER
+    }
     
+    const positions = OUTDOOR_CRACK_POSITIONS[selectedArea] ? 
+      Object.entries(OUTDOOR_CRACK_POSITIONS[selectedArea]).map(([key, value]) => ({
+        key,
+        value,
+        translation: t(`repair.outside.${key.toLowerCase()}`)
+      })) : [];
+
     return (
       <>
-        <Text style={styles.label}>Select position</Text>
+        <Text style={styles.label}>{t('repair.outside.selectPosition')}</Text>
         <TouchableOpacity 
           style={styles.dropdownButton}
           onPress={() => {
@@ -251,7 +303,10 @@ const RepairOutsideScreen = () => {
         {isPositionDropdownOpen && (
           <View style={styles.dropdownMenu}>
             <ScrollView nestedScrollEnabled={true} style={styles.scrollList}>
-              {Object.entries(OUTDOOR_CRACK_POSITIONS[selectedArea as keyof typeof OUTDOOR_CRACK_POSITIONS]).map(([key, value]) => (
+              {[
+                ...positions,
+                { key: 'OTHER', value: 'other', translation: t('repair.outside.other') }
+              ].map(({ key, value, translation }) => (
                 <TouchableOpacity 
                   key={key}
                   style={styles.dropdownItem}
@@ -263,7 +318,7 @@ const RepairOutsideScreen = () => {
                       selectedPosition === value ? styles.selectedDropdownItem : {}
                     ]}
                   >
-                    {key.replace(/_/g, ' ')}
+                    {translation}
                   </Text>
                   {selectedPosition === value && (
                     <Icon name="check" size={18} color="#B77F2E" />
@@ -276,12 +331,14 @@ const RepairOutsideScreen = () => {
 
         {selectedPosition && (
           <View style={styles.selectedInfo}>
-            <Text style={styles.selectedInfoLabel}>Selected position:</Text>
+            <Text style={styles.selectedInfoLabel}>{t('repair.outside.selectedPosition')}:</Text>
             <Text style={styles.selectedInfoValue}>
-              {selectedPosition
-                .split('/')
-                .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-                .join(' > ')}
+              {selectedPosition === 'other' 
+                ? t('repair.outside.other')
+                : selectedPosition
+                    .split('/')
+                    .map(part => t(`repair.outside.${part.toLowerCase()}`))
+                    .join(' > ')}
             </Text>
           </View>
         )}
@@ -293,18 +350,18 @@ const RepairOutsideScreen = () => {
     switch (currentStep) {
       case 1:
         return (
-          <>
-            {/* Nhập mô tả */}
-            <Text style={styles.label}>Details</Text>
+          <View style={styles.stepContainer}>
+            {/* Description input */}
+            <Text style={styles.label}>{t('repair.outside.details')}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter description"
+              placeholder={t('repair.outside.description')}
               value={description}
               onChangeText={setDescription}
               multiline
             />
             {!isDescriptionValid && (
-              <Text style={styles.warningText}>Enter at least 5 characters of description</Text>
+              <Text style={styles.warningText}>{t('repair.outside.descriptionWarning')}</Text>
             )}
 
             {/* Custom Area Dropdown */}
@@ -313,7 +370,7 @@ const RepairOutsideScreen = () => {
             {/* Custom Position Dropdown */}
             {renderPositionDropdown()}
 
-            {/* Nút Tiếp tục */}
+            {/* Continue Button */}
             <TouchableOpacity
               style={[
                 styles.continueButton,
@@ -327,50 +384,25 @@ const RepairOutsideScreen = () => {
               disabled={!(isDescriptionValid && isPositionValid)}
               onPress={() => setCurrentStep(2)}
             >
-              <Text style={styles.continueButtonText}>Continue</Text>
+              <Text style={styles.continueButtonText}>{t('repair.outside.continue')}</Text>
             </TouchableOpacity>
-          </>
+          </View>
         );
 
       case 2:
         return (
-          <>
-            {/* Thêm hình ảnh */}
-            <Text style={styles.label}>Add photos</Text>
+          <View style={styles.stepContainer}>
+            {/* Add photos */}
+            <Text style={styles.label}>{t('repair.outside.addPhotos')}</Text>
             <TouchableOpacity
               style={styles.imagePicker}
               onPress={openImageSourceModal}
             >
               <Icon name="add-a-photo" size={30} color="#B77F2E" />
-              <Text>Choose photo</Text>
+              <Text>{t('repair.outside.choosePhoto')}</Text>
             </TouchableOpacity>
 
-            {/* Modal chọn nguồn ảnh */}
-            <Modal
-              isVisible={isImageSourceModalVisible}
-              onBackdropPress={closeImageSourceModal}
-              style={styles.modal}
-            >
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Select photo source</Text>
-                <TouchableOpacity
-                  style={styles.modalOption}
-                  onPress={takePhoto}
-                >
-                  <Icon name="camera-alt" size={24} color="#B77F2E" />
-                  <Text style={styles.modalOptionText}>Take photo</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.modalOption}
-                  onPress={pickImageFromLibrary}
-                >
-                  <Icon name="photo-library" size={24} color="#B77F2E" />
-                  <Text style={styles.modalOptionText}>Choose from library</Text>
-                </TouchableOpacity>
-              </View>
-            </Modal>
-
-            {/* Hiển thị ảnh đã chọn */}
+            {/* Display chosen images */}
             <View style={styles.imageContainer}>
               {images.map((image, index) => (
                 <View key={index} style={styles.imageWrapper}>
@@ -386,11 +418,11 @@ const RepairOutsideScreen = () => {
             </View>
             {images.length === 0 && (
               <Text style={styles.warningText}>
-                Please add at least 1 photo
+                {t('repair.outside.photoWarning')}
               </Text>
             )}
 
-            {/* Nút điều hướng */}
+            {/* Navigation buttons */}
             <TouchableOpacity
               style={[
                 styles.continueButton,
@@ -399,9 +431,9 @@ const RepairOutsideScreen = () => {
               disabled={!isImagesValid}
               onPress={handleContinueToReview}
             >
-              <Text style={styles.continueButtonText}>Continue</Text>
+              <Text style={styles.continueButtonText}>{t('repair.outside.continue')}</Text>
             </TouchableOpacity>
-          </>
+          </View>
         );
 
       default:
@@ -419,30 +451,80 @@ const RepairOutsideScreen = () => {
         >
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Repair outside</Text>
+        <Text style={styles.headerTitle}>{t('repair.outside.title')}</Text>
         <Text style={styles.stepIndicator}>
-          <Text style={{ color: "#000" }}>Step </Text>
+          <Text style={{ color: "#000" }}>{t('repair.outside.step')} </Text>
           <Text style={{ color: "#B77F2E" }}>{currentStep}</Text>
           <Text style={{ color: "#000" }}>/2</Text>
         </Text>
       </View>
 
-      {/* Thông tin căn hộ */}
+      {/* Property Info */}
       <View style={styles.propertyInfo}>
         <Text style={styles.unitCode}>
           {property.building}
         </Text>
         <Text style={styles.subTitle}>
-          Building {property.description} | Apartment {property.unit} 
+          {t('propertyDetail.buildingInfo', { 
+            description: property.description, 
+            unit: property.unit 
+          })}
         </Text>
       </View>
 
-      {/* Thông báo khu vực công cộng */}
+      {/* Public Area Notice */}
       <View style={styles.noticeContainer}>
         <Icon name="info" size={24} color="#2196F3" />
         <Text style={styles.noticeText}>
-          This report will be sent to the building manager to repair the public area
+          {t('repair.outside.publicAreaNotice')}
         </Text>
+      </View>
+
+      {/* Progress indicator */}
+      <View style={styles.progressContainer}>
+        <View style={styles.stepIndicator}>
+          <View
+            style={[
+              styles.stepCircle,
+              {
+                backgroundColor: currentStep >= 1 ? "#B77F2E" : "#E0E0E0",
+              },
+            ]}
+          >
+            <Text style={styles.stepText}>1</Text>
+          </View>
+          <Text
+            style={[
+              styles.stepLabel,
+              { color: currentStep >= 1 ? "#B77F2E" : "#999" },
+            ]}
+          >
+            {t('repair.outside.details')}
+          </Text>
+        </View>
+
+        <View style={styles.stepLine} />
+
+        <View style={styles.stepIndicator}>
+          <View
+            style={[
+              styles.stepCircle,
+              {
+                backgroundColor: currentStep >= 2 ? "#B77F2E" : "#E0E0E0",
+              },
+            ]}
+          >
+            <Text style={styles.stepText}>2</Text>
+          </View>
+          <Text
+            style={[
+              styles.stepLabel,
+              { color: currentStep >= 2 ? "#B77F2E" : "#999" },
+            ]}
+          >
+            {t('repair.outside.addPhotos')}
+          </Text>
+        </View>
       </View>
 
       {/* Dynamic Step Rendering */}
@@ -472,12 +554,42 @@ const styles = StyleSheet.create({
   },
   stepIndicator: {
     position: "absolute",
-    fontWeight: "bold",
     right: 0,
     fontSize: 14,
     backgroundColor: "#F8EDDC",
     padding: 10,
     borderRadius: 15,
+    fontWeight: "bold",
+  },
+  progressContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  stepCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#E0E0E0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 5,
+  },
+  stepText: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  stepLabel: {
+    fontSize: 14,
+    marginTop: 5,
+    textAlign: "center",
+  },
+  stepLine: {
+    width: 30,
+    height: 2,
+    backgroundColor: "#E0E0E0",
   },
   propertyInfo: {
     padding: 16,
@@ -706,6 +818,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#B77F2E",
     fontWeight: "500",
+  },
+  stepContainer: {
+    padding: 16,
   },
 });
 

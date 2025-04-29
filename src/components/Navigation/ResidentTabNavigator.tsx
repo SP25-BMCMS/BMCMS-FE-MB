@@ -7,11 +7,13 @@ import AccountScreen from '../../screen/AccountScreen';
 import { ResidentBottomTabParamList } from '../../types';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 
 const Tab = createBottomTabNavigator<ResidentBottomTabParamList>();
 
 const ResidentTabNavigator = () => {
   const [notificationCount, setNotificationCount] = useState(0);
+  const { t } = useTranslation();
 
   const fetchNotificationCount = async () => {
     const userString = await AsyncStorage.getItem('userData');
@@ -69,17 +71,30 @@ const ResidentTabNavigator = () => {
         headerShown: false,
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Property" component={PropertyScreen} />
+      <Tab.Screen 
+        name="Home" 
+        component={HomeScreen} 
+        options={{ tabBarLabel: t('navigation.home') }}
+      />
+      <Tab.Screen 
+        name="Property" 
+        component={PropertyScreen}
+        options={{ tabBarLabel: t('navigation.property') }}
+      />
       <Tab.Screen
         name="Notification"
         options={{
+          tabBarLabel: t('navigation.notification'),
           tabBarBadge: notificationCount > 0 ? notificationCount : undefined,
         }}
       >
         {() => <NotificationScreen onReadAll={resetNotificationCount} />}
       </Tab.Screen>
-      <Tab.Screen name="Account" component={AccountScreen} />
+      <Tab.Screen 
+        name="Account" 
+        component={AccountScreen}
+        options={{ tabBarLabel: t('navigation.account') }}
+      />
     </Tab.Navigator>
   );
 };

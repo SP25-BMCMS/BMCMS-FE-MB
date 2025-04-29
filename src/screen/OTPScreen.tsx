@@ -16,6 +16,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types";
 import { AuthService } from "../service/registerResident";
+import { useTranslation } from 'react-i18next';
 
 type OTPScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -23,6 +24,7 @@ type OTPScreenNavigationProp = StackNavigationProp<
 >;
 
 const OTPScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<OTPScreenNavigationProp>();
   const route = useRoute();
   const params = route.params as {
@@ -75,7 +77,7 @@ const OTPScreen = () => {
       // Lấy thông tin người dùng từ AsyncStorage
       const tempUserDataString = await AsyncStorage.getItem('tempUserData');
       if (!tempUserDataString) {
-        Alert.alert("Alert", "Cannot find registration information");
+        Alert.alert(t('screens.otp.alert'), t('screens.otp.error.noRegistration'));
         return;
       }
       
@@ -101,17 +103,17 @@ const OTPScreen = () => {
           })
         );
         
-        Alert.alert("Thành công", response.message);
+        Alert.alert(t('screens.otp.success'), response.message);
         navigation.navigate("MainApp");
       } else {
         setError(true);
         triggerErrorAnimation();
-        Alert.alert("Alert", response?.message || "OTP is not valid");
+        Alert.alert(t('screens.otp.alert'), t('screens.otp.error.invalidOTP'));
       }
     } catch (error) {
       setError(true);
       triggerErrorAnimation();
-      Alert.alert("Alert", "An error occurred during OTP verification");
+      Alert.alert(t('screens.otp.alert'), t('screens.otp.error.verificationFailed'));
     }
   };
 
@@ -172,11 +174,11 @@ const OTPScreen = () => {
         <Icon name="arrow-back" size={24} color="#000" />
       </TouchableOpacity>
 
-      <Text style={styles.headerTitle}>Enter OTP</Text>
+      <Text style={styles.headerTitle}>{t('screens.otp.title')}</Text>
 
       <View style={styles.inputSection}>
         <Text style={styles.inputLabel}>
-          OTP has been sent to {params.identifier}
+          {t('screens.otp.sentTo', { identifier: params.identifier })}
         </Text>
 
         <Animated.View
@@ -205,7 +207,7 @@ const OTPScreen = () => {
         </Animated.View>
 
         {error && (
-          <Text style={styles.errorText}>OTP is not valid, please enter again</Text>
+          <Text style={styles.errorText}>{t('screens.otp.error.invalidOTP')}</Text>
         )}
       </View>
 
@@ -219,7 +221,7 @@ const OTPScreen = () => {
         onPress={handleVerify}
         disabled={otp.join("").length !== 6}
       >
-        <Text style={styles.verifyButtonText}>Verify</Text>
+        <Text style={styles.verifyButtonText}>{t('screens.otp.verify')}</Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>
   );

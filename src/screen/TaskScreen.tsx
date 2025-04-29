@@ -14,6 +14,7 @@ import instance from '../service/Auth';
 import { VITE_CHANGE_STATUS_CRACK, VITE_GET_TASK_ASSIGNMENT, VITE_CHANGE_STATUS_SCHEDULE_JOB_ID } from '@env';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { validateToken } from '../service/Auth';
+import { useTranslation } from 'react-i18next';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -23,6 +24,7 @@ enum ViewMode {
 }
 
 const TaskScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.MAINTENANCE_TASKS);
   const [error, setError] = useState<string>('');
@@ -241,29 +243,12 @@ const TaskScreen = () => {
   };
 
   const getStatusText = (status: string) => {
-    switch (status) {
-      case 'Pending':
-        return 'Pending';
-      case 'InProgress':
-        return 'In Progress';
-      case 'Completed':
-        return 'Completed';
-      case 'Canceled':
-        return 'Canceled';
-      case 'Verified':
-        return 'Verified';
-      case 'Unverified':
-        return 'Unverified';
-      case 'Reviewing':
-        return 'Reviewing';
-      default:
-        return status;
-    }
+    return t(`inspectionDetail.statusTypes.${status}`) || status;
   };
 
   const handleTaskPress = (assignmentId: string) => {
     if (!tokenValid) {
-      Alert.alert("Session Expired", "Your session has expired. Please log in again.");
+      Alert.alert(t('screens.task.sessionExpired'), t('screens.task.loginAgain'));
       return;
     }
     navigation.navigate('TaskDetail', { assignmentId });
@@ -271,7 +256,7 @@ const TaskScreen = () => {
 
   const handleCreateTaskAssignment = () => {
     if (!tokenValid) {
-      Alert.alert("Session Expired", "Your session has expired. Please log in again.");
+      Alert.alert(t('screens.task.sessionExpired'), t('screens.task.loginAgain'));
       return;
     }
     navigation.navigate('CreateTaskAssignment');
@@ -377,7 +362,7 @@ const TaskScreen = () => {
           style={styles.reviewingButton}
           onPress={() => handleChangeToReviewing(assignment)}
         >
-          <Text style={styles.reviewingButtonText}>Change to Reviewing</Text>
+          <Text style={styles.reviewingButtonText}>{t('screens.task.changeToReviewing')}</Text>
         </TouchableOpacity>
       );
     }
@@ -418,7 +403,7 @@ const TaskScreen = () => {
           style={[styles.reviewingButton, { backgroundColor: '#4CD964' }]} // Màu xanh lá cho schedule job
           onPress={() => handleChangeToScheduleReviewing(assignment)}
         >
-          <Text style={styles.reviewingButtonText}>Change to Reviewing</Text>
+          <Text style={styles.reviewingButtonText}>{t('screens.task.changeToReviewing')}</Text>
         </TouchableOpacity>
       );
     }
@@ -429,7 +414,7 @@ const TaskScreen = () => {
 
   const handleChangeToReviewing = async (assignment: TaskAssignment) => {
     if (!tokenValid) {
-      Alert.alert("Session Expired", "Your session has expired. Please log in again.");
+      Alert.alert(t('screens.task.sessionExpired'), t('screens.task.loginAgain'));
       return;
     }
     
@@ -440,8 +425,8 @@ const TaskScreen = () => {
       
       if (!crackReportId) {
         showMessage({
-          message: "Error",
-          description: "No crack report found for this task",
+          message: t('common.error'),
+          description: t('screens.task.noCrackReport'),
           type: "danger",
           duration: 3000
         });
@@ -450,15 +435,15 @@ const TaskScreen = () => {
       
       // Hiển thị dialog xác nhận
       Alert.alert(
-        "Change Status",
-        "Do you want to change this report status to Reviewing?",
+        t('screens.task.changeStatus'),
+        t('screens.task.confirmStatusChange'),
         [
           {
-            text: "Cancel",
+            text: t('screens.task.cancel'),
             style: "cancel"
           },
           {
-            text: "Confirm",
+            text: t('screens.task.confirm'),
             onPress: async () => {
               try {
                 // 1. Gọi API thay đổi trạng thái của crack report
@@ -481,8 +466,8 @@ const TaskScreen = () => {
                 
                 // Hiển thị thông báo thành công
                 showMessage({
-                  message: "Success",
-                  description: "Crack report status changed to Reviewing",
+                  message: t('screens.task.success'),
+                  description: t('screens.task.crackReportStatusChanged'),
                   type: "success",
                   duration: 3000
                 });
@@ -492,8 +477,8 @@ const TaskScreen = () => {
               } catch (error) {
                 console.error('Error changing crack report status:', error);
                 showMessage({
-                  message: "Error",
-                  description: "Failed to update crack report status",
+                  message: t('common.error'),
+                  description: t('screens.task.failedToUpdate'),
                   type: "danger",
                   duration: 3000
                 });
@@ -505,8 +490,8 @@ const TaskScreen = () => {
     } catch (error) {
       console.error('Error in handleChangeToReviewing:', error);
       showMessage({
-        message: "Error",
-        description: "An error occurred while processing your request",
+        message: t('common.error'),
+        description: t('screens.task.errorOccurred'),
         type: "danger",
         duration: 3000
       });
@@ -516,7 +501,7 @@ const TaskScreen = () => {
   // Hàm mới để xử lý thay đổi trạng thái schedule job
   const handleChangeToScheduleReviewing = async (assignment: TaskAssignment) => {
     if (!tokenValid) {
-      Alert.alert("Session Expired", "Your session has expired. Please log in again.");
+      Alert.alert(t('screens.task.sessionExpired'), t('screens.task.loginAgain'));
       return;
     }
     
@@ -527,8 +512,8 @@ const TaskScreen = () => {
       
       if (!scheduleJobId) {
         showMessage({
-          message: "Error",
-          description: "No schedule job found for this task",
+          message: t('common.error'),
+          description: t('screens.task.noScheduleJob'),
           type: "danger",
           duration: 3000
         });
@@ -547,15 +532,15 @@ const TaskScreen = () => {
       
       // Hiển thị dialog xác nhận
       Alert.alert(
-        "Change Status",
-        "Do you want to change this schedule job status to Reviewing?",
+        t('screens.task.changeStatus'),
+        t('screens.task.confirmStatusChange'),
         [
           {
-            text: "Cancel",
+            text: t('screens.task.cancel'),
             style: "cancel"
           },
           {
-            text: "Confirm",
+            text: t('screens.task.confirm'),
             onPress: async () => {
               try {
                 // 1. Gọi API thay đổi trạng thái của schedule job
@@ -581,8 +566,8 @@ const TaskScreen = () => {
                 
                 // Hiển thị thông báo thành công
                 showMessage({
-                  message: "Success",
-                  description: "Schedule job status changed to Reviewing",
+                  message: t('screens.task.success'),
+                  description: t('screens.task.scheduleJobStatusChanged'),
                   type: "success",
                   duration: 3000
                 });
@@ -596,8 +581,8 @@ const TaskScreen = () => {
                   console.error('Error response:', error.response.status, error.response.data);
                 }
                 showMessage({
-                  message: "Error",
-                  description: "Failed to update schedule job status: " + (error.response?.data?.message || error.message || "Unknown error"),
+                  message: t('common.error'),
+                  description: t('screens.task.failedToUpdate') + ": " + (error.response?.data?.message || error.message || "Unknown error"),
                   type: "danger",
                   duration: 3000
                 });
@@ -609,8 +594,8 @@ const TaskScreen = () => {
     } catch (error: any) {
       console.error('Error in handleChangeToScheduleReviewing:', error);
       showMessage({
-        message: "Error",
-        description: "An error occurred while processing your request",
+        message: t('common.error'),
+        description: t('screens.task.errorOccurred'),
         type: "danger",
         duration: 3000
       });
@@ -632,12 +617,12 @@ const TaskScreen = () => {
       <View style={styles.badgeContainer}>
         <View style={[styles.badge, {marginRight: 5}]}>
           <Text style={styles.badgeText}>
-            Maintenance: {maintenanceTasks.length}
+            {t('screens.task.maintenance')}: {maintenanceTasks.length}
           </Text>
         </View>
         <View style={[styles.badge, {backgroundColor: '#FF6B4F'}]}>
           <Text style={styles.badgeText}>
-            Cracks: {crackTasks.length}
+            {t('screens.task.crack')}: {crackTasks.length}
           </Text>
         </View>
       </View>
@@ -650,13 +635,13 @@ const TaskScreen = () => {
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
           <Icon name="error-outline" size={64} color="#FF3B30" />
-          <Text style={styles.errorText}>Your session has expired</Text>
-          <Text style={styles.errorSubText}>Please log in again to continue</Text>
+          <Text style={styles.errorText}>{t('screens.task.sessionExpired')}</Text>
+          <Text style={styles.errorSubText}>{t('screens.task.loginAgain')}</Text>
           <TouchableOpacity 
             style={styles.retryButton}
             onPress={() => navigation.navigate('SignIn')}
           >
-            <Text style={styles.retryButtonText}>Go to Login</Text>
+            <Text style={styles.retryButtonText}>{t('screens.task.goToLogin')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -667,7 +652,7 @@ const TaskScreen = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.headerContainer}>
         <Text style={styles.headerTitle}>
-          {viewMode === ViewMode.MAINTENANCE_TASKS ? 'Maintenance Tasks' : 'Crack Tasks'}
+          {viewMode === ViewMode.MAINTENANCE_TASKS ? t('screens.task.maintenanceTasks') : t('screens.task.crackTasks')}
         </Text>
         
         <TouchableOpacity 
@@ -683,7 +668,7 @@ const TaskScreen = () => {
             color="#FFFFFF" 
           />
           <Text style={styles.toggleButtonText}>
-            {viewMode === ViewMode.MAINTENANCE_TASKS ? 'Cracks' : 'Maintenance'}
+            {viewMode === ViewMode.MAINTENANCE_TASKS ? t('screens.task.crack') : t('screens.task.maintenance')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -696,7 +681,7 @@ const TaskScreen = () => {
         {statusFilter && (
           <View style={styles.activeFilterIndicator}>
             <Text style={styles.activeFilterText}>
-              Filtered by: {getStatusText(statusFilter)}
+              {t('myReport.filteredBy')}: {getStatusText(statusFilter)}
             </Text>
             <TouchableOpacity onPress={() => setStatusFilter(null)}>
               <Icon name="cancel" size={20} color="#FF4500" />
@@ -710,7 +695,7 @@ const TaskScreen = () => {
         >
           <Icon name="filter-list" size={20} color="#FFFFFF" />
           <Text style={styles.filterButtonText}>
-            {statusFilter ? `Filter: ${getStatusText(statusFilter)}` : "Filter by Status"}
+            {statusFilter ? `${t('screens.task.filter')}: ${getStatusText(statusFilter)}` : t('screens.task.filterByStatus')}
           </Text>
           <Icon 
             name={showFilterDropdown ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
@@ -735,7 +720,7 @@ const TaskScreen = () => {
               onStartShouldSetResponder={() => true}
               onTouchEnd={(e) => e.stopPropagation()}
             >
-              <Text style={styles.dropdownTitle}>Filter by Status</Text>
+              <Text style={styles.dropdownTitle}>{t('screens.task.filterByStatus')}</Text>
               
               <TouchableOpacity
                 style={[styles.dropdownItem, statusFilter === null && styles.dropdownItemActive]}
@@ -745,7 +730,7 @@ const TaskScreen = () => {
                 }}
               >
                 <Text style={[styles.dropdownItemText, statusFilter === null && styles.dropdownItemTextActive]}>
-                  All
+                  {t('screens.task.all')}
                 </Text>
                 {statusFilter === null && <Icon name="check" size={18} color="#FF4500" />}
               </TouchableOpacity>
@@ -758,7 +743,7 @@ const TaskScreen = () => {
                 }}
               >
                 <Text style={[styles.dropdownItemText, statusFilter === 'Pending' && styles.dropdownItemTextActive]}>
-                  Pending
+                  {t('screens.task.pending')}
                 </Text>
                 {statusFilter === 'Pending' && <Icon name="check" size={18} color="#FF4500" />}
               </TouchableOpacity>
@@ -771,7 +756,7 @@ const TaskScreen = () => {
                 }}
               >
                 <Text style={[styles.dropdownItemText, statusFilter === 'Verified' && styles.dropdownItemTextActive]}>
-                  Verified
+                  {t('screens.task.verified')}
                 </Text>
                 {statusFilter === 'Verified' && <Icon name="check" size={18} color="#FF4500" />}
               </TouchableOpacity>
@@ -784,7 +769,7 @@ const TaskScreen = () => {
                 }}
               >
                 <Text style={[styles.dropdownItemText, statusFilter === 'Confirmed' && styles.dropdownItemTextActive]}>
-                  Confirmed
+                  {t('screens.task.confirmed')}
                 </Text>
                 {statusFilter === 'Confirmed' && <Icon name="check" size={18} color="#FF4500" />}
               </TouchableOpacity>
@@ -797,7 +782,7 @@ const TaskScreen = () => {
                 }}
               >
                 <Text style={[styles.dropdownItemText, statusFilter === 'InProgress' && styles.dropdownItemTextActive]}>
-                  In Progress
+                  {t('screens.task.inProgress')}
                 </Text>
                 {statusFilter === 'InProgress' && <Icon name="check" size={18} color="#FF4500" />}
               </TouchableOpacity>
@@ -807,7 +792,7 @@ const TaskScreen = () => {
                   style={styles.cancelButton}
                   onPress={() => setShowFilterDropdown(false)}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                  <Text style={styles.cancelButtonText}>{t('screens.task.cancel')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -823,7 +808,7 @@ const TaskScreen = () => {
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryButtonText}>{t('screens.home.retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -845,17 +830,17 @@ const TaskScreen = () => {
               />
               <Text style={styles.emptyText}>
                 {statusFilter 
-                  ? `No ${viewMode === ViewMode.MAINTENANCE_TASKS ? "maintenance" : "crack"} tasks with '${getStatusText(statusFilter)}' status`
+                  ? `${t('screens.task.noFilteredTasks')} '${getStatusText(statusFilter)}'`
                   : viewMode === ViewMode.MAINTENANCE_TASKS 
-                    ? "No maintenance tasks available"
-                    : "No crack-related tasks available"}
+                    ? t('screens.task.noMaintenanceTasksAvailable')
+                    : t('screens.task.noCrackTasksAvailable')}
               </Text>
               {statusFilter && (
                 <TouchableOpacity 
                   style={styles.clearFilterButton}
                   onPress={() => setStatusFilter(null)}
                 >
-                  <Text style={styles.clearFilterText}>Clear Filter</Text>
+                  <Text style={styles.clearFilterText}>{t('screens.task.clearFilter')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -883,7 +868,7 @@ const TaskScreen = () => {
                      (reviewingTasks.includes(assignment.assignment_id) || 
                       reviewingScheduleTasks.includes(assignment.assignment_id)) && (
                       <View style={[styles.statusBadge, styles.reviewingChip]}>
-                        <Text style={styles.statusText}>Reviewing</Text>
+                        <Text style={styles.statusText}>{t('myReport.status.Reviewing')}</Text>
                       </View>
                     )}
                   </View>
@@ -891,14 +876,14 @@ const TaskScreen = () => {
                 
                 <View style={styles.taskInfo}>
                   <Text style={styles.taskInfoText}>
-                    <Text style={styles.taskInfoLabel}>Created: </Text>
+                    <Text style={styles.taskInfoLabel}>{t('screens.task.created')}: </Text>
                     {formatDate(assignment.created_at)}
                   </Text>
                   
                   {/* Hiển thị Assignment status */}
                   {assignment.task?.status !== assignment.status && (
                     <View style={[styles.assignmentStatusBadge, { backgroundColor: getStatusColor(assignment.status) }]}>
-                      <Text style={styles.assignmentStatusText}>Assignment: {getStatusText(assignment.status)}</Text>
+                      <Text style={styles.assignmentStatusText}>{t('screens.task.assignment')}: {getStatusText(assignment.status)}</Text>
                     </View>
                   )}
                   
@@ -915,7 +900,7 @@ const TaskScreen = () => {
                         {color: viewMode === ViewMode.MAINTENANCE_TASKS ? "#5856D6" : "#FF4500"}
                       ]}
                     >
-                      {viewMode === ViewMode.MAINTENANCE_TASKS ? "Maintenance" : "Crack"}
+                      {viewMode === ViewMode.MAINTENANCE_TASKS ? t('screens.task.maintenance') : t('screens.task.crack')}
                     </Text>
                   </View>
                 </View>

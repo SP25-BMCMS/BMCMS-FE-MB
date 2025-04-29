@@ -14,6 +14,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../types";
 import { Ionicons } from "@expo/vector-icons";
 import { LocationService, LocationDetail, LocationUpdateData } from "../../service/Location";
+import { useTranslation } from 'react-i18next';
 
 type EditLocationScreenRouteProp = RouteProp<RootStackParamList, 'EditLocation'>;
 type EditLocationScreenNavigationProp = StackNavigationProp<RootStackParamList, 'EditLocation'>;
@@ -24,6 +25,7 @@ type Props = {
 };
 
 const EditLocationScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { t } = useTranslation();
   const { locationId, onGoBack } = route.params;
   
   const [loading, setLoading] = useState<boolean>(true);
@@ -51,12 +53,12 @@ const EditLocationScreen: React.FC<Props> = ({ route, navigation }) => {
           setBuildingDetailId(location.buildingDetailId);
           setLocationDetailId(location.locationDetailId);
         } else {
-          Alert.alert("Error", "Failed to load location details");
+          Alert.alert(t('editLocation.error'), t('editLocation.loadFailed'));
           navigation.goBack();
         }
       } catch (error) {
         console.error("Error fetching location details:", error);
-        Alert.alert("Error", "Failed to load location details");
+        Alert.alert(t('editLocation.error'), t('editLocation.loadFailed'));
         navigation.goBack();
       } finally {
         setLoading(false);
@@ -64,11 +66,11 @@ const EditLocationScreen: React.FC<Props> = ({ route, navigation }) => {
     };
 
     fetchLocationData();
-  }, [locationId, navigation]);
+  }, [locationId, navigation, t]);
 
   const handleUpdateLocation = async () => {
     if (!roomNumber.trim() || !floorNumber.trim()) {
-      Alert.alert("Missing Information", "Please fill in the required fields (Room and Floor)");
+      Alert.alert(t('editLocation.missingInfo'), t('editLocation.fillRequired'));
       return;
     }
 
@@ -90,12 +92,12 @@ const EditLocationScreen: React.FC<Props> = ({ route, navigation }) => {
         onGoBack();
       }
       
-      Alert.alert("Success", "Location information updated successfully", [
+      Alert.alert(t('editLocation.success'), t('editLocation.updateSuccess'), [
         { text: "OK", onPress: () => navigation.goBack() }
       ]);
     } catch (error) {
       console.error("Error updating location data:", error);
-      Alert.alert("Error", "Failed to update location information");
+      Alert.alert(t('editLocation.error'), t('editLocation.updateFailed'));
       setSaving(false);
     }
   };
@@ -110,12 +112,12 @@ const EditLocationScreen: React.FC<Props> = ({ route, navigation }) => {
           >
             <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Edit Location</Text>
+          <Text style={styles.headerTitle}>{t('editLocation.title')}</Text>
           <View style={{ width: 24 }} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#B77F2E" />
-          <Text style={styles.loadingText}>Loading location details...</Text>
+          <Text style={styles.loadingText}>{t('editLocation.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -130,67 +132,67 @@ const EditLocationScreen: React.FC<Props> = ({ route, navigation }) => {
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Location</Text>
+        <Text style={styles.headerTitle}>{t('editLocation.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.content}>
         <View style={styles.card}>
-          <Text style={styles.label}>Room Number <Text style={styles.required}>*</Text></Text>
+          <Text style={styles.label}>{t('editLocation.roomNumber')} <Text style={styles.required}>{t('editLocation.required')}</Text></Text>
           <TextInput
             style={styles.input}
-            placeholder="Enter room number/name"
+            placeholder={t('editLocation.enterRoom')}
             value={roomNumber}
             onChangeText={setRoomNumber}
           />
 
-          <Text style={styles.label}>Floor Number <Text style={styles.required}>*</Text></Text>
+          <Text style={styles.label}>{t('editLocation.floorNumber')} <Text style={styles.required}>{t('editLocation.required')}</Text></Text>
           <TextInput
             style={styles.input}
-            placeholder="Enter floor number"
+            placeholder={t('editLocation.enterFloor')}
             value={floorNumber}
             onChangeText={setFloorNumber}
             keyboardType="number-pad"
           />
 
-          <Text style={styles.label}>Area Type</Text>
+          <Text style={styles.label}>{t('editLocation.areaType')}</Text>
           <View style={styles.positionContainer}>
             <TouchableOpacity 
               style={[styles.positionButton, areaType === 'Wall' && styles.selectedPosition]}
               onPress={() => setAreaType('Wall')}
             >
-              <Text style={[styles.positionText, areaType === 'Wall' && styles.selectedPositionText]}>Wall</Text>
+              <Text style={[styles.positionText, areaType === 'Wall' && styles.selectedPositionText]}>{t('editLocation.wall')}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.positionButton, areaType === 'Floor' && styles.selectedPosition]}
               onPress={() => setAreaType('Floor')}
             >
-              <Text style={[styles.positionText, areaType === 'Floor' && styles.selectedPositionText]}>Floor</Text>
+              <Text style={[styles.positionText, areaType === 'Floor' && styles.selectedPositionText]}>{t('editLocation.floor')}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.positionButton, areaType === 'Ceiling' && styles.selectedPosition]}
               onPress={() => setAreaType('Ceiling')}
             >
-              <Text style={[styles.positionText, areaType === 'Ceiling' && styles.selectedPositionText]}>Ceiling</Text>
+              <Text style={[styles.positionText, areaType === 'Ceiling' && styles.selectedPositionText]}>{t('editLocation.ceiling')}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.positionButton, areaType === 'column' && styles.selectedPosition]}
               onPress={() => setAreaType('column')}
             >
-              <Text style={[styles.positionText, areaType === 'column' && styles.selectedPositionText]}>Column</Text>
+              <Text style={[styles.positionText, areaType === 'column' && styles.selectedPositionText]}>{t('editLocation.column')}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.positionButton, areaType === 'Other' && styles.selectedPosition]}
               onPress={() => setAreaType('Other')}
             >
-              <Text style={[styles.positionText, areaType === 'Other' && styles.selectedPositionText]}>Other</Text>
+              <Text style={[styles.positionText, areaType === 'Other' && styles.selectedPositionText]}>{t('editLocation.other')}</Text>
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.label}>Description</Text>
+          <Text style={styles.label}>{t('editLocation.description')}</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
-            placeholder="Add any additional details about the location"
+            placeholder={t('editLocation.addDetails')}
             value={description}
             onChangeText={setDescription}
             multiline
@@ -209,10 +211,10 @@ const EditLocationScreen: React.FC<Props> = ({ route, navigation }) => {
           {saving ? (
             <View style={styles.savingContainer}>
               <ActivityIndicator size="small" color="#FFFFFF" />
-              <Text style={styles.saveButtonText}>Updating...</Text>
+              <Text style={styles.saveButtonText}>{t('editLocation.updating')}</Text>
             </View>
           ) : (
-            <Text style={styles.saveButtonText}>Update Location</Text>
+            <Text style={styles.saveButtonText}>{t('editLocation.updateLocation')}</Text>
           )}
         </TouchableOpacity>
       </ScrollView>

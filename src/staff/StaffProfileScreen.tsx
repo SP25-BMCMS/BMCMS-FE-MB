@@ -17,10 +17,12 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { showMessage } from 'react-native-flash-message';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
 const StaffProfileScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [staffDetails, setStaffDetails] = useState<StaffDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,10 +44,10 @@ const StaffProfileScreen = () => {
       const response = await AuthService.getStaffDetails(userId);
       setStaffDetails(response.data);
     } catch (err: any) {
-      setError(err.message || 'Failed to load staff details');
+      setError(err.message || t('staffProfile.failedToLoad'));
       showMessage({
-        message: 'Error',
-        description: 'Failed to load your profile information',
+        message: t('staffProfile.error'),
+        description: t('staffProfile.failedToLoad'),
         type: 'danger',
         icon: 'danger',
         duration: 3000,
@@ -67,7 +69,7 @@ const StaffProfileScreen = () => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#4CAF50" />
-        <Text style={styles.loadingText}>Loading profile...</Text>
+        <Text style={styles.loadingText}>{t('staffProfile.loadingProfile')}</Text>
       </View>
     );
   }
@@ -79,14 +81,14 @@ const StaffProfileScreen = () => {
           <TouchableOpacity onPress={goBack} style={styles.backButton}>
             <Icon name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Staff Profile</Text>
+          <Text style={styles.headerTitle}>{t('staffProfile.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.errorContainer}>
           <Icon name="error-outline" size={80} color="#F44336" style={{ marginBottom: 20 }} />
-          <Text style={styles.errorText}>Error: {error}</Text>
+          <Text style={styles.errorText}>{t('staffProfile.error')}: {error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchStaffDetails}>
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryText}>{t('staffProfile.retry')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -100,14 +102,14 @@ const StaffProfileScreen = () => {
           <TouchableOpacity onPress={goBack} style={styles.backButton}>
             <Icon name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Staff Profile</Text>
+          <Text style={styles.headerTitle}>{t('staffProfile.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.errorContainer}>
           <Icon name="person-off" size={80} color="#607D8B" style={{ marginBottom: 20 }} />
-          <Text style={styles.errorText}>No staff information available</Text>
+          <Text style={styles.errorText}>{t('staffProfile.noStaffInfo')}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchStaffDetails}>
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryText}>{t('staffProfile.retry')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -161,7 +163,7 @@ const StaffProfileScreen = () => {
         <TouchableOpacity onPress={goBack} style={styles.backButton}>
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Staff Profile</Text>
+        <Text style={styles.headerTitle}>{t('staffProfile.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
       
@@ -191,7 +193,7 @@ const StaffProfileScreen = () => {
           <View style={styles.infoCard}>
             <View style={styles.cardHeader}>
               <Icon name="person" size={24} color="#4CAF50" />
-              <Text style={styles.cardTitle}>Personal Information</Text>
+              <Text style={styles.cardTitle}>{t('staffProfile.personalInfo')}</Text>
             </View>
             
             <View style={styles.cardDivider} />
@@ -201,7 +203,7 @@ const StaffProfileScreen = () => {
                 <Icon name="email" size={24} color="#9E9E9E" />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Email</Text>
+                <Text style={styles.infoLabel}>{t('staffProfile.email')}</Text>
                 <Text style={styles.infoValue}>{staffDetails.email}</Text>
               </View>
             </View>
@@ -211,7 +213,7 @@ const StaffProfileScreen = () => {
                 <Icon name="phone" size={24} color="#9E9E9E" />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Phone</Text>
+                <Text style={styles.infoLabel}>{t('staffProfile.phone')}</Text>
                 <Text style={styles.infoValue}>{staffDetails.phone}</Text>
               </View>
             </View>
@@ -221,7 +223,7 @@ const StaffProfileScreen = () => {
                 <Icon name="accessibility" size={24} color="#9E9E9E" />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Gender</Text>
+                <Text style={styles.infoLabel}>{t('staffProfile.gender')}</Text>
                 <Text style={styles.infoValue}>{staffDetails.gender}</Text>
               </View>
             </View>
@@ -231,7 +233,7 @@ const StaffProfileScreen = () => {
                 <Icon name="cake" size={24} color="#9E9E9E" />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Date of Birth</Text>
+                <Text style={styles.infoLabel}>{t('staffProfile.dateOfBirth')}</Text>
                 <Text style={styles.infoValue}>{formatDate(staffDetails.dateOfBirth)}</Text>
               </View>
             </View>
@@ -240,7 +242,7 @@ const StaffProfileScreen = () => {
           <View style={styles.infoCard}>
             <View style={styles.cardHeader}>
               <Icon name="work" size={24} color="#1976D2" />
-              <Text style={styles.cardTitle}>Department Information</Text>
+              <Text style={styles.cardTitle}>{t('staffProfile.departmentInfo')}</Text>
             </View>
             
             <View style={styles.cardDivider} />
@@ -250,7 +252,7 @@ const StaffProfileScreen = () => {
                 {staffDetails.userDetails.department.departmentName}
               </Text>
               <Text style={styles.departmentArea}>
-                Area: {staffDetails.userDetails.department.area}
+                {t('staffProfile.area')}: {staffDetails.userDetails.department.area}
               </Text>
             </View>
             
@@ -259,7 +261,7 @@ const StaffProfileScreen = () => {
                 <Icon name="info" size={24} color="#9E9E9E" />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Role</Text>
+                <Text style={styles.infoLabel}>{t('staffProfile.role')}</Text>
                 <Text style={styles.infoValue}>{staffDetails.role}</Text>
               </View>
             </View>
@@ -269,7 +271,7 @@ const StaffProfileScreen = () => {
                 <Icon name="description" size={24} color="#9E9E9E" />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Description</Text>
+                <Text style={styles.infoLabel}>{t('staffProfile.description')}</Text>
                 <Text style={styles.infoValue}>
                   {staffDetails.userDetails.department.description}
                 </Text>
@@ -281,7 +283,7 @@ const StaffProfileScreen = () => {
                 <Icon name="assignment" size={24} color="#9E9E9E" />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Position Description</Text>
+                <Text style={styles.infoLabel}>{t('staffProfile.positionDescription')}</Text>
                 <Text style={styles.infoValue}>
                   {staffDetails.userDetails.position.description}
                 </Text>

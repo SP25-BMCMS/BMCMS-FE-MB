@@ -13,14 +13,20 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "../types";
 import { NotificationService, Notification } from "../service/Notification";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { format, formatDistanceToNow } from "date-fns";
 import { showMessage } from "react-native-flash-message";
 import { Swipeable } from "react-native-gesture-handler";
+import { useTranslation } from 'react-i18next';
+
+type NotificationScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
-  const navigation = useNavigation();
+  const { t } = useTranslation();
+  const navigation = useNavigation<NotificationScreenNavigationProp>();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -395,71 +401,17 @@ const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
     if (notifications.length === 0 || !userId) return;
     
     Alert.alert(
-      "Delete All Notifications",
-      "Are you sure you want to delete all notifications? This action cannot be undone.",
+      t('screens.notification.actions.delete.title'),
+      t('screens.notification.actions.delete.message'),
       [
         {
-          text: "Cancel",
+          text: t('screens.notification.actions.delete.cancel'),
           style: "cancel"
         },
         {
-          text: "Delete All",
+          text: t('screens.notification.actions.delete.confirm'),
           style: "destructive",
-          onPress: async () => {
-            try {
-              // Show loading toast
-              showMessage({
-                message: "Deleting all notifications...",
-                type: "info",
-                icon: "info",
-                duration: 2000,
-                backgroundColor: "#2196F3",
-                color: "#FFFFFF",
-                style: {
-                  borderRadius: 8,
-                  marginTop: 40,
-                },
-              });
-              
-              // Call API to delete all notifications
-              await NotificationService.deleteAllNotifications(userId);
-              
-              // Clear local state
-              setNotifications([]);
-              setUnreadCount(0);
-              
-              // Show success toast
-              showMessage({
-                message: "All notifications deleted",
-                type: "success",
-                icon: "success",
-                duration: 3000,
-                backgroundColor: "#4CAF50",
-                color: "#FFFFFF",
-                style: {
-                  borderRadius: 8,
-                  marginTop: 40,
-                },
-              });
-            } catch (error) {
-              console.error("Error deleting all notifications:", error);
-              
-              // Show error toast
-              showMessage({
-                message: "Failed to delete all notifications",
-                description: "Please try again later",
-                type: "danger",
-                icon: "danger",
-                duration: 3000,
-                backgroundColor: "#F44336",
-                color: "#FFFFFF",
-                style: {
-                  borderRadius: 8,
-                  marginTop: 40,
-                },
-              });
-            }
-          }
+          onPress: deleteAllNotifications
         }
       ]
     );
@@ -468,27 +420,24 @@ const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
   if (!isLoggedIn) {
     return (
       <View style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>NOTIFICATION</Text>
+          <Text style={styles.headerTitle}>{t('screens.notification.title.default')}</Text>
         </View>
 
-        {/* UI for not logged in users */}
         <View style={styles.content}>
           <Image
             source={require("../../assets/notification-login.png")}
             style={styles.image}
             resizeMode="contain"
           />
-          <Text style={styles.noNotificationText}>Not Signed In</Text>
-          <Text style={styles.subText}>Please sign in to receive notifications</Text>
+          <Text style={styles.noNotificationText}>{t('screens.notification.notSignedIn.title')}</Text>
+          <Text style={styles.subText}>{t('screens.notification.notSignedIn.message')}</Text>
 
           <TouchableOpacity
             style={styles.actionButton}
-            // @ts-ignore
             onPress={() => navigation.navigate("SignIn")}
           >
-            <Text style={styles.actionButtonText}>Sign In</Text>
+            <Text style={styles.actionButtonText}>{t('screens.notification.notSignedIn.action')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -497,10 +446,11 @@ const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>
-          {userType === 'staff' ? 'STAFF NOTIFICATIONS' : 'NOTIFICATIONS'}
+          {userType === 'staff' 
+            ? t('screens.notification.title.staff') 
+            : t('screens.notification.title.default')}
         </Text>
         <View style={styles.headerRight}>
           {unreadCount > 0 && (
@@ -524,21 +474,20 @@ const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
       {loading && !refreshing ? (
         <View style={styles.content}>
           <ActivityIndicator size="large" color="#B77F2E" />
-          <Text style={styles.loadingText}>Loading notifications...</Text>
+          <Text style={styles.loadingText}>{t('screens.notification.loading')}</Text>
         </View>
       ) : notifications.length === 0 ? (
-        // Empty notification list
         <View style={styles.content}>
           <Image
             source={require("../../assets/notification.png")}
             style={styles.image}
             resizeMode="contain"
           />
-          <Text style={styles.noNotificationText}>No Notifications</Text>
+          <Text style={styles.noNotificationText}>{t('screens.notification.empty.title')}</Text>
           <Text style={styles.subText}>
             {userType === 'staff' 
-              ? "You don't have any staff notifications yet" 
-              : "You don't have any notifications yet"
+              ? t('screens.notification.empty.message.staff')
+              : t('screens.notification.empty.message.default')
             }
           </Text>
 
@@ -547,7 +496,9 @@ const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
             onPress={fetchNotifications}
             disabled={loading}
           >
-            <Text style={styles.actionButtonText}>{loading ? "Loading..." : "Refresh"}</Text>
+            <Text style={styles.actionButtonText}>
+              {loading ? t('common.loading') : t('screens.notification.actions.refresh')}
+            </Text>
           </TouchableOpacity>
         </View>
       ) : (

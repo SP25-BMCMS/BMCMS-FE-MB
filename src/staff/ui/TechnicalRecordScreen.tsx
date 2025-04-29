@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { showMessage } from 'react-native-flash-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 
 type TechnicalRecordScreenRouteProp = RouteProp<RootStackParamList, 'TechnicalRecord'>;
 type TechnicalRecordScreenNavigationProp = StackNavigationProp<RootStackParamList, 'TechnicalRecord'>;
@@ -68,6 +69,7 @@ interface TechnicalRecordResponse {
 }
 
 const TechnicalRecordScreen: React.FC<Props> = ({ route }) => {
+  const { t } = useTranslation();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { buildingId, buildingName } = route.params;
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -126,8 +128,8 @@ const TechnicalRecordScreen: React.FC<Props> = ({ route }) => {
         Linking.openURL(url);
       } else {
         showMessage({
-          message: "Error",
-          description: "Cannot open this document",
+          message: t('common.error'),
+          description: t('technicalRecord.cannotOpenDocument'),
           type: "warning",
           duration: 3000,
         });
@@ -150,15 +152,13 @@ const TechnicalRecordScreen: React.FC<Props> = ({ route }) => {
         <Text style={styles.deviceName}>{item.device.name}</Text>
       </View>
       
-      
-      
       <View style={styles.actionButtons}>
         <TouchableOpacity 
           style={styles.viewButton}
           onPress={() => openDocument(item.viewUrl)}
         >
           <Ionicons name="eye-outline" size={18} color="#FFFFFF" />
-          <Text style={styles.buttonText}>View</Text>
+          <Text style={styles.buttonText}>{t('technicalRecord.view')}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
@@ -166,7 +166,7 @@ const TechnicalRecordScreen: React.FC<Props> = ({ route }) => {
           onPress={() => openDocument(item.fileUrl)}
         >
           <Ionicons name="download-outline" size={18} color="#FFFFFF" />
-          <Text style={styles.buttonText}>Download</Text>
+          <Text style={styles.buttonText}>{t('technicalRecord.download')}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -181,14 +181,14 @@ const TechnicalRecordScreen: React.FC<Props> = ({ route }) => {
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Technical Records</Text>
+        <Text style={styles.headerTitle}>{t('technicalRecord.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <View style={styles.buildingInfoContainer}>
-        <Text style={styles.buildingName}>{buildingName || 'Building'}</Text>
+        <Text style={styles.buildingName}>{buildingName || t('technicalRecord.building')}</Text>
         <Text style={styles.recordsCount}>
-          {technicalRecordsData ? `${technicalRecordsData.meta.total} records available` : ''}
+          {technicalRecordsData ? t('technicalRecord.recordsAvailable', { count: technicalRecordsData.meta.total }) : ''}
         </Text>
       </View>
 
@@ -199,13 +199,13 @@ const TechnicalRecordScreen: React.FC<Props> = ({ route }) => {
       ) : isError ? (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>
-            {error instanceof Error ? error.message : 'Failed to load technical records.'}
+            {error instanceof Error ? error.message : t('technicalRecord.loadError')}
           </Text>
           <TouchableOpacity 
             style={styles.retryButton}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.retryButtonText}>Go Back</Text>
+            <Text style={styles.retryButtonText}>{t('common.goBack')}</Text>
           </TouchableOpacity>
         </View>
       ) : technicalRecordsData && technicalRecordsData.data ? (
@@ -219,7 +219,7 @@ const TechnicalRecordScreen: React.FC<Props> = ({ route }) => {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="document-outline" size={50} color="#CCCCCC" />
-              <Text style={styles.emptyText}>No technical records found for this building</Text>
+              <Text style={styles.emptyText}>{t('technicalRecord.noRecordsFound')}</Text>
             </View>
           }
           ListFooterComponent={
@@ -231,7 +231,7 @@ const TechnicalRecordScreen: React.FC<Props> = ({ route }) => {
       ) : (
         <View style={styles.emptyContainer}>
           <Ionicons name="alert-circle-outline" size={50} color="#CCCCCC" />
-          <Text style={styles.emptyText}>No technical records available</Text>
+          <Text style={styles.emptyText}>{t('technicalRecord.noRecordsAvailable')}</Text>
         </View>
       )}
     </SafeAreaView>

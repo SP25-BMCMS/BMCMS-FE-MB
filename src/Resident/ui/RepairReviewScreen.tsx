@@ -18,6 +18,7 @@ import {
 } from '@react-navigation/native';
 import { CrackService } from '../../service/crackService';
 import { Property, CRACK_POSITIONS, OUTDOOR_CRACK_POSITIONS } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 type RootStackParamList = {
   RepairReview: {
@@ -33,6 +34,7 @@ type RootStackParamList = {
 };
 
 const RepairReviewScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'RepairReview'>>();
   const {
@@ -52,7 +54,7 @@ const RepairReviewScreen = () => {
       setIsSubmitting(true);
 
       if (!buildingDetailId) {
-        Alert.alert('Error', 'Building information not found');
+        Alert.alert(t('repair.error.buildingNotFound'));
         setIsSubmitting(false);
         return;
       }
@@ -88,11 +90,11 @@ const RepairReviewScreen = () => {
         navigation.navigate('RepairSuccess');
       } else {
         // Failed report
-        Alert.alert('Error', 'Could not submit crack report');
+        Alert.alert('Error', t('repair.error.submissionFailed'));
       }
     } catch (error) {
       console.error('Error submitting report:', error);
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to submit report');
+      Alert.alert('Error', error instanceof Error ? error.message : t('repair.error.generalError'));
       setIsSubmitting(false);
     }
   };
@@ -107,30 +109,30 @@ const RepairReviewScreen = () => {
         >
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Review Report</Text>
+        <Text style={styles.headerTitle}>{t('repair.review.title')}</Text>
       </View>
 
       {/* Thông tin căn hộ */}
       <View style={styles.propertyInfo}>
         <Text style={styles.unitCode}>{property.building}</Text>
         <Text style={styles.subTitle}>
-          Building {property.description} | Apartment {property.unit}
+          {t('repair.review.buildingInfo', { description: property.description, unit: property.unit })}
         </Text>
       </View>
 
       {/* Chi tiết báo cáo */}
       <View style={styles.reportDetails}>
-        <Text style={styles.label}>Description</Text>
+        <Text style={styles.label}>{t('repair.review.description')}</Text>
         <Text style={styles.description}>{description}</Text>
 
-        <Text style={styles.label}>Location</Text>
+        <Text style={styles.label}>{t('repair.review.location')}</Text>
         <Text style={styles.position}>
           {selectedRoom ? selectedRoom.replace(/_/g, ' ') + ' - ' 
             + selectedPosition?.split('/').pop()?.replace(/_/g, ' ')
-            : 'Not specified'}
+            : t('repair.review.notSpecified')}
         </Text>
 
-        <Text style={styles.label}>Photos</Text>
+        <Text style={styles.label}>{t('repair.review.photos')}</Text>
         <ScrollView horizontal style={styles.imageContainer}>
           {images.map((image, index) => (
             <Image 
@@ -151,7 +153,7 @@ const RepairReviewScreen = () => {
         {isSubmitting ? (
           <ActivityIndicator color="#FFFFFF" />
         ) : (
-          <Text style={styles.submitButtonText}>Submit Report</Text>
+          <Text style={styles.submitButtonText}>{t('repair.review.submit')}</Text>
         )}
       </TouchableOpacity>
     </ScrollView>

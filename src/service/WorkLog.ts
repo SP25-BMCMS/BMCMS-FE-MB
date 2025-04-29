@@ -13,6 +13,20 @@ export interface WorkLog {
   description: string;
   status: string;
   crack_id: string;
+  task?: {
+    completedAt?: string;
+    statusHistories?: Array<{
+      status: string;
+      timestamp: string;
+      notes?: string;
+    }>;
+    maintenanceRecords?: Array<{
+      date: string;
+      technicianName: string;
+      description: string;
+      photoUrls?: string[];
+    }>;
+  };
   crackReport: {
     crackReportId: string;
     buildingDetailId: string;

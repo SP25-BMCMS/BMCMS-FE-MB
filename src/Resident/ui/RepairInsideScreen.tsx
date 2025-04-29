@@ -24,6 +24,7 @@ import * as ImagePicker from "expo-image-picker";
 import { Property } from "../../types";
 import { CRACK_POSITIONS } from "../../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTranslation } from 'react-i18next';
 
 // Define route params type
 type RootStackParamList = {
@@ -39,6 +40,7 @@ type RootStackParamList = {
 };
 
 const RepairInsideScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute();
   const { property } = route.params as { property: Property };
@@ -57,8 +59,8 @@ const RepairInsideScreen = () => {
   // Dropdown states
   const [isRoomDropdownOpen, setIsRoomDropdownOpen] = useState(false);
   const [isPositionDropdownOpen, setIsPositionDropdownOpen] = useState(false);
-  const [roomDisplayText, setRoomDisplayText] = useState('Select room');
-  const [positionDisplayText, setPositionDisplayText] = useState('Select position');
+  const [roomDisplayText, setRoomDisplayText] = useState(t('repair.inside.selectRoom'));
+  const [positionDisplayText, setPositionDisplayText] = useState(t('repair.inside.selectPosition'));
 
   // Thêm state để theo dõi trạng thái loading
   const [isLoading, setIsLoading] = useState(false);
@@ -83,7 +85,7 @@ const RepairInsideScreen = () => {
   // Thêm useEffect để kiểm tra quyền khi màn hình được tải
   React.useEffect(() => {
     (async () => {
-      // Yêu cầu quyền truy cập thư viện ảnh khi component được mount
+      // Request permission when component mounts
       if (Platform.OS === 'ios') {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
@@ -112,10 +114,10 @@ const RepairInsideScreen = () => {
     
     try {
       setIsLoading(true); // Start loading
-      // Đóng modal trước khi mở image picker
+      // Close modal before opening image picker
       setImageSourceModalVisible(false);
       
-      // Trì hoãn mở image picker để đảm bảo modal đã đóng hoàn toàn
+      // Delay opening image picker to ensure modal is fully closed
       setTimeout(async () => {
         try {
           // Request media library permissions
@@ -123,8 +125,8 @@ const RepairInsideScreen = () => {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (status !== 'granted') {
               Alert.alert(
-                "Permission Denied",
-                "We need access to your photos to continue. Please grant permission in your device settings.",
+                t('repair.inside.permissionDenied'),
+                t('repair.inside.photoLibraryPermission'),
                 [{ text: "OK" }]
               );
               setIsLoading(false);
@@ -132,25 +134,25 @@ const RepairInsideScreen = () => {
             }
           }
           
-          // Bọc trong một try-catch để xử lý lỗi từ launchImageLibraryAsync
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          // Launch image library
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
             quality: 0.5,
-            allowsEditing: Platform.OS === 'ios', // Chỉ cho phép chỉnh sửa trên iOS
+            allowsEditing: Platform.OS === 'ios',
             aspect: [4, 3],
-    });
+          });
 
           if (!result.canceled && result.assets && result.assets.length > 0) {
-            // Cập nhật state images
+            // Update images state
             setImages(prevImages => [...prevImages, result.assets[0].uri]);
           }
         } catch (error) {
           console.error("Error in image picker:", error);
-          Alert.alert("Error", "Cannot access photo library. Please try again.");
+          Alert.alert("Error", t('repair.inside.photoLibraryError'));
         } finally {
-          setIsLoading(false); // End loading regardless of outcome
+          setIsLoading(false);
         }
-      }, 500); // Tăng delay để đảm bảo modal đã đóng hoàn toàn
+      }, 500);
     } catch (error) {
       console.error("Error in pickImageFromLibrary:", error);
       setIsLoading(false);
@@ -158,14 +160,12 @@ const RepairInsideScreen = () => {
   };
 
   const takePhoto = async () => {
-    if (isLoading) return; // Prevent multiple calls
+    if (isLoading) return;
     
     try {
-      setIsLoading(true); // Start loading
-      // Đóng modal trước khi mở camera
+      setIsLoading(true);
       setImageSourceModalVisible(false);
       
-      // Trì hoãn mở camera để đảm bảo modal đã đóng hoàn toàn
       setTimeout(async () => {
         try {
           // Request camera permissions
@@ -173,8 +173,8 @@ const RepairInsideScreen = () => {
             const { status } = await ImagePicker.requestCameraPermissionsAsync();
             if (status !== 'granted') {
               Alert.alert(
-                "Permission Denied",
-                "We need access to your camera to continue. Please grant permission in your device settings.",
+                t('repair.inside.permissionDenied'),
+                t('repair.inside.cameraPermission'),
                 [{ text: "OK" }]
               );
               setIsLoading(false);
@@ -182,24 +182,22 @@ const RepairInsideScreen = () => {
             }
           }
           
-          // Bọc trong một try-catch để xử lý lỗi từ launchCameraAsync
-    const result = await ImagePicker.launchCameraAsync({
+          const result = await ImagePicker.launchCameraAsync({
             quality: 0.5,
-            allowsEditing: Platform.OS === 'ios', // Chỉ cho phép chỉnh sửa trên iOS
+            allowsEditing: Platform.OS === 'ios',
             aspect: [4, 3],
-    });
+          });
 
           if (!result.canceled && result.assets && result.assets.length > 0) {
-            // Cập nhật state images sử dụng functional update để tránh race condition
             setImages(prevImages => [...prevImages, result.assets[0].uri]);
           }
         } catch (error) {
           console.error("Error in camera:", error);
-          Alert.alert("Error", "Cannot access camera. Please try again.");
+          Alert.alert("Error", t('repair.inside.cameraError'));
         } finally {
-          setIsLoading(false); // End loading regardless of outcome
+          setIsLoading(false);
         }
-      }, 500); // Tăng delay để đảm bảo modal đã đóng hoàn toàn
+      }, 500);
     } catch (error) {
       console.error("Error in takePhoto:", error);
       setIsLoading(false);
@@ -216,22 +214,27 @@ const RepairInsideScreen = () => {
 
   const handleRoomSelect = (room: keyof typeof CRACK_POSITIONS | 'OTHER') => {
     setSelectedRoom(room);
-    setRoomDisplayText(room === 'OTHER' ? 'Other' : room.replace(/_/g, ' '));
+    setRoomDisplayText(room === 'OTHER' ? t('repair.inside.other') : t(`repair.inside.${room.toLowerCase()}`));
     setIsRoomDropdownOpen(false);
     
     // Reset position when room changes
-    if (room !== 'OTHER') {
-      setSelectedPosition('');
-      setPositionDisplayText('Select position');
-    } else {
-      // For 'OTHER', auto-set a dummy position value to satisfy validation
+    if (room === 'OTHER') {
       setSelectedPosition('other');
+      setPositionDisplayText(t('repair.inside.other'));
+    } else {
+      setSelectedPosition('');
+      setPositionDisplayText(t('repair.inside.selectPosition'));
     }
   };
 
   const handlePositionSelect = (key: string, value: string) => {
-    setSelectedPosition(value);
-    setPositionDisplayText(key.replace(/_/g, ' '));
+    if (key === 'OTHER') {
+      setSelectedPosition('other');
+      setPositionDisplayText(t('repair.inside.other'));
+    } else {
+      setSelectedPosition(value);
+      setPositionDisplayText(t(`repair.inside.${key.toLowerCase()}`));
+    }
     setIsPositionDropdownOpen(false);
   };
 
@@ -263,9 +266,17 @@ const RepairInsideScreen = () => {
   };
 
   const renderRoomDropdown = () => {
+    const roomOptions = [
+      { key: 'KITCHEN', translation: t('repair.inside.kitchen') },
+      { key: 'LIVING_ROOM', translation: t('repair.inside.livingRoom') },
+      { key: 'BEDROOM', translation: t('repair.inside.bedroom') },
+      { key: 'BATHROOM', translation: t('repair.inside.bathroom') },
+      { key: 'OTHER', translation: t('repair.inside.other') }
+    ];
+
     return (
       <>
-        <Text style={styles.label}>Select room</Text>
+        <Text style={styles.label}>{t('repair.inside.selectRoom')}</Text>
         <TouchableOpacity 
           style={styles.dropdownButton}
           onPress={() => {
@@ -273,8 +284,10 @@ const RepairInsideScreen = () => {
             setIsPositionDropdownOpen(false);
           }}
         >
-          <Icon name="room" size={20} color="#B77F2E" style={styles.dropdownIcon} />
-          <Text style={styles.dropdownButtonText}>{roomDisplayText}</Text>
+          <Icon name="house" size={20} color="#B77F2E" style={styles.dropdownIcon} />
+          <Text style={styles.dropdownButtonText}>
+            {roomDisplayText}
+          </Text>
           <Icon 
             name={isRoomDropdownOpen ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
             size={24} 
@@ -285,21 +298,21 @@ const RepairInsideScreen = () => {
         {isRoomDropdownOpen && (
           <View style={styles.dropdownMenu}>
             <ScrollView nestedScrollEnabled={true} style={styles.scrollList}>
-              {[...Object.keys(CRACK_POSITIONS), 'OTHER'].map((item) => (
+              {roomOptions.map(({ key, translation }) => (
                 <TouchableOpacity 
-                  key={item}
+                  key={key}
                   style={styles.dropdownItem}
-                  onPress={() => handleRoomSelect(item as keyof typeof CRACK_POSITIONS | 'OTHER')}
+                  onPress={() => handleRoomSelect(key as keyof typeof CRACK_POSITIONS | 'OTHER')}
                 >
                   <Text 
                     style={[
                       styles.dropdownItemText,
-                      selectedRoom === item ? styles.selectedDropdownItem : {}
+                      selectedRoom === key ? styles.selectedDropdownItem : {}
                     ]}
                   >
-                    {item === 'OTHER' ? 'Other' : item.replace(/_/g, ' ')}
+                    {translation}
                   </Text>
-                  {selectedRoom === item && (
+                  {selectedRoom === key && (
                     <Icon name="check" size={18} color="#B77F2E" />
                   )}
                 </TouchableOpacity>
@@ -312,11 +325,15 @@ const RepairInsideScreen = () => {
   };
 
   const renderPositionDropdown = () => {
-    if (!selectedRoom || selectedRoom === 'OTHER') return null;
+    if (!selectedRoom) return null;
+    
+    if (selectedRoom === 'OTHER') {
+      return null; // Don't show position dropdown for OTHER
+    }
     
     return (
       <>
-        <Text style={styles.label}>Select position</Text>
+        <Text style={styles.label}>{t('repair.inside.selectPosition')}</Text>
         <TouchableOpacity 
           style={styles.dropdownButton}
           onPress={() => {
@@ -324,7 +341,7 @@ const RepairInsideScreen = () => {
             setIsRoomDropdownOpen(false);
           }}
         >
-          <Icon name="place" size={20} color="#B77F2E" style={styles.dropdownIcon} />
+          <Icon name="location-on" size={20} color="#B77F2E" style={styles.dropdownIcon} />
           <Text style={styles.dropdownButtonText}>{positionDisplayText}</Text>
           <Icon 
             name={isPositionDropdownOpen ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
@@ -333,10 +350,17 @@ const RepairInsideScreen = () => {
           />
         </TouchableOpacity>
 
-        {isPositionDropdownOpen && (
+        {isPositionDropdownOpen && selectedRoom && (
           <View style={styles.dropdownMenu}>
             <ScrollView nestedScrollEnabled={true} style={styles.scrollList}>
-              {Object.entries(CRACK_POSITIONS[selectedRoom as keyof typeof CRACK_POSITIONS]).map(([key, value]) => (
+              {[
+                ...Object.entries(CRACK_POSITIONS[selectedRoom as keyof typeof CRACK_POSITIONS]).map(([key, value]) => ({
+                  key,
+                  value,
+                  translation: t(`repair.inside.${key.toLowerCase()}`)
+                })),
+                { key: 'OTHER', value: 'other', translation: t('repair.inside.other') }
+              ].map(({ key, value, translation }) => (
                 <TouchableOpacity 
                   key={key}
                   style={styles.dropdownItem}
@@ -348,7 +372,7 @@ const RepairInsideScreen = () => {
                       selectedPosition === value ? styles.selectedDropdownItem : {}
                     ]}
                   >
-                    {key.replace(/_/g, ' ')}
+                    {translation}
                   </Text>
                   {selectedPosition === value && (
                     <Icon name="check" size={18} color="#B77F2E" />
@@ -367,32 +391,27 @@ const RepairInsideScreen = () => {
       case 1:
         return (
           <>
-            {/* Nhập mô tả */}
-            <Text style={styles.label}>Details</Text>
+            <Text style={styles.label}>{t('repair.inside.details')}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter description"
+              placeholder={t('repair.inside.description')}
               value={description}
               onChangeText={setDescription}
               multiline
             />
-            {!isDescriptionValid && (
-              <Text style={styles.warningText}>Enter at least 5 characters of description</Text>
+            {description.length < 5 && (
+              <Text style={styles.warningText}>{t('repair.inside.descriptionWarning')}</Text>
             )}
 
-            {/* Custom Room Dropdown */}
             {renderRoomDropdown()}
-
-            {/* Custom Position Dropdown */}
             {renderPositionDropdown()}
 
-            {/* Nút Tiếp tục */}
             <TouchableOpacity
               style={[
                 styles.continueButton,
                 { 
                   backgroundColor: 
-                    isDescriptionValid && isPositionValid 
+                    isDescriptionValid && isPositionValid
                       ? "#B77F2E" 
                       : "#ccc" 
                 },
@@ -400,7 +419,7 @@ const RepairInsideScreen = () => {
               disabled={!(isDescriptionValid && isPositionValid)}
               onPress={() => setCurrentStep(2)}
             >
-              <Text style={styles.continueButtonText}>Continue</Text>
+              <Text style={styles.continueButtonText}>{t('repair.inside.continue')}</Text>
             </TouchableOpacity>
           </>
         );
@@ -408,83 +427,46 @@ const RepairInsideScreen = () => {
       case 2:
         return (
           <>
-            {/* Thêm hình ảnh */}
-            <Text style={styles.label}>Add photos</Text>
+            <Text style={styles.label}>{t('repair.inside.addPhotos')}</Text>
             <TouchableOpacity
               style={styles.imagePicker}
               onPress={openImageSourceModal}
-              disabled={isLoading}
             >
               <Icon name="add-a-photo" size={30} color="#B77F2E" />
-              <Text>Choose photo</Text>
+              <Text>{t('repair.inside.choosePhoto')}</Text>
             </TouchableOpacity>
 
-            {/* Modal chọn nguồn ảnh */}
             <Modal
               isVisible={isImageSourceModalVisible}
               onBackdropPress={closeImageSourceModal}
-              onBackButtonPress={closeImageSourceModal}
-              backdropTransitionOutTiming={0}
-              useNativeDriver={true}
-              useNativeDriverForBackdrop={true}
-              animationInTiming={300}
-              animationOutTiming={300}
-              hideModalContentWhileAnimating={true}
-              propagateSwipe={true}
               style={styles.modal}
             >
               <View style={styles.modalContent}>
-                <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Select photo source</Text>
-                  <TouchableOpacity 
-                    onPress={closeImageSourceModal}
-                    style={styles.closeModalButton}
-                  >
-                    <Icon name="close" size={24} color="#333" />
-                  </TouchableOpacity>
-                </View>
+                <Text style={styles.modalTitle}>{t('repair.inside.photoSourceTitle')}</Text>
                 <TouchableOpacity
                   style={styles.modalOption}
                   onPress={takePhoto}
-                  activeOpacity={0.6}
                 >
                   <Icon name="camera-alt" size={24} color="#B77F2E" />
-                  <Text style={styles.modalOptionText}>Take photo</Text>
+                  <Text style={styles.modalOptionText}>{t('repair.inside.takePhoto')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.modalOption}
                   onPress={pickImageFromLibrary}
-                  activeOpacity={0.6}
                 >
                   <Icon name="photo-library" size={24} color="#B77F2E" />
-                  <Text style={styles.modalOptionText}>Choose from gallery</Text>
+                  <Text style={styles.modalOptionText}>{t('repair.inside.chooseFromLibrary')}</Text>
                 </TouchableOpacity>
               </View>
             </Modal>
 
-            {/* Loading indicator */}
-            {isLoading && (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#B77F2E" />
-                <Text style={styles.loadingText}>Loading image...</Text>
-              </View>
-            )}
-
-            {/* Hiển thị ảnh đã chọn */}
             <View style={styles.imageContainer}>
               {images.map((image, index) => (
                 <View key={index} style={styles.imageWrapper}>
-                  <Image 
-                    source={{ uri: image }} 
-                    style={styles.image} 
-                    resizeMode="cover"
-                    resizeMethod="scale"
-                  />
+                  <Image source={{ uri: image }} style={styles.image} />
                   <TouchableOpacity
                     style={styles.removeImageButton}
                     onPress={() => removeImage(index)}
-                    activeOpacity={0.7}
-                    disabled={isLoading}
                   >
                     <Icon name="close" size={20} color="#fff" />
                   </TouchableOpacity>
@@ -492,19 +474,20 @@ const RepairInsideScreen = () => {
               ))}
             </View>
             {images.length === 0 && (
-              <Text style={styles.warningText}>Please add at least 1 photo</Text>
+              <Text style={styles.warningText}>
+                {t('repair.inside.photoWarning')}
+              </Text>
             )}
 
-            {/* Nút điều hướng */}
             <TouchableOpacity
               style={[
                 styles.continueButton,
-                { backgroundColor: isImagesValid && !isLoading ? "#B77F2E" : "#ccc" },
+                { backgroundColor: images.length > 0 ? "#B77F2E" : "#ccc" },
               ]}
-              disabled={!isImagesValid || isLoading}
+              disabled={images.length === 0}
               onPress={handleContinueToReview}
             >
-              <Text style={styles.continueButtonText}>Continue</Text>
+              <Text style={styles.continueButtonText}>{t('repair.inside.continue')}</Text>
             </TouchableOpacity>
           </>
         );
@@ -524,7 +507,7 @@ const RepairInsideScreen = () => {
         >
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Repair Request</Text>
+        <Text style={styles.headerTitle}>{t('repair.inside.title')}</Text>
         <Text style={styles.stepIndicator}>
           <Text style={{ color: "#000" }}>Step </Text>
           <Text style={{ color: "#B77F2E" }}>{currentStep}</Text>
@@ -538,12 +521,17 @@ const RepairInsideScreen = () => {
           {property.building}
         </Text>
         <Text style={styles.subTitle}>
-          Building {property.description} | Apartment {property.unit} 
+          {t('propertyDetail.buildingInfo', { 
+            description: property.description, 
+            unit: property.unit 
+          })}
         </Text>
       </View>
 
       {/* Dynamic Step Rendering */}
-      {renderStep()}
+      <View style={styles.formContainer}>
+        {renderStep()}
+      </View>
     </ScrollView>
   );
 };
@@ -843,6 +831,9 @@ const styles = StyleSheet.create({
     color: '#B77F2E',
     fontSize: 16,
     fontWeight: '500',
+  },
+  formContainer: {
+    padding: 16,
   },
 });
 

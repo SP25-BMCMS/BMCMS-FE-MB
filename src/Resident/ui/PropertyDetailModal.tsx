@@ -17,6 +17,7 @@ import {
 } from "@react-navigation/native";
 import { PropertyService } from "../../service/propertyService";
 import { PropertyDetail } from "../../types";
+import { useTranslation } from 'react-i18next';
 
 // Define route params type
 type RootStackParamList = {
@@ -27,6 +28,7 @@ type RootStackParamList = {
 };
 
 const PropertyDetailScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'PropertyDetail'>>();
   
@@ -65,16 +67,16 @@ const PropertyDetailScreen = () => {
   if (!property) {
     return (
       <View style={styles.container}>
-        <Text>Property information not found</Text>
+        <Text>{t('propertyDetail.propertyNotFound')}</Text>
       </View>
     );
   }
 
-  // Giữ nguyên các dịch vụ nhưng thêm màu sắc
+  // Services with translations
   const services = [
-    { id: "1", name: "Resident Information", icon: "people", color: "#4CAF50" },
-    { id: "2", name: "Repair inside", icon: "build", color: "#FF5722" },
-    { id: "3", name: "Repair outside", icon: "apartment", color: "#2196F3" },
+    { id: "1", name: t('propertyDetail.residentInformation'), icon: "people", color: "#4CAF50" },
+    { id: "2", name: t('propertyDetail.repairInside'), icon: "build", color: "#FF5722" },
+    { id: "3", name: t('propertyDetail.repairOutside'), icon: "apartment", color: "#2196F3" },
   ];
 
   const handleRepairInside = () => {
@@ -91,7 +93,7 @@ const PropertyDetailScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header với nút Back */}
+      {/* Header with Back button */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -101,32 +103,39 @@ const PropertyDetailScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Card căn hộ */}
+      {/* Property Card */}
       <View style={styles.propertyInfo}>
         <Text style={styles.unitCode}>
           {property.building}
         </Text>
-        <Text style={styles.subTitle}>Building {property.description} | Apartment {property.unit}</Text>
+        <Text style={styles.subTitle}>
+          {t('propertyDetail.buildingInfo', { 
+            description: property.description, 
+            unit: property.unit 
+          })}
+        </Text>
       
-        {/* Additional Property Details */}
+        {/* Property Details */}
         <View style={styles.propertyDetails}>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Number of Floors:</Text>
-            <Text style={styles.detailValue}>{property.numberFloor || 'Unknown'}</Text>
+            <Text style={styles.detailLabel}>{t('propertyDetail.propertyDetails.numberOfFloors')}:</Text>
+            <Text style={styles.detailValue}>
+              {property.numberFloor || t('propertyDetail.propertyDetails.unknown')}
+            </Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Apartment Code:</Text>
+            <Text style={styles.detailLabel}>{t('propertyDetail.propertyDetails.apartmentCode')}:</Text>
             <Text style={styles.detailValue}>{property.unit}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Area:</Text>
+            <Text style={styles.detailLabel}>{t('propertyDetail.propertyDetails.area')}:</Text>
             <Text style={styles.detailValue}>{property.area}</Text>
           </View>
         </View>
       </View>
 
-      {/* Danh sách tiện ích */}
-      <Text style={styles.sectionTitle}>Services</Text>
+      {/* Services List */}
+      <Text style={styles.sectionTitle}>{t('propertyDetail.services')}</Text>
       <FlatList
         key={`flatlist-${numColumns}`}
         data={services}
@@ -137,9 +146,9 @@ const PropertyDetailScreen = () => {
           <TouchableOpacity
             style={styles.serviceItem}
             onPress={() => {
-              if (item.name === "Repair inside") {
+              if (item.name === t('propertyDetail.repairInside')) {
                 handleRepairInside();
-              } else if (item.name === "Repair outside") {
+              } else if (item.name === t('propertyDetail.repairOutside')) {
                 handleRepairOutside();
               }
             }}

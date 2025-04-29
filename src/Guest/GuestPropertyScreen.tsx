@@ -1,10 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 const GuestPropertyScreen = ({ onSignIn }: { onSignIn: () => void }) => {
+  const { t } = useTranslation();
+  
   return (
     <View style={styles.container}>
-      <Text style={styles.headerTitle}>PROPERTY</Text>
+      <Text style={styles.headerTitle}>{t('guestProperty.title')}</Text>
 
       <Image 
         source={require('../../assets/tower.jpg')} 
@@ -12,11 +15,11 @@ const GuestPropertyScreen = ({ onSignIn }: { onSignIn: () => void }) => {
         resizeMode="contain"
       />
 
-      <Text style={styles.title}>You own any Masterise product?</Text>
-      <Text style={styles.description}>Sign in to manage all your properties now.</Text>
+      <Text style={styles.title}>{t('guestProperty.question')}</Text>
+      <Text style={styles.description}>{t('guestProperty.description')}</Text>
 
       <TouchableOpacity style={styles.signInButton} onPress={onSignIn}>
-        <Text style={styles.signInButtonText}>Sign Up</Text>
+        <Text style={styles.signInButtonText}>{t('guestProperty.signUp')}</Text>
       </TouchableOpacity>
     </View>
   );

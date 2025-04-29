@@ -35,6 +35,7 @@ import LocationDetailScreen from './src/staff/ui/LocationDetailScreen';
 import MaintenanceHistoryScreen from './src/staff/ui/MaintenanceHistoryScreen';
 import StaffMaintenanceHistoryScreen from './src/staff/ui/StaffMaintenanceHistoryScreen';
 import TechnicalRecordScreen from './src/staff/ui/TechnicalRecordScreen';
+import './src/i18n';
 
 const Stack = createStackNavigator<RootStackParamList>();
 const queryClient = new QueryClient();

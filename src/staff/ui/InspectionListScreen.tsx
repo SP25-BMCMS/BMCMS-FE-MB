@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Modal from 'react-native-modal';
 import { showMessage } from 'react-native-flash-message';
+import { useTranslation } from 'react-i18next';
 
 type InspectionListScreenRouteProp = RouteProp<RootStackParamList, 'InspectionList'>;
 type InspectionListScreenNavigationProp = StackNavigationProp<RootStackParamList, 'InspectionList'>;
@@ -54,6 +55,7 @@ const getReportStatusColor = (status: string): string => {
 };
 
 const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { t } = useTranslation();
   const { taskAssignmentId, taskDescription } = route.params;
   const [submitting, setSubmitting] = useState(false);
   const [selectedInspection, setSelectedInspection] = useState<EnhancedInspection | null>(null);
@@ -171,26 +173,23 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
     const hasNoCost = !item.total_cost || parseInt(item.total_cost) === 0;
     const isEligible = isEligibleForPrivateAsset(item);
     
-    // Status indicator colors
-    let statusColor = '#4CD964'; // Default green for inspections with cost
+    let statusColor = '#4CD964';
     let statusText = '';
     
     if (hasNoCost) {
       if (item.isprivateasset) {
-        statusColor = '#007AFF'; // Blue for private assets
-        statusText = 'Private Asset';
+        statusColor = '#007AFF';
+        statusText = t('inspectionDetail.privateAsset');
       } else {
-        statusColor = '#FF9500'; // Orange for no cost
-        statusText = 'No Cost';
+        statusColor = '#FF9500';
+        statusText = t('inspectionDetail.noCost');
       }
     } else {
-      statusText = `${item.total_cost} VND`;
+      statusText = `${parseInt(item.total_cost).toLocaleString()} VND`;
     }
     
-    // Additional status for report status
     let reportStatusBadge = null;
     if (item.isprivateasset && item.report_status) {
-      // For private assets, always show the report_status
       reportStatusBadge = (
         <View style={[
           styles.reportStatusBadge, 
@@ -202,21 +201,22 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
     }
     
     return (
-      <View style={styles.inspectionCard}>
-        <TouchableOpacity 
-          style={styles.inspectionContent}
-          onPress={() => handleInspectionPress(item)}
-        >
+      <TouchableOpacity 
+        style={styles.inspectionCard}
+        onPress={() => handleInspectionPress(item)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.inspectionContent}>
           <View style={styles.inspectionHeader}>
-            <View style={styles.idContainer}>
-              <Ionicons name="document-text" size={16} color="#B77F2E" />
-              <Text style={styles.inspectionId}>
-                {item.inspection_id.substring(0, 8)}...
+            <View style={styles.dateContainer}>
+              <Ionicons name="calendar-outline" size={16} color="#666" />
+              <Text style={styles.dateText}>
+                {formatDate(item.created_at)}
               </Text>
             </View>
             <View style={[styles.costContainer, { backgroundColor: hasNoCost ? (item.isprivateasset ? '#E1F5FE' : '#FFF3E0') : '#E8F5E9' }]}>
               <Ionicons 
-                name={hasNoCost ? (item.isprivateasset ? "lock-closed" : "cash") : "cash"} 
+                name={hasNoCost ? (item.isprivateasset ? "lock-closed-outline" : "wallet-outline") : "wallet-outline"} 
                 size={16} 
                 color={statusColor} 
               />
@@ -226,31 +226,22 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
             </View>
           </View>
           
-          <Text style={styles.inspectionDescription} numberOfLines={2}>
-            {item.description}
+          <Text style={styles.inspectionDescription} numberOfLines={3}>
+            {item.description || t('inspectionDetail.noDescription')}
           </Text>
           
-          <View style={styles.inspectionInfo}>
-            <View style={styles.dateContainer}>
-              <Ionicons name="calendar" size={14} color="#666" />
-              <Text style={styles.infoText}>
-                {formatDate(item.created_at)}
-              </Text>
-            </View>
-            
-            <View style={styles.imagesPreview}>
+          <View style={styles.footerContainer}>
+            <View style={styles.imagesContainer}>
               {item.image_urls.length > 0 ? (
                 <View style={styles.imageCountContainer}>
-                  <Ionicons name="images" size={16} color="#666" />
-                  <Text style={styles.imageCount}>{item.image_urls.length}</Text>
+                  <Ionicons name="images-outline" size={16} color="#666" />
+                  <Text style={styles.imageCount}>{item.image_urls.length} {t('inspectionDetail.images').toLowerCase()}</Text>
                 </View>
               ) : (
-                <Text style={styles.noImagesText}>No images</Text>
+                <Text style={styles.noImagesText}>{t('inspectionList.noImages')}</Text>
               )}
             </View>
-          </View>
-          
-          <View style={styles.statusContainer}>
+            
             {reportStatusBadge}
           </View>
           
@@ -259,24 +250,26 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
               style={styles.privateAssetButton}
               onPress={() => handleMarkAsPrivateAsset(item)}
             >
-              <Ionicons name="lock-closed" size={16} color="#FFFFFF" />
-              <Text style={styles.privateAssetButtonText}>Mark as Private Asset</Text>
+              <Ionicons name="lock-closed-outline" size={16} color="#FFFFFF" />
+              <Text style={styles.privateAssetButtonText}>
+                {t('inspectionList.markAsPrivateAsset')}
+              </Text>
             </TouchableOpacity>
           )}
-        </TouchableOpacity>
-      </View>
-    )
+        </View>
+      </TouchableOpacity>
+    );
   };
 
   const renderEmptyList = () => (
     <View style={styles.emptyContainer}>
       <Ionicons name="document-text-outline" size={60} color="#CCCCCC" />
-      <Text style={styles.emptyText}>No inspections found for this task</Text>
+      <Text style={styles.emptyText}>{t('inspectionList.noInspections')}</Text>
       <TouchableOpacity 
         style={styles.createButton}
         onPress={() => navigation.goBack()}
       >
-        <Text style={styles.createButtonText}>Go Back</Text>
+        <Text style={styles.createButtonText}>{t('inspectionList.goBack')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -290,7 +283,7 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Inspections</Text>
+        <Text style={styles.headerTitle}>{t('inspectionList.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
       
@@ -298,9 +291,7 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
         <Text style={styles.taskTitle} numberOfLines={2}>
           {taskDescription}
         </Text>
-        <Text style={styles.taskId}>
-          Task ID: {taskAssignmentId.substring(0, 8)}...
-        </Text>
+       
       </View>
 
       {isLoading && !isRefetching ? (
@@ -330,10 +321,9 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Confirm Action</Text>
+            <Text style={styles.modalTitle}>{t('inspectionList.confirmAction')}</Text>
             <Text style={styles.modalText}>
-              Are you sure you want to mark this inspection as a Private Asset? 
-              This will update the status to 'Pending'.
+              {t('inspectionList.confirmPrivateAsset')}
             </Text>
             
             <View style={styles.modalActions}>
@@ -344,7 +334,7 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
                 }}
                 disabled={submitting}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>{t('inspectionList.cancel')}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -355,7 +345,7 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
                 {submitting ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.confirmButtonText}>Confirm</Text>
+                  <Text style={styles.confirmButtonText}>{t('inspectionList.confirm')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -397,12 +387,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: '#F0F0F0',
   },
   taskTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 4,
+    color: '#333333',
+    marginBottom: 8,
+    lineHeight: 24,
   },
   taskId: {
     fontSize: 14,
@@ -441,17 +433,17 @@ const styles = StyleSheet.create({
   },
   inspectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 12,
     marginBottom: 16,
-    elevation: 3,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 2,
+    overflow: 'hidden',
   },
   inspectionContent: {
-    flex: 1,
+    padding: 16,
   },
   inspectionHeader: {
     flexDirection: 'row',
@@ -459,69 +451,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  idContainer: {
+  dateContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF9E6',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 8,
   },
-  inspectionId: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#B77F2E',
-    marginLeft: 4,
+  dateText: {
+    fontSize: 13,
+    color: '#666666',
+    marginLeft: 6,
+    fontWeight: '500',
   },
   costContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 8,
   },
   totalCost: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    marginLeft: 4,
-  },
-  reportStatusBadge: {
-    marginTop: 8,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  reportStatusText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  noCostText: {
-    color: '#FF9500',
+    marginLeft: 6,
   },
   inspectionDescription: {
     fontSize: 15,
     color: '#333333',
+    lineHeight: 22,
     marginBottom: 12,
-    lineHeight: 20,
   },
-  inspectionInfo: {
+  footerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 8,
   },
-  dateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  infoText: {
-    fontSize: 13,
-    color: '#666666',
-    marginLeft: 4,
-  },
-  imagesPreview: {
+  imagesContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -529,33 +497,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F5F5F5',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   imageCount: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#666666',
-    marginLeft: 4,
+    marginLeft: 6,
+    fontWeight: '500',
   },
   noImagesText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#999999',
     fontStyle: 'italic',
+  },
+  reportStatusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  reportStatusText: {
+    fontSize: 13,
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
   privateAssetButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FF9500',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    backgroundColor: '#007AFF',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderRadius: 8,
     marginTop: 12,
   },
   privateAssetButtonText: {
     color: '#FFFFFF',
     fontWeight: '600',
+    fontSize: 14,
     marginLeft: 8,
   },
   modalContainer: {
@@ -646,26 +626,27 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
-    minHeight: 400,
+    padding: 32,
+    backgroundColor: '#FFFFFF',
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#666666',
     textAlign: 'center',
     marginTop: 16,
     marginBottom: 24,
+    lineHeight: 22,
   },
   createButton: {
-    backgroundColor: '#B77F2E',
+    backgroundColor: '#007AFF',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
   },
   createButtonText: {
     color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 16,
+    fontWeight: '600',
+    fontSize: 15,
   },
   reasonContainer: {
     marginBottom: 16,
