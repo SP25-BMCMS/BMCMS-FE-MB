@@ -140,10 +140,10 @@
     "statusHistory": "Lịch sử trạng thái",
     "maintenanceHistory": "Lịch sử bảo trì",
     "status": {
-      "pending": "Chờ xử lý",
-      "inProgress": "Đang xử lý",
-      "completed": "Hoàn thành",
-      "rejected": "Từ chối"
+      "Completed": "Hoàn thành",
+      "InProgress": "Đang xử lý",
+      "Assigned": "Đã phân công",
+      "Pending": "Chờ xử lý"
     },
     "date": "Ngày",
     "technician": "Kỹ thuật viên",
@@ -175,7 +175,24 @@
       "continue": "Tiếp tục",
       "alert": "Thông báo",
       "descriptionAlert": "Vui lòng nhập mô tả chi tiết (tối thiểu 5 ký tự)",
-      "positionAlert": "Vui lòng chọn khu vực và vị trí vết nứt"
+      "positionAlert": "Vui lòng chọn khu vực và vị trí vết nứt",
+      "buildingExterior": "Ngoại thất tòa nhà",
+      "commonArea": "Khu vực chung",
+      "parking": "Bãi đỗ xe",
+      "landscape": "Cảnh quan",
+      "other": "Khác",
+      "wall": "Tường",
+      "foundation": "Nền móng", 
+      "roof": "Mái",
+      "stairs": "Cầu thang",
+      "corridor": "Hành lang",
+      "lobby": "Sảnh",
+      "surface": "Bề mặt",
+      "pillar": "Cột",
+      "ceiling": "Trần",
+      "garden": "Vườn",
+      "playground": "Sân chơi",
+      "walkway": "Lối đi"
     },
     "inside": {
       "title": "Báo cáo vết nứt bên trong",
@@ -198,7 +215,14 @@
       "cameraPermission": "Chúng tôi cần quyền truy cập vào máy ảnh của bạn để tiếp tục. Vui lòng cấp quyền trong cài đặt thiết bị của bạn.",
       "photoLibraryPermission": "Chúng tôi cần quyền truy cập vào thư viện ảnh của bạn để tiếp tục. Vui lòng cấp quyền trong cài đặt thiết bị của bạn.",
       "cameraError": "Không thể truy cập máy ảnh. Vui lòng thử lại.",
-      "photoLibraryError": "Không thể truy cập thư viện ảnh. Vui lòng thử lại."
+      "photoLibraryError": "Không thể truy cập thư viện ảnh. Vui lòng thử lại.",
+      "kitchen": "Nhà bếp",
+      "livingRoom": "Phòng khách",
+      "bedroom": "Phòng ngủ",
+      "bathroom": "Phòng tắm",
+      "wall": "Tường",
+      "floor": "Sàn",
+      "ceiling": "Trần nhà"
     },
     "review": {
       "title": "Xem lại báo cáo",
@@ -700,7 +724,32 @@
     "locationDetails": "Chi Tiết Vị Trí",
     "room": "Phòng",
     "floor": "Tầng",
-    "areaType": "Loại Khu Vực"
+    "areaType": "Loại Khu Vực",
+    "crackTypes": {
+      "Vertical": "Thẳng đứng",
+      "Horizontal": "Ngang", 
+      "Diagonal": "Chéo",
+      "Structural": "Kết cấu",
+      "NonStructural": "Phi kết cấu",
+      "Other": "Khác"
+    },
+    "statusTypes": {
+      "Pending": "Chờ xử lý",
+      "Approved": "Đã duyệt",
+      "Rejected": "Từ chối",
+      "NoPending": "Không chờ xử lý",
+      "InProgress": "Đang xử lý",
+      "Completed": "Hoàn thành",
+      "Fixed": "Đã sửa",
+      "Reassigned": "Đã phân công lại",
+      "InFixing": "Đang sửa chữa",
+      "Verified": "Đã xác minh",
+      "Confirmed": "Đã xác nhận",
+      "Unverified": "Chưa xác minh",
+      "Reviewing": "Đang xem xét",
+      "Assigned": "Đã phân công",
+      "Canceled": "Đã hủy"
+    }
   },
   "inspectionList": {
     "title": "Danh Sách Kiểm Tra",
@@ -964,9 +1013,9 @@
     "loading": "Đang tải dữ liệu...",
     "formTitle": "Chi Tiết Phân Công Mới",
     "selectTask": "Chọn Công Việc",
-    "noTasks": "Không tìm thấy công việc khả dụng hoặc tất cả công việc đã được xác nhận",
+    "noTasks": "Không tìm thấy công việc hoặc tất cả công việc đã được xác nhận",
     "assignTo": "Phân Công Cho",
-    "noStaff": "Không có nhân viên khả dụng",
+    "noStaff": "Không có nhân viên",
     "status": "Trạng Thái",
     "description": "Mô Tả",
     "descriptionPlaceholder": "Nhập mô tả công việc",
@@ -977,9 +1026,14 @@
     "taskUnavailable": "Công Việc Không Khả Dụng",
     "taskConfirmed": "Công việc này đã được xác nhận bởi một phân công khác. Vui lòng chọn công việc khác.",
     "success": "Thành Công",
-    "successMessage": "Đã tạo phân công công việc thành công",
+    "successMessage": "Tạo phân công công việc thành công",
     "error": "Lỗi",
-    "errorMessage": "Không thể tạo phân công công việc. Vui lòng thử lại."
+    "errorMessage": "Không thể tạo phân công công việc. Vui lòng thử lại.",
+    "selectStatusTitle": "Chọn Trạng Thái",
+    "statusTypes": {
+      "InFixing": "Đang Sửa Chữa",
+      "Reassigned": "Đã Phân Công Lại"
+    }
   },
   "propertyDetail": {
     "title": "Chi Tiết Căn Hộ",

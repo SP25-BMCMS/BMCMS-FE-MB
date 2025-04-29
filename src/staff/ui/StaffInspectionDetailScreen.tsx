@@ -69,15 +69,9 @@ const StaffInspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => 
           <Text style={styles.cardTitle}>{t('staffInspectionDetail.generalInfo')}</Text>
           <View style={styles.divider} />
           
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{t('staffInspectionDetail.inspectionId')}:</Text>
-            <Text style={styles.infoValue}>{inspection.inspection_id}</Text>
-          </View>
           
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{t('staffInspectionDetail.taskAssignmentId')}:</Text>
-            <Text style={styles.infoValue}>{inspection.task_assignment_id}</Text>
-          </View>
+          
+          
           
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>{t('staffInspectionDetail.created')}:</Text>

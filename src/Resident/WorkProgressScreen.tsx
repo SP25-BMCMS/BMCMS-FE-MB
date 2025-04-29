@@ -405,7 +405,7 @@ const WorkProgressScreen = () => {
                   { color: getStatusColor(crackReport.status) },
                 ]}
               >
-                {crackReport.status}
+                {t(`workProgress.status.${crackReport.status}`)}
               </Text>
             </View>
           </View>
@@ -430,7 +430,7 @@ const WorkProgressScreen = () => {
               <Text
                 style={[styles.statusText, { color: getStatusColor(status) }]}
               >
-                {status}
+                {t(`workProgress.status.${status}`)}
               </Text>
             </View>
           </View>

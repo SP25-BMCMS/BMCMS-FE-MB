@@ -99,22 +99,7 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
   };
 
   const getStatusText = (status: string) => {
-    switch (status) {
-      case 'Pending':
-        return 'Pending';
-      case 'InProgress':
-        return 'In Progress';
-      case 'Completed':
-        return 'Completed';
-      case 'Canceled':
-        return 'Canceled';
-      case 'Verified':
-        return 'Verified';
-      case 'Unverified':
-        return 'Unverified';
-      default:
-        return status;
-    }
+    return t(`inspectionDetail.statusTypes.${status}`) || status;
   };
 
   const getSeverityColor = (severity: string) => {
@@ -131,16 +116,7 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
   };
 
   const getSeverityText = (severity: string) => {
-    switch (severity) {
-      case 'Low':
-        return 'Low';
-      case 'Medium':
-        return 'Medium';
-      case 'High':
-        return 'High';
-      default:
-        return severity;
-    }
+    return t(`staffTaskDetail.severityTypes.${severity}`) || severity;
   };
 
   const getPositionText = (position: string | null) => {
@@ -153,16 +129,16 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
       
       switch (parts[0]) {
         case 'kitchen':
-          room = 'Kitchen';
+          room = t('repair.inside.kitchen');
           break;
         case 'living-room':
-          room = 'Living Room';
+          room = t('repair.inside.livingRoom');
           break;
         case 'bedroom':
-          room = 'Bedroom';
+          room = t('repair.inside.bedroom');
           break;
         case 'bathroom':
-          room = 'Bathroom';
+          room = t('repair.inside.bathroom');
           break;
         default:
           room = parts[0];
@@ -170,13 +146,13 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
       
       switch (parts[1]) {
         case 'wall':
-          location = 'Wall';
+          room = t('repair.inside.wall');
           break;
         case 'floor':
-          location = 'Floor';
+          room = t('repair.inside.floor');
           break;
         case 'ceiling':
-          location = 'Ceiling';
+          room = t('repair.inside.ceiling');
           break;
         default:
           location = parts[1];

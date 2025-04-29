@@ -81,21 +81,25 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'Pending':
-        return 'Pending';
+        return t('inspectionDetail.statusTypes.Pending');
       case 'InProgress':
-        return 'In Progress';
+        return t('inspectionDetail.statusTypes.InProgress');
       case 'Completed':
-        return 'Completed';
+        return t('inspectionDetail.statusTypes.Completed');
       case 'Canceled':
-        return 'Canceled';
+        return t('inspectionDetail.statusTypes.Canceled');
       case 'Verified':
-        return 'Verified';
+        return t('inspectionDetail.statusTypes.Verified');
       case 'Unverified':
-        return 'Unverified';
+        return t('inspectionDetail.statusTypes.Unverified');
       case 'InFixing':
-        return 'In Fixing';
+        return t('inspectionDetail.statusTypes.InFixing');
       case 'Reassigned':
-        return 'Reassigned';
+        return t('inspectionDetail.statusTypes.Reassigned');
+      case 'Fixed':
+        return t('inspectionDetail.statusTypes.Fixed');
+      case 'Confirmed':
+        return t('inspectionDetail.statusTypes.Confirmed');
       default:
         return status;
     }
@@ -294,10 +298,7 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
             <Text style={styles.cardTitle}>{t('createStaffInspection.summary')}</Text>
             <View style={styles.divider} />
             
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>{t('createStaffInspection.taskId')}:</Text>
-              <Text style={styles.infoValue}>{taskDetail.task_id.substring(0, 8)}...</Text>
-            </View>
+           
             
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>{t('createStaffInspection.status')}:</Text>
@@ -377,10 +378,7 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('createStaffInspection.taskInfo')}</Text>
           <View style={styles.infoContainer}>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>{t('createStaffInspection.taskId')}:</Text>
-              <Text style={styles.infoValue}>{taskDetail.task_id}</Text>
-            </View>
+            
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>{t('createStaffInspection.description')}:</Text>
               <Text style={styles.infoValue}>{taskDetail.description}</Text>
@@ -391,10 +389,7 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
                 <Text style={styles.statusText}>{getStatusText(taskDetail.status)}</Text>
               </View>
             </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>{t('createStaffInspection.assignmentId')}:</Text>
-              <Text style={styles.infoValue}>{taskDetail.assignment_id}</Text>
-            </View>
+        
           </View>
         </View>
 

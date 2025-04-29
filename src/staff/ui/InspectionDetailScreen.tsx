@@ -58,6 +58,15 @@ type Props = {
 
 const windowWidth = Dimensions.get("window").width;
 
+interface CrackRecordData {
+  locationDetailId: string;
+  crackType: "Vertical" | "Horizontal" | "Diagonal" | "Structural" | "NonStructural" | "Other";
+  length: string;
+  width: string;
+  depth: string;
+  description: string;
+}
+
 const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { t } = useTranslation();
   const { inspection } = route.params;
@@ -71,12 +80,12 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [selectedLocation, setSelectedLocation] =
     useState<LocationDetail | null>(null);
   const [crackModalVisible, setCrackModalVisible] = useState<boolean>(false);
-  const [crackRecordData, setCrackRecordData] = useState<CrackRecordPayload>({
+  const [crackRecordData, setCrackRecordData] = useState<CrackRecordData>({
     locationDetailId: "",
     crackType: "Vertical",
-    length: 0,
-    width: 0,
-    depth: 0,
+    length: '',
+    width: '',
+    depth: '',
     description: "",
   });
   const [crackRecordModalVisible, setCrackRecordModalVisible] =
@@ -219,9 +228,9 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       setCrackRecordData({
         locationDetailId: "",
         crackType: "Vertical",
-        length: 0,
-        width: 0,
-        depth: 0,
+        length: '',
+        width: '',
+        depth: '',
         description: "",
       });
       
@@ -336,48 +345,68 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     setCrackRecordData({
       locationDetailId: "",
       crackType: "Vertical",
-      length: 0,
-      width: 0,
-      depth: 0,
+      length: '',
+      width: '',
+      depth: '',
       description: "",
     });
   };
 
   // Submit crack record form
-  const handleSubmitCrackRecord = () => {
-    // Validate fields
-    if (
-      crackRecordData.length <= 0 ||
-      crackRecordData.width <= 0 ||
-      crackRecordData.depth <= 0
-    ) {
+  const handleSubmitCrackRecord = async () => {
+    try {
+      const submissionData: CrackRecordPayload = {
+        ...crackRecordData,
+        length: parseFloat(crackRecordData.length) || 0,
+        width: parseFloat(crackRecordData.width) || 0,
+        depth: parseFloat(crackRecordData.depth) || 0,
+      };
+
+      // Validate fields
+      if (
+        submissionData.length <= 0 ||
+        submissionData.width <= 0 ||
+        submissionData.depth <= 0
+      ) {
+        showMessage({
+          message: "Validation Error",
+          description: "All measurements must be greater than 0",
+          type: "warning",
+          icon: "warning",
+          duration: 3000,
+          backgroundColor: "#FF9500",
+          color: "#FFFFFF",
+        });
+        return;
+      }
+
+      if (!submissionData.description.trim()) {
+        showMessage({
+          message: "Validation Error",
+          description: "Description is required",
+          type: "warning",
+          icon: "warning",
+          duration: 3000,
+          backgroundColor: "#FF9500",
+          color: "#FFFFFF",
+        });
+        return;
+      }
+
+      // Submit the crack record
+      createRecordMutation.mutate(submissionData);
+    } catch (error) {
+      console.error("Error submitting crack record:", error);
       showMessage({
-        message: "Validation Error",
-        description: "All measurements must be greater than 0",
-        type: "warning",
-        icon: "warning",
+        message: "Error",
+        description: "Failed to submit crack record",
+        type: "danger",
+        icon: "danger",
         duration: 3000,
-        backgroundColor: "#FF9500",
+        backgroundColor: "#FF3B30",
         color: "#FFFFFF",
       });
-      return;
     }
-
-    if (!crackRecordData.description.trim()) {
-      showMessage({
-        message: "Validation Error",
-        description: "Description is required",
-        type: "warning",
-        icon: "warning",
-        duration: 3000,
-        backgroundColor: "#FF9500",
-        color: "#FFFFFF",
-      });
-      return;
-    }
-
-    // Submit the crack record
-    createRecordMutation.mutate(crackRecordData);
   };
 
   // Function to handle opening crack record modal
@@ -412,6 +441,22 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   // Update the function to navigate to the LocationDetailScreen
   const handleOpenLocationDetail = (locationId: string) => {
     navigation.navigate("LocationDetail", { locationDetailId: locationId });
+  };
+
+  // Add this validation function near the top of the component
+  const validateFloatInput = (value: string) => {
+    if (value === '') return true;
+    const floatRegex = /^\d*\.?\d{0,2}$/;
+    return floatRegex.test(value);
+  };
+
+  const handleFloatInputChange = (value: string, field: 'length' | 'width' | 'depth') => {
+    if (validateFloatInput(value)) {
+      setCrackRecordData(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
   };
 
   if (loading) {
@@ -451,6 +496,53 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const hasMoreLocations = hasLocations && locationData.length > 3;
 
+  // Helper function to get status color
+  const getStatusColor = (status: string): string => {
+    switch (status) {
+      case t('inspectionDetail.statusTypes.Pending'):
+      case 'Pending':
+        return '#FF9500';
+      case t('inspectionDetail.statusTypes.Approved'):
+      case 'Approved':
+        return '#4CD964';
+      case t('inspectionDetail.statusTypes.Rejected'):
+      case 'Rejected':
+        return '#FF3B30';
+      case t('inspectionDetail.statusTypes.NoPending'):
+      case 'NoPending':
+        return '#007AFF';
+      case t('inspectionDetail.statusTypes.InProgress'):
+      case 'InProgress':
+        return '#5856D6';
+      case t('inspectionDetail.statusTypes.Completed'):
+      case 'Completed':
+        return '#4CD964';
+      case t('inspectionDetail.statusTypes.Fixed'):
+      case 'Fixed':
+        return '#4CD964';
+      case t('inspectionDetail.statusTypes.Reassigned'):
+      case 'Reassigned':
+        return '#FF9500';
+      case t('inspectionDetail.statusTypes.InFixing'):
+      case 'InFixing':
+        return '#5AC8FA';
+      case t('inspectionDetail.statusTypes.Verified'):
+      case 'Verified':
+        return '#4CD964';
+      case t('inspectionDetail.statusTypes.Confirmed'):
+      case 'Confirmed':
+        return '#4CD964';
+      case t('inspectionDetail.statusTypes.Unverified'):
+      case 'Unverified':
+        return '#FF9500';
+      case t('inspectionDetail.statusTypes.Reviewing'):
+      case 'Reviewing':
+        return '#5856D6';
+      default:
+        return '#5AC8FA';
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -484,7 +576,7 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 ]}
               >
                 <Text style={styles.statusText}>
-                  {inspectionDetail.taskAssignment.task.status}
+                  {t(`inspectionDetail.statusTypes.${inspectionDetail.taskAssignment.task.status}`) || inspectionDetail.taskAssignment.task.status}
                 </Text>
               </View>
             </View>
@@ -524,7 +616,7 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 ]}
               >
                 <Text style={styles.statusText}>
-                  {inspectionDetail.crackInfo.data[0].status}
+                  {t(`inspectionDetail.statusTypes.${inspectionDetail.crackInfo.data[0].status}`) || inspectionDetail.crackInfo.data[0].status}
                 </Text>
               </View>
             </View>
@@ -601,11 +693,11 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               <View
                 style={[
                   styles.statusBadge,
-                  { backgroundColor: getStatusColor(currentInspection.report_status) }
+                  { backgroundColor: getStatusColor(currentInspection.report_status || '') }
                 ]}
               >
                 <Text style={styles.statusText}>
-                  {currentInspection.report_status}
+                  {t(`inspectionDetail.statusTypes.${currentInspection.report_status}`) || currentInspection.report_status}
                 </Text>
               </View>
             </View>
@@ -819,55 +911,47 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 <Picker
                   selectedValue={crackRecordData.crackType}
                   onValueChange={(value) =>
-                    setCrackRecordData({ ...crackRecordData, crackType: value })
+                    setCrackRecordData({ ...crackRecordData, crackType: value as "Vertical" | "Horizontal" | "Diagonal" | "Structural" | "NonStructural" | "Other" })
                   }
                   style={styles.picker}
                 >
-                  <Picker.Item label="Vertical" value="Vertical" />
-                  <Picker.Item label="Horizontal" value="Horizontal" />
-                  <Picker.Item label="Diagonal" value="Diagonal" />
-                  <Picker.Item label="Structural" value="Structural" />
-                  <Picker.Item label="NonStructural" value="NonStructural" />
+                  <Picker.Item label={t('inspectionDetail.crackTypes.Vertical')} value="Vertical" />
+                  <Picker.Item label={t('inspectionDetail.crackTypes.Horizontal')} value="Horizontal" />
+                  <Picker.Item label={t('inspectionDetail.crackTypes.Diagonal')} value="Diagonal" />
+                  <Picker.Item label={t('inspectionDetail.crackTypes.Structural')} value="Structural" />
+                  <Picker.Item label={t('inspectionDetail.crackTypes.NonStructural')} value="NonStructural" />
+                  <Picker.Item label={t('inspectionDetail.crackTypes.Other')} value="Other" />
                 </Picker>
               </View>
 
               <Text style={styles.crackInputLabel}>{t('inspectionDetail.length')}:</Text>
               <TextInput
                 style={styles.crackInput}
-                keyboardType="numeric"
-                value={crackRecordData.length.toString()}
-                onChangeText={(text) =>
-                  setCrackRecordData({
-                    ...crackRecordData,
-                    length: text ? parseFloat(text) : 0,
-                  })
-                }
+                value={crackRecordData.length}
+                onChangeText={(value) => handleFloatInputChange(value, 'length')}
+                keyboardType="decimal-pad"
+                maxLength={10}
+                placeholder="0.00"
               />
 
               <Text style={styles.crackInputLabel}>{t('inspectionDetail.width')}:</Text>
               <TextInput
                 style={styles.crackInput}
-                keyboardType="numeric"
-                value={crackRecordData.width.toString()}
-                onChangeText={(text) =>
-                  setCrackRecordData({
-                    ...crackRecordData,
-                    width: text ? parseFloat(text) : 0,
-                  })
-                }
+                value={crackRecordData.width}
+                onChangeText={(value) => handleFloatInputChange(value, 'width')}
+                keyboardType="decimal-pad"
+                maxLength={10}
+                placeholder="0.00"
               />
 
               <Text style={styles.crackInputLabel}>{t('inspectionDetail.depth')}:</Text>
               <TextInput
                 style={styles.crackInput}
-                keyboardType="numeric"
-                value={crackRecordData.depth.toString()}
-                onChangeText={(text) =>
-                  setCrackRecordData({
-                    ...crackRecordData,
-                    depth: text ? parseFloat(text) : 0,
-                  })
-                }
+                value={crackRecordData.depth}
+                onChangeText={(value) => handleFloatInputChange(value, 'depth')}
+                keyboardType="decimal-pad"
+                maxLength={10}
+                placeholder="0.00"
               />
 
               <Text style={styles.crackInputLabel}>{t('inspectionDetail.description')}:</Text>
@@ -956,38 +1040,6 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       </Modal>
     </SafeAreaView>
   );
-};
-
-// Helper function to get status color
-const getStatusColor = (status: string): string => {
-  switch (status) {
-    case "Pending":
-      return "#FF9500"; // Orange
-    case "Assigned":
-      return "#007AFF"; // Blue
-    case "InProgress":
-      return "#5856D6"; // Purple
-    case "Completed":
-      return "#4CD964"; // Green
-    case "Canceled":
-      return "#FF3B30"; // Red
-    case "Verified":
-      return "#4CD964"; // Green
-    case "Unverified": 
-      return "#FF9500"; // Orange
-    case "Confirmed":
-      return "#4CD964"; // Green
-    case "Rejected":
-      return "#FF3B30"; // Red
-    case "Reviewing":
-      return "#5856D6"; // Purple
-    case "InFixing":
-      return "#5AC8FA"; // Light blue
-    case "Approved":
-      return "#4CD964"; // Green
-    default:
-      return "#8E8E93"; // Gray
-  }
 };
 
 const SafeAreaView = (props: any) => {

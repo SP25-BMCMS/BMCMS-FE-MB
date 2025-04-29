@@ -216,10 +216,7 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('staffTaskDetail.taskInfo')}</Text>
             <View style={styles.infoContainer}>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>{t('staffTaskDetail.taskId')}:</Text>
-                <Text style={styles.infoValue}>{taskDetail.task_id}</Text>
-              </View>
+              
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>{t('staffTaskDetail.description')}:</Text>
                 <Text style={styles.infoValue}>{taskDetail.description}</Text>
@@ -252,10 +249,7 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
               <Text style={styles.sectionTitle}>{t('staffTaskDetail.crackInfo')}</Text>
               {taskDetail.crackInfo.data.map((crackReport, index) => (
                 <View key={index} style={styles.crackInfoContainer}>
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>{t('staffTaskDetail.reportId')}:</Text>
-                    <Text style={styles.infoValue}>{crackReport.crackReportId}</Text>
-                  </View>
+                 
                   <View style={styles.infoRow}>
                     <Text style={styles.infoLabel}>{t('staffTaskDetail.description')}:</Text>
                     <Text style={styles.infoValue}>{crackReport.description}</Text>

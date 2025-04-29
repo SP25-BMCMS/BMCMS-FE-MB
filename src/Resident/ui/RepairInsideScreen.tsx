@@ -214,13 +214,13 @@ const RepairInsideScreen = () => {
 
   const handleRoomSelect = (room: keyof typeof CRACK_POSITIONS | 'OTHER') => {
     setSelectedRoom(room);
-    setRoomDisplayText(room === 'OTHER' ? t('repair.inside.other') : room.replace(/_/g, ' '));
+    setRoomDisplayText(room === 'OTHER' ? t('repair.inside.other') : t(`repair.inside.${room.toLowerCase()}`));
     setIsRoomDropdownOpen(false);
     
-    // Reset position if room changes
+    // Reset position when room changes
     if (room === 'OTHER') {
-      setSelectedPosition('');
-      setPositionDisplayText(t('repair.inside.customPosition'));
+      setSelectedPosition('other');
+      setPositionDisplayText(t('repair.inside.other'));
     } else {
       setSelectedPosition('');
       setPositionDisplayText(t('repair.inside.selectPosition'));
@@ -228,8 +228,13 @@ const RepairInsideScreen = () => {
   };
 
   const handlePositionSelect = (key: string, value: string) => {
-    setSelectedPosition(value);
-    setPositionDisplayText(key.replace(/_/g, ' '));
+    if (key === 'OTHER') {
+      setSelectedPosition('other');
+      setPositionDisplayText(t('repair.inside.other'));
+    } else {
+      setSelectedPosition(value);
+      setPositionDisplayText(t(`repair.inside.${key.toLowerCase()}`));
+    }
     setIsPositionDropdownOpen(false);
   };
 
@@ -261,6 +266,14 @@ const RepairInsideScreen = () => {
   };
 
   const renderRoomDropdown = () => {
+    const roomOptions = [
+      { key: 'KITCHEN', translation: t('repair.inside.kitchen') },
+      { key: 'LIVING_ROOM', translation: t('repair.inside.livingRoom') },
+      { key: 'BEDROOM', translation: t('repair.inside.bedroom') },
+      { key: 'BATHROOM', translation: t('repair.inside.bathroom') },
+      { key: 'OTHER', translation: t('repair.inside.other') }
+    ];
+
     return (
       <>
         <Text style={styles.label}>{t('repair.inside.selectRoom')}</Text>
@@ -285,21 +298,21 @@ const RepairInsideScreen = () => {
         {isRoomDropdownOpen && (
           <View style={styles.dropdownMenu}>
             <ScrollView nestedScrollEnabled={true} style={styles.scrollList}>
-              {[...Object.keys(CRACK_POSITIONS), 'OTHER'].map((room) => (
+              {roomOptions.map(({ key, translation }) => (
                 <TouchableOpacity 
-                  key={room}
+                  key={key}
                   style={styles.dropdownItem}
-                  onPress={() => handleRoomSelect(room as keyof typeof CRACK_POSITIONS | 'OTHER')}
+                  onPress={() => handleRoomSelect(key as keyof typeof CRACK_POSITIONS | 'OTHER')}
                 >
                   <Text 
                     style={[
                       styles.dropdownItemText,
-                      selectedRoom === room ? styles.selectedDropdownItem : {}
+                      selectedRoom === key ? styles.selectedDropdownItem : {}
                     ]}
                   >
-                    {room === 'OTHER' ? t('repair.inside.other') : room.replace(/_/g, ' ')}
+                    {translation}
                   </Text>
-                  {selectedRoom === room && (
+                  {selectedRoom === key && (
                     <Icon name="check" size={18} color="#B77F2E" />
                   )}
                 </TouchableOpacity>
@@ -312,25 +325,10 @@ const RepairInsideScreen = () => {
   };
 
   const renderPositionDropdown = () => {
-    // If no room selected or OTHER is selected, don't show position dropdown
     if (!selectedRoom) return null;
     
-    // Handle 'OTHER' as a special case
-    if (selectedRoom === 'OTHER' as string) {
-      return (
-        <>
-          <Text style={styles.label}>{t('repair.inside.customPosition')}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={t('repair.inside.customPosition')}
-            value={customPosition}
-            onChangeText={(text) => {
-              setCustomPosition(text);
-              setSelectedPosition(text);
-            }}
-          />
-        </>
-      );
+    if (selectedRoom === 'OTHER') {
+      return null; // Don't show position dropdown for OTHER
     }
     
     return (
@@ -355,7 +353,14 @@ const RepairInsideScreen = () => {
         {isPositionDropdownOpen && selectedRoom && (
           <View style={styles.dropdownMenu}>
             <ScrollView nestedScrollEnabled={true} style={styles.scrollList}>
-              {Object.entries(CRACK_POSITIONS[selectedRoom as keyof typeof CRACK_POSITIONS]).map(([key, value]) => (
+              {[
+                ...Object.entries(CRACK_POSITIONS[selectedRoom as keyof typeof CRACK_POSITIONS]).map(([key, value]) => ({
+                  key,
+                  value,
+                  translation: t(`repair.inside.${key.toLowerCase()}`)
+                })),
+                { key: 'OTHER', value: 'other', translation: t('repair.inside.other') }
+              ].map(({ key, value, translation }) => (
                 <TouchableOpacity 
                   key={key}
                   style={styles.dropdownItem}
@@ -367,7 +372,7 @@ const RepairInsideScreen = () => {
                       selectedPosition === value ? styles.selectedDropdownItem : {}
                     ]}
                   >
-                    {key.replace(/_/g, ' ')}
+                    {translation}
                   </Text>
                   {selectedPosition === value && (
                     <Icon name="check" size={18} color="#B77F2E" />
@@ -406,16 +411,12 @@ const RepairInsideScreen = () => {
                 styles.continueButton,
                 { 
                   backgroundColor: 
-                    description.length >= 5 && selectedRoom && 
-                    (selectedPosition || (selectedRoom === 'OTHER' && customPosition))
+                    isDescriptionValid && isPositionValid
                       ? "#B77F2E" 
                       : "#ccc" 
                 },
               ]}
-              disabled={
-                !(description.length >= 5 && selectedRoom && 
-                  (selectedPosition || (selectedRoom === 'OTHER' && customPosition)))
-              }
+              disabled={!(isDescriptionValid && isPositionValid)}
               onPress={() => setCurrentStep(2)}
             >
               <Text style={styles.continueButtonText}>{t('repair.inside.continue')}</Text>

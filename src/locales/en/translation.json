@@ -134,6 +134,12 @@
       "taskInfo": "Task Information",
       "reportedImages": "Reported Images",
       "severity": "Severity"
+    },
+    "status": {
+      "Completed": "Completed",
+      "InProgress": "In Progress",
+      "Assigned": "Assigned",
+      "Pending": "Pending"
     }
   },
   "repair": {
@@ -159,7 +165,24 @@
       "checkAgain": "Check again",
       "alert": "Alert",
       "descriptionAlert": "Please enter a detailed description (minimum 5 characters)",
-      "positionAlert": "Please select the area and crack position"
+      "positionAlert": "Please select the area and crack position",
+      "buildingExterior": "Building Exterior",
+      "commonArea": "Common Area",
+      "parking": "Parking",
+      "landscape": "Landscape",
+      "other": "Other",
+      "wall": "Wall",
+      "foundation": "Foundation", 
+      "roof": "Roof",
+      "stairs": "Stairs",
+      "corridor": "Corridor",
+      "lobby": "Lobby",
+      "surface": "Surface",
+      "pillar": "Pillar",
+      "ceiling": "Ceiling",
+      "garden": "Garden",
+      "playground": "Playground",
+      "walkway": "Walkway"
     },
     "inside": {
       "title": "Report Indoor Crack",
@@ -182,7 +205,14 @@
       "cameraPermission": "We need access to your camera to continue. Please grant permission in your device settings.",
       "photoLibraryPermission": "We need access to your photos to continue. Please grant permission in your device settings.",
       "cameraError": "Cannot access camera. Please try again.",
-      "photoLibraryError": "Cannot access photo library. Please try again."
+      "photoLibraryError": "Cannot access photo library. Please try again.",
+      "kitchen": "Kitchen",
+      "livingRoom": "Living Room",
+      "bedroom": "Bedroom",
+      "bathroom": "Bathroom",
+      "wall": "Wall",
+      "floor": "Floor",
+      "ceiling": "Ceiling"
     },
     "review": {
       "title": "Review Report",
@@ -672,7 +702,32 @@
     "locationDetails": "Location Details",
     "room": "Room",
     "floor": "Floor",
-    "areaType": "Area Type"
+    "areaType": "Area Type",
+    "crackTypes": {
+      "Vertical": "Vertical",
+      "Horizontal": "Horizontal", 
+      "Diagonal": "Diagonal",
+      "Structural": "Structural",
+      "NonStructural": "Non-Structural",
+      "Other": "Other"
+    },
+    "statusTypes": {
+      "Pending": "Pending",
+      "Approved": "Approved",
+      "Rejected": "Rejected",
+      "NoPending": "No Pending",
+      "InProgress": "In Progress",
+      "Completed": "Completed",
+      "Fixed": "Fixed",
+      "Reassigned": "Reassigned",
+      "InFixing": "In Fixing",
+      "Verified": "Verified",
+      "Confirmed": "Confirmed",
+      "Unverified": "Unverified",
+      "Reviewing": "Reviewing",
+      "Assigned": "Assigned",
+      "Canceled": "Canceled"
+    }
   },
   "inspectionList": {
     "title": "Inspections",
@@ -936,22 +991,27 @@
     "loading": "Loading data...",
     "formTitle": "New Assignment Details",
     "selectTask": "Select Task",
-    "noTasks": "No available tasks found or all tasks are already confirmed",
+    "noTasks": "No available tasks found or all tasks are confirmed",
     "assignTo": "Assign To",
-    "noStaff": "No staff members available",
+    "noStaff": "No available staff",
     "status": "Status",
     "description": "Description",
     "descriptionPlaceholder": "Enter task description",
     "createButton": "Create Assignment",
     "creating": "Creating...",
     "missingFields": "Missing Fields",
-    "fillFields": "Please fill all the fields",
+    "fillFields": "Please fill in all required fields",
     "taskUnavailable": "Task Unavailable",
-    "taskConfirmed": "This task has already been confirmed by another assignment. Please select a different task.",
+    "taskConfirmed": "This task has been confirmed by another assignment. Please select a different task.",
     "success": "Success",
     "successMessage": "Task assignment created successfully",
     "error": "Error",
-    "errorMessage": "Failed to create task assignment. Please try again."
+    "errorMessage": "Could not create task assignment. Please try again.",
+    "selectStatusTitle": "Select Status",
+    "statusTypes": {
+      "InFixing": "In Fixing",
+      "Reassigned": "Reassigned"
+    }
   },
   "propertyDetail": {
     "title": "Property Detail",

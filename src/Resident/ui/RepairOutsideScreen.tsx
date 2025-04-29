@@ -22,24 +22,13 @@ import {
   RouteProp,
 } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
-import { Property } from "../../types";
-import { OUTDOOR_CRACK_POSITIONS } from "../../types";
+import { Property, OUTDOOR_CRACK_POSITIONS } from "../../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from 'react-i18next';
 
-// Define route params type
-type RootStackParamList = {
-  RepairOutside: { property: Property };
-  RepairReview: {
-    property: Property;
-    description: string;
-    images: string[];
-    buildingDetailId?: string;
-    selectedRoom?: keyof typeof OUTDOOR_CRACK_POSITIONS;
-    selectedPosition?: string;
-    isPrivatesAsset: boolean;
-  };
-};
+// Update type definitions at the top of the file
+type OutdoorArea = keyof typeof OUTDOOR_CRACK_POSITIONS;
+type AreaType = OutdoorArea | 'OTHER';
 
 const RepairOutsideScreen = () => {
   const { t } = useTranslation();
@@ -53,15 +42,31 @@ const RepairOutsideScreen = () => {
   const [isImageSourceModalVisible, setImageSourceModalVisible] = useState(false);
   
   // State for crack reporting
-  const [selectedArea, setSelectedArea] = useState<keyof typeof OUTDOOR_CRACK_POSITIONS | ''>('');
+  const [selectedArea, setSelectedArea] = useState<AreaType>('BUILDING_EXTERIOR');
   const [selectedPosition, setSelectedPosition] = useState('');
   const [buildingDetailId, setBuildingDetailId] = useState<string | undefined>(undefined);
+  const [customArea, setCustomArea] = useState('');
+  const [customPosition, setCustomPosition] = useState('');
 
   // Dropdown states
   const [isAreaDropdownOpen, setIsAreaDropdownOpen] = useState(false);
   const [isPositionDropdownOpen, setIsPositionDropdownOpen] = useState(false);
-  const [areaDisplayText, setAreaDisplayText] = useState('Select area');
-  const [positionDisplayText, setPositionDisplayText] = useState('Select position');
+  const [areaDisplayText, setAreaDisplayText] = useState(t('repair.outside.selectArea'));
+  const [positionDisplayText, setPositionDisplayText] = useState(t('repair.outside.selectPosition'));
+
+  // Update navigation params type
+  type RootStackParamList = {
+    RepairOutside: { property: Property };
+    RepairReview: {
+      property: Property;
+      description: string;
+      images: string[];
+      buildingDetailId?: string;
+      selectedRoom: OutdoorArea | undefined;
+      selectedPosition: string;
+      isPrivatesAsset: boolean;
+    };
+  };
 
   // Fetch building detail ID when screen loads
   React.useEffect(() => {
@@ -119,20 +124,45 @@ const RepairOutsideScreen = () => {
   const isImagesValid = images.length > 0;
   const isPositionValid = selectedArea && selectedPosition;
 
-  const handleAreaSelect = (area: keyof typeof OUTDOOR_CRACK_POSITIONS) => {
+  const handleAreaSelect = (area: AreaType) => {
     setSelectedArea(area);
-    setAreaDisplayText(area.replace(/_/g, ' '));
+    const translation = area === 'OTHER' 
+      ? t('repair.outside.other')
+      : t(`repair.outside.${area === 'BUILDING_EXTERIOR' ? 'buildingExterior' : 
+          area === 'COMMON_AREA' ? 'commonArea' : 
+          area.toLowerCase()}`);
+    setAreaDisplayText(translation);
     setIsAreaDropdownOpen(false);
     
     // Reset position when area changes
-    setSelectedPosition('');
-    setPositionDisplayText('Select position');
+    if (area === 'OTHER') {
+      setSelectedPosition('other');
+      setPositionDisplayText(t('repair.outside.other'));
+    } else {
+      setSelectedPosition('');
+      setPositionDisplayText(t('repair.outside.selectPosition'));
+    }
   };
 
   const handlePositionSelect = (key: string, value: string) => {
-    setSelectedPosition(value);
-    setPositionDisplayText(key.replace(/_/g, ' '));
+    if (key === 'OTHER') {
+      setSelectedPosition('other');
+      setPositionDisplayText(t('repair.outside.other'));
+    } else {
+      setSelectedPosition(value);
+      setPositionDisplayText(t(`repair.outside.${key.toLowerCase()}`));
+    }
     setIsPositionDropdownOpen(false);
+  };
+
+  const handleCustomAreaChange = (text: string) => {
+    setCustomArea(text);
+    setSelectedPosition(text);
+  };
+
+  const handleCustomPositionChange = (text: string) => {
+    setCustomPosition(text);
+    setSelectedPosition(text);
   };
 
   const handleContinueToReview = () => {
@@ -162,15 +192,16 @@ const RepairOutsideScreen = () => {
         { 
           text: t('repair.outside.continue'), 
           onPress: () => {
-            navigation.navigate("RepairReview", {
+            const navigationParams = {
               property,
               description,
               images,
               buildingDetailId,
-              selectedRoom: selectedArea,
-              selectedPosition,
+              selectedRoom: selectedArea === 'OTHER' ? undefined : selectedArea as OutdoorArea,
+              selectedPosition: selectedArea === 'OTHER' ? 'other' : selectedPosition,
               isPrivatesAsset: false
-            });
+            };
+            navigation.navigate("RepairReview", navigationParams);
           } 
         }
       ]
@@ -178,6 +209,14 @@ const RepairOutsideScreen = () => {
   };
 
   const renderAreaDropdown = () => {
+    const areaOptions = [
+      { key: 'BUILDING_EXTERIOR', translation: t('repair.outside.buildingExterior') },
+      { key: 'COMMON_AREA', translation: t('repair.outside.commonArea') },
+      { key: 'PARKING', translation: t('repair.outside.parking') },
+      { key: 'LANDSCAPE', translation: t('repair.outside.landscape') },
+      { key: 'OTHER', translation: t('repair.outside.other') }
+    ];
+
     return (
       <>
         <Text style={styles.label}>{t('repair.outside.selectArea')}</Text>
@@ -190,7 +229,7 @@ const RepairOutsideScreen = () => {
         >
           <Icon name="location-on" size={20} color="#B77F2E" style={styles.dropdownIcon} />
           <Text style={styles.dropdownButtonText}>
-            {selectedArea ? selectedArea.replace(/_/g, ' ') : t('repair.outside.selectArea')}
+            {areaDisplayText}
           </Text>
           <Icon 
             name={isAreaDropdownOpen ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
@@ -202,21 +241,21 @@ const RepairOutsideScreen = () => {
         {isAreaDropdownOpen && (
           <View style={styles.dropdownMenu}>
             <ScrollView nestedScrollEnabled={true} style={styles.scrollList}>
-              {Object.keys(OUTDOOR_CRACK_POSITIONS).map((area) => (
+              {areaOptions.map(({ key, translation }) => (
                 <TouchableOpacity 
-                  key={area}
+                  key={key}
                   style={styles.dropdownItem}
-                  onPress={() => handleAreaSelect(area as keyof typeof OUTDOOR_CRACK_POSITIONS)}
+                  onPress={() => handleAreaSelect(key as AreaType)}
                 >
                   <Text 
                     style={[
                       styles.dropdownItemText,
-                      selectedArea === area ? styles.selectedDropdownItem : {}
+                      selectedArea === key ? styles.selectedDropdownItem : {}
                     ]}
                   >
-                    {area.replace(/_/g, ' ')}
+                    {translation}
                   </Text>
-                  {selectedArea === area && (
+                  {selectedArea === key && (
                     <Icon name="check" size={18} color="#B77F2E" />
                   )}
                 </TouchableOpacity>
@@ -230,7 +269,18 @@ const RepairOutsideScreen = () => {
 
   const renderPositionDropdown = () => {
     if (!selectedArea) return null;
+
+    if (selectedArea === 'OTHER') {
+      return null; // Don't show position dropdown for OTHER
+    }
     
+    const positions = OUTDOOR_CRACK_POSITIONS[selectedArea] ? 
+      Object.entries(OUTDOOR_CRACK_POSITIONS[selectedArea]).map(([key, value]) => ({
+        key,
+        value,
+        translation: t(`repair.outside.${key.toLowerCase()}`)
+      })) : [];
+
     return (
       <>
         <Text style={styles.label}>{t('repair.outside.selectPosition')}</Text>
@@ -253,7 +303,10 @@ const RepairOutsideScreen = () => {
         {isPositionDropdownOpen && (
           <View style={styles.dropdownMenu}>
             <ScrollView nestedScrollEnabled={true} style={styles.scrollList}>
-              {Object.entries(OUTDOOR_CRACK_POSITIONS[selectedArea as keyof typeof OUTDOOR_CRACK_POSITIONS]).map(([key, value]) => (
+              {[
+                ...positions,
+                { key: 'OTHER', value: 'other', translation: t('repair.outside.other') }
+              ].map(({ key, value, translation }) => (
                 <TouchableOpacity 
                   key={key}
                   style={styles.dropdownItem}
@@ -265,7 +318,7 @@ const RepairOutsideScreen = () => {
                       selectedPosition === value ? styles.selectedDropdownItem : {}
                     ]}
                   >
-                    {key.replace(/_/g, ' ')}
+                    {translation}
                   </Text>
                   {selectedPosition === value && (
                     <Icon name="check" size={18} color="#B77F2E" />
@@ -280,10 +333,12 @@ const RepairOutsideScreen = () => {
           <View style={styles.selectedInfo}>
             <Text style={styles.selectedInfoLabel}>{t('repair.outside.selectedPosition')}:</Text>
             <Text style={styles.selectedInfoValue}>
-              {selectedPosition
-                .split('/')
-                .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-                .join(' > ')}
+              {selectedPosition === 'other' 
+                ? t('repair.outside.other')
+                : selectedPosition
+                    .split('/')
+                    .map(part => t(`repair.outside.${part.toLowerCase()}`))
+                    .join(' > ')}
             </Text>
           </View>
         )}
@@ -295,7 +350,7 @@ const RepairOutsideScreen = () => {
     switch (currentStep) {
       case 1:
         return (
-          <>
+          <View style={styles.stepContainer}>
             {/* Description input */}
             <Text style={styles.label}>{t('repair.outside.details')}</Text>
             <TextInput
@@ -331,12 +386,12 @@ const RepairOutsideScreen = () => {
             >
               <Text style={styles.continueButtonText}>{t('repair.outside.continue')}</Text>
             </TouchableOpacity>
-          </>
+          </View>
         );
 
       case 2:
         return (
-          <>
+          <View style={styles.stepContainer}>
             {/* Add photos */}
             <Text style={styles.label}>{t('repair.outside.addPhotos')}</Text>
             <TouchableOpacity
@@ -346,31 +401,6 @@ const RepairOutsideScreen = () => {
               <Icon name="add-a-photo" size={30} color="#B77F2E" />
               <Text>{t('repair.outside.choosePhoto')}</Text>
             </TouchableOpacity>
-
-            {/* Photo source modal */}
-            <Modal
-              isVisible={isImageSourceModalVisible}
-              onBackdropPress={closeImageSourceModal}
-              style={styles.modal}
-            >
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>{t('repair.outside.photoSourceTitle')}</Text>
-                <TouchableOpacity
-                  style={styles.modalOption}
-                  onPress={takePhoto}
-                >
-                  <Icon name="camera-alt" size={24} color="#B77F2E" />
-                  <Text style={styles.modalOptionText}>{t('repair.outside.takePhoto')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.modalOption}
-                  onPress={pickImageFromLibrary}
-                >
-                  <Icon name="photo-library" size={24} color="#B77F2E" />
-                  <Text style={styles.modalOptionText}>{t('repair.outside.chooseFromLibrary')}</Text>
-                </TouchableOpacity>
-              </View>
-            </Modal>
 
             {/* Display chosen images */}
             <View style={styles.imageContainer}>
@@ -403,7 +433,7 @@ const RepairOutsideScreen = () => {
             >
               <Text style={styles.continueButtonText}>{t('repair.outside.continue')}</Text>
             </TouchableOpacity>
-          </>
+          </View>
         );
 
       default:
@@ -788,6 +818,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#B77F2E",
     fontWeight: "500",
+  },
+  stepContainer: {
+    padding: 16,
   },
 });
 

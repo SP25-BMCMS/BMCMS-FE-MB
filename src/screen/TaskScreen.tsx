@@ -243,24 +243,7 @@ const TaskScreen = () => {
   };
 
   const getStatusText = (status: string) => {
-    switch (status) {
-      case 'Pending':
-        return 'Pending';
-      case 'InProgress':
-        return 'In Progress';
-      case 'Completed':
-        return 'Completed';
-      case 'Canceled':
-        return 'Canceled';
-      case 'Verified':
-        return 'Verified';
-      case 'Unverified':
-        return 'Unverified';
-      case 'Reviewing':
-        return 'Reviewing';
-      default:
-        return status;
-    }
+    return t(`inspectionDetail.statusTypes.${status}`) || status;
   };
 
   const handleTaskPress = (assignmentId: string) => {

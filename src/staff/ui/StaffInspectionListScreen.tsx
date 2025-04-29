@@ -262,9 +262,6 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
       onPress={() => handleInspectionPress(item)}
     >
       <View style={styles.inspectionHeader}>
-        <Text style={styles.inspectionId} numberOfLines={1}>
-          ID: {item.inspection_id.substring(0, 8)}...
-        </Text>
         <Text style={styles.totalCost}>
           {parseInt(item.total_cost) > 0 ? `${item.total_cost} VND` : 'No cost'}
         </Text>
@@ -324,9 +321,7 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
         <Text style={styles.taskTitle} numberOfLines={2}>
           {taskDescription}
         </Text>
-        <Text style={styles.taskId}>
-          {t('staffInspectionList.taskId')}: {taskAssignmentId.substring(0, 8)}...
-        </Text>
+        
       </View>
 
       {loading && !refreshing ? (

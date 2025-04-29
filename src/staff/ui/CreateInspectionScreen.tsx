@@ -527,10 +527,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
             <Text style={styles.cardTitle}>{t('inspection.summary')}</Text>
             <View style={styles.divider} />
             
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>{t('inspection.taskId')}:</Text>
-              <Text style={styles.infoValue}>{taskDetail.task_id.substring(0, 8)}...</Text>
-            </View>
+           
             
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>{t('inspection.type')}:</Text>
@@ -660,10 +657,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
             <Text style={styles.cardTitle}>{t('inspection.taskInformation')}</Text>
             <View style={styles.divider} />
             
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>{t('inspection.taskId')}:</Text>
-              <Text style={styles.infoValue}>{taskDetail.task_id.substring(0, 8)}...</Text>
-            </View>
+           
             
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>{t('inspection.description')}:</Text>

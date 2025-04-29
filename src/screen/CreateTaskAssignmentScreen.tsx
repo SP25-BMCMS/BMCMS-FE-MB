@@ -56,7 +56,7 @@ const CreateTaskAssignmentScreen = () => {
   const [selectedEmployeeLabel, setSelectedEmployeeLabel] = useState('');
   const [description, setDescription] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<'InFixing' | 'Pending' | 'Verified' | 'Unverified' | 'Fixed' | 'Confirmed' | 'Reassigned'>('InFixing');
-  const [selectedStatusLabel, setSelectedStatusLabel] = useState('InFixing');
+  const [selectedStatusLabel, setSelectedStatusLabel] = useState(t('createTaskAssignment.statusTypes.InFixing'));
   
   // Dropdown state
   const [taskDropdownVisible, setTaskDropdownVisible] = useState(false);
@@ -64,8 +64,8 @@ const CreateTaskAssignmentScreen = () => {
   const [statusDropdownVisible, setStatusDropdownVisible] = useState(false);
   
   const statusOptions = [
-    { label: 'InFixing', value: 'InFixing' as const },
-    { label: 'Reassigned', value: 'Reassigned' as const }
+    { label: t('createTaskAssignment.statusTypes.InFixing'), value: 'InFixing' as const },
+    { label: t('createTaskAssignment.statusTypes.Reassigned'), value: 'Reassigned' as const }
   ];
 
   // Sử dụng tanstack Query để lấy tất cả task và task assignments
@@ -272,7 +272,7 @@ const CreateTaskAssignmentScreen = () => {
   // Handle status selection
   const handleStatusSelect = (status: 'InFixing' | 'Reassigned') => {
     setSelectedStatus(status);
-    setSelectedStatusLabel(status);
+    setSelectedStatusLabel(t(`createTaskAssignment.statusTypes.${status}`));
     setStatusDropdownVisible(false);
   };
   
