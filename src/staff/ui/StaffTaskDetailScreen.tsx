@@ -16,6 +16,7 @@ import { TaskService } from '../../service/Task';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 type StaffTaskDetailScreenRouteProp = RouteProp<RootStackParamList, 'StaffTaskDetail'>;
 type StaffTaskDetailScreenNavigationProp = StackNavigationProp<RootStackParamList, 'StaffTaskDetail'>;
@@ -26,6 +27,7 @@ type Props = {
 };
 
 const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
+  const { t } = useTranslation();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { assignmentId } = route.params;
   const [taskDetail, setTaskDetail] = useState<TaskAssignmentDetail | null>(null);
@@ -194,7 +196,7 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Staff Task Details</Text>
+        <Text style={styles.headerTitle}>{t('staffTaskDetail.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -206,40 +208,40 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchTaskDetail}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : taskDetail ? (
         <ScrollView style={styles.scrollView}>
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Task Information</Text>
+            <Text style={styles.sectionTitle}>{t('staffTaskDetail.taskInfo')}</Text>
             <View style={styles.infoContainer}>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Task ID:</Text>
+                <Text style={styles.infoLabel}>{t('staffTaskDetail.taskId')}:</Text>
                 <Text style={styles.infoValue}>{taskDetail.task_id}</Text>
               </View>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Description:</Text>
+                <Text style={styles.infoLabel}>{t('staffTaskDetail.description')}:</Text>
                 <Text style={styles.infoValue}>{taskDetail.description}</Text>
               </View>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Status:</Text>
+                <Text style={styles.infoLabel}>{t('staffTaskDetail.status')}:</Text>
                 <View style={[styles.statusBadge, { backgroundColor: getStatusColor(taskDetail.status) }]}>
-                  <Text style={styles.statusText}>{getStatusText(taskDetail.status)}</Text>
+                  <Text style={styles.statusText}>{t(`staffTaskDetail.statusTypes.${taskDetail.status}`)}</Text>
                 </View>
               </View>
               {taskDetail.employee && (
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Assigned to:</Text>
+                  <Text style={styles.infoLabel}>{t('staffTaskDetail.assignedTo')}:</Text>
                   <Text style={styles.employeeName}>{taskDetail.employee.username}</Text>
                 </View>
               )}
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Created:</Text>
+                <Text style={styles.infoLabel}>{t('staffTaskDetail.created')}:</Text>
                 <Text style={styles.infoValue}>{formatDate(taskDetail.created_at)}</Text>
               </View>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Updated:</Text>
+                <Text style={styles.infoLabel}>{t('staffTaskDetail.updated')}:</Text>
                 <Text style={styles.infoValue}>{formatDate(taskDetail.updated_at)}</Text>
               </View>
             </View>
@@ -247,50 +249,49 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
 
           {taskDetail.crackInfo && taskDetail.crackInfo.data && taskDetail.crackInfo.data.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Crack Information</Text>
+              <Text style={styles.sectionTitle}>{t('staffTaskDetail.crackInfo')}</Text>
               {taskDetail.crackInfo.data.map((crackReport, index) => (
                 <View key={index} style={styles.crackInfoContainer}>
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Report ID:</Text>
+                    <Text style={styles.infoLabel}>{t('staffTaskDetail.reportId')}:</Text>
                     <Text style={styles.infoValue}>{crackReport.crackReportId}</Text>
                   </View>
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Description:</Text>
+                    <Text style={styles.infoLabel}>{t('staffTaskDetail.description')}:</Text>
                     <Text style={styles.infoValue}>{crackReport.description}</Text>
                   </View>
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Location:</Text>
+                    <Text style={styles.infoLabel}>{t('staffTaskDetail.location')}:</Text>
                     <Text style={styles.infoValue}>{getPositionText(crackReport.position)}</Text>
                   </View>
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Status:</Text>
+                    <Text style={styles.infoLabel}>{t('staffTaskDetail.status')}:</Text>
                     <View style={[styles.statusBadge, { backgroundColor: getStatusColor(crackReport.status) }]}>
-                      <Text style={styles.statusText}>{getStatusText(crackReport.status)}</Text>
+                      <Text style={styles.statusText}>{t(`staffTaskDetail.statusTypes.${crackReport.status}`)}</Text>
                     </View>
                   </View>
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Reported by:</Text>
+                    <Text style={styles.infoLabel}>{t('staffTaskDetail.reportedBy')}:</Text>
                     <Text style={styles.employeeName}>{crackReport.reportedBy.username}</Text>
                   </View>
                   {crackReport.verifiedBy && (
                     <View style={styles.infoRow}>
-                      <Text style={styles.infoLabel}>Verified by:</Text>
+                      <Text style={styles.infoLabel}>{t('staffTaskDetail.verifiedBy')}:</Text>
                       <Text style={styles.employeeName}>{crackReport.verifiedBy.username}</Text>
                     </View>
                   )}
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Reported on:</Text>
+                    <Text style={styles.infoLabel}>{t('staffTaskDetail.reportedOn')}:</Text>
                     <Text style={styles.infoValue}>{formatDate(crackReport.createdAt)}</Text>
                   </View>
 
                   {crackReport.crackDetails && crackReport.crackDetails.length > 0 && (
                     <>
-                      <Text style={styles.subSectionTitle}>Crack Details</Text>
+                      <Text style={styles.subSectionTitle}>{t('staffTaskDetail.crackDetails')}</Text>
                       
-                      {/* Display both original and AI detection images */}
                       <View style={styles.imageComparisonContainer}>
                         <View style={styles.imageWrapper}>
-                          <Text style={styles.imageLabel}>Original Image</Text>
+                          <Text style={styles.imageLabel}>{t('staffTaskDetail.originalImage')}</Text>
                           <Image 
                             source={{ uri: crackReport.crackDetails[selectedImageIndex].photoUrl }} 
                             style={styles.compareImage}
@@ -298,7 +299,7 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
                           />
                         </View>
                         <View style={styles.imageWrapper}>
-                          <Text style={styles.imageLabel}>AI Analysis</Text>
+                          <Text style={styles.imageLabel}>{t('staffTaskDetail.aiAnalysis')}</Text>
                           <Image 
                             source={{ uri: crackReport.crackDetails[selectedImageIndex].aiDetectionUrl }} 
                             style={styles.compareImage}
@@ -337,18 +338,18 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
                       {/* Display selected image details */}
                       <View style={styles.selectedImageInfo}>
                         <View style={styles.infoRow}>
-                          <Text style={styles.infoLabel}>Severity:</Text>
+                          <Text style={styles.infoLabel}>{t('staffTaskDetail.severity')}:</Text>
                           <View style={[
                             styles.severityBadge, 
                             { backgroundColor: getSeverityColor(crackReport.crackDetails[selectedImageIndex].severity) }
                           ]}>
                             <Text style={styles.severityText}>
-                              {getSeverityText(crackReport.crackDetails[selectedImageIndex].severity)}
+                              {t(`staffTaskDetail.severityTypes.${crackReport.crackDetails[selectedImageIndex].severity}`)}
                             </Text>
                           </View>
                         </View>
                         <View style={styles.infoRow}>
-                          <Text style={styles.infoLabel}>Created on:</Text>
+                          <Text style={styles.infoLabel}>{t('staffTaskDetail.createdOn')}:</Text>
                           <Text style={styles.infoValue}>{formatDate(crackReport.crackDetails[selectedImageIndex].createdAt)}</Text>
                         </View>
                       </View>
@@ -373,7 +374,7 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
                 }}
               >
                 <Text style={styles.buttonText}>
-                  View Maintenance History
+                  {t('staffTaskDetail.viewMaintenanceHistory')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -388,7 +389,7 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
                 }}
               >
                 <Text style={styles.buttonText}>
-                  Create Inspection
+                  {t('staffTaskDetail.createInspection')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -405,14 +406,14 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
               }}
             >
               <Text style={styles.buttonText}>
-                View Inspections
+                {t('staffTaskDetail.viewInspections')}
               </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
       ) : (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No details found.</Text>
+          <Text style={styles.emptyText}>{t('staffTaskDetail.noDetails')}</Text>
         </View>
       )}
     </SafeAreaView>

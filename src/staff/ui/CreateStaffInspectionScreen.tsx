@@ -22,6 +22,7 @@ import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import Modal from 'react-native-modal';
 import { showMessage } from "react-native-flash-message";
+import { useTranslation } from 'react-i18next';
 
 type CreateStaffInspectionScreenRouteProp = RouteProp<RootStackParamList, 'CreateStaffInspection'>;
 type CreateStaffInspectionScreenNavigationProp = StackNavigationProp<RootStackParamList>;
@@ -32,6 +33,7 @@ type Props = {
 };
 
 const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
+  const { t } = useTranslation();
   const { taskDetail } = route.params;
   const navigation = useNavigation<CreateStaffInspectionScreenNavigationProp>();
   
@@ -189,8 +191,8 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
   const handleReviewInspection = () => {
     if (selectedImages.length === 0) {
       showMessage({
-        message: "Missing Images",
-        description: "Please add at least one image to continue",
+        message: t('createStaffInspection.missingImages'),
+        description: t('createStaffInspection.addImagesContinue'),
         type: "warning",
         icon: "warning",
         position: "top",
@@ -200,8 +202,8 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
 
     if (description.trim() === '') {
       showMessage({
-        message: "Missing Notes",
-        description: "Please add inspection notes to continue",
+        message: t('createStaffInspection.missingNotes'),
+        description: t('createStaffInspection.addNotesContinue'),
         type: "warning",
         icon: "warning",
         position: "top",
@@ -230,8 +232,8 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
       
       setIsSubmitting(false);
       showMessage({
-        message: "Success",
-        description: "Inspection created successfully",
+        message: t('createStaffInspection.success'),
+        description: t('createStaffInspection.inspectionCreated'),
         type: "success",
         icon: "success",
         position: "top",
@@ -242,8 +244,8 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
       console.error('Error submitting inspection:', error);
       setIsSubmitting(false);
       showMessage({
-        message: "Error",
-        description: "Failed to create inspection. Please try again.",
+        message: t('createStaffInspection.error'),
+        description: t('createStaffInspection.createFailed'),
         type: "danger",
         icon: "danger",
         position: "top",
@@ -256,15 +258,15 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
       setIsChangingStatus(true);
       await TaskService.updateStatusAndCreateWorklog(taskDetail.assignment_id, 'Fixed');
       showMessage({
-        message: "Status Changed",
-        description: "Task status has been changed to Fixed",
+        message: t('createStaffInspection.statusChanged'),
+        description: t('createStaffInspection.statusChangedMessage'),
         type: "success",
       });
     } catch (error) {
       console.error('Error changing status:', error);
       showMessage({
-        message: "Error",
-        description: "Failed to change task status",
+        message: t('createStaffInspection.error'),
+        description: t('createStaffInspection.failedToChangeStatus'),
         type: "danger",
       });
     } finally {
@@ -283,41 +285,41 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
           >
             <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Review Inspection</Text>
+          <Text style={styles.headerTitle}>{t('createStaffInspection.reviewInspection')}</Text>
           <View style={{ width: 24 }} />
         </View>
         
         <ScrollView style={styles.content}>
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Summary</Text>
+            <Text style={styles.cardTitle}>{t('createStaffInspection.summary')}</Text>
             <View style={styles.divider} />
             
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Task ID:</Text>
+              <Text style={styles.infoLabel}>{t('createStaffInspection.taskId')}:</Text>
               <Text style={styles.infoValue}>{taskDetail.task_id.substring(0, 8)}...</Text>
             </View>
             
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Status:</Text>
+              <Text style={styles.infoLabel}>{t('createStaffInspection.status')}:</Text>
               <View style={[styles.statusBadge, { backgroundColor: getStatusColor(taskDetail.status) }]}>
                 <Text style={styles.statusText}>{getStatusText(taskDetail.status)}</Text>
               </View>
             </View>
             
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Images:</Text>
+              <Text style={styles.infoLabel}>{t('createStaffInspection.images')}:</Text>
               <Text style={styles.infoValue}>{selectedImages.length} added</Text>
             </View>
           </View>
           
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Notes</Text>
+            <Text style={styles.cardTitle}>{t('createStaffInspection.notes')}</Text>
             <View style={styles.divider} />
             <Text style={styles.notesPreview}>{description}</Text>
           </View>
           
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Images</Text>
+            <Text style={styles.cardTitle}>{t('createStaffInspection.images')}</Text>
             <View style={styles.divider} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {selectedImages.map((image, index) => (
@@ -335,7 +337,7 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
               {isChangingStatus ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.buttonText}>Change Status to Fixed</Text>
+                <Text style={styles.buttonText}>{t('createStaffInspection.changeStatus')}</Text>
               )}
             </TouchableOpacity>
 
@@ -347,7 +349,7 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
               {isSubmitting ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.buttonText}>Confirm & Submit</Text>
+                <Text style={styles.buttonText}>{t('createStaffInspection.confirmSubmit')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -366,31 +368,31 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Inspection</Text>
+        <Text style={styles.headerTitle}>{t('createStaffInspection.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.scrollView}>
         {/* Task Information */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Task Information</Text>
+          <Text style={styles.sectionTitle}>{t('createStaffInspection.taskInfo')}</Text>
           <View style={styles.infoContainer}>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Task ID:</Text>
+              <Text style={styles.infoLabel}>{t('createStaffInspection.taskId')}:</Text>
               <Text style={styles.infoValue}>{taskDetail.task_id}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Description:</Text>
+              <Text style={styles.infoLabel}>{t('createStaffInspection.description')}:</Text>
               <Text style={styles.infoValue}>{taskDetail.description}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Status:</Text>
+              <Text style={styles.infoLabel}>{t('createStaffInspection.status')}:</Text>
               <View style={[styles.statusBadge, { backgroundColor: getStatusColor(taskDetail.status) }]}>
                 <Text style={styles.statusText}>{getStatusText(taskDetail.status)}</Text>
               </View>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Assignment ID:</Text>
+              <Text style={styles.infoLabel}>{t('createStaffInspection.assignmentId')}:</Text>
               <Text style={styles.infoValue}>{taskDetail.assignment_id}</Text>
             </View>
           </View>
@@ -398,10 +400,10 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
 
         {/* Inspection Description */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Inspection Note</Text>
+          <Text style={styles.sectionTitle}>{t('createStaffInspection.inspectionNote')}</Text>
           <TextInput
             style={styles.descriptionInput}
-            placeholder="Enter inspection description"
+            placeholder={t('createStaffInspection.enterDescription')}
             value={description}
             onChangeText={setDescription}
             multiline
@@ -412,14 +414,14 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
 
         {/* Inspection Images */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Inspection Images</Text>
+          <Text style={styles.sectionTitle}>{t('createStaffInspection.inspectionImages')}</Text>
           
           <TouchableOpacity
             style={styles.imagePicker}
             onPress={openImageSourceModal}
           >
             <Ionicons name="camera" size={24} color="#B77F2E" />
-            <Text style={styles.imagePickerText}>Add Photos</Text>
+            <Text style={styles.imagePickerText}>{t('createStaffInspection.addPhotos')}</Text>
           </TouchableOpacity>
           
           {/* Image Source Modal */}
@@ -434,14 +436,14 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
             animationOut="slideOutDown"
           >
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Select Image Source</Text>
+              <Text style={styles.modalTitle}>{t('createStaffInspection.selectImageSource')}</Text>
               
               <TouchableOpacity
                 style={styles.modalOption}
                 onPress={takePhoto}
               >
                 <Ionicons name="camera" size={24} color="#B77F2E" />
-                <Text style={styles.modalOptionText}>Take Photo</Text>
+                <Text style={styles.modalOptionText}>{t('createStaffInspection.takePhoto')}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -449,14 +451,14 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
                 onPress={pickImageFromLibrary}
               >
                 <Ionicons name="images" size={24} color="#B77F2E" />
-                <Text style={styles.modalOptionText}>Choose from Gallery</Text>
+                <Text style={styles.modalOptionText}>{t('createStaffInspection.chooseFromGallery')}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={closeImageSourceModal}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>{t('createStaffInspection.cancel')}</Text>
               </TouchableOpacity>
             </View>
           </Modal>
@@ -477,7 +479,7 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
               ))}
             </View>
           ) : (
-            <Text style={styles.warningText}>Please add at least one image</Text>
+            <Text style={styles.warningText}>{t('createStaffInspection.addImage')}</Text>
           )}
         </View>
 
@@ -503,7 +505,7 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
           {isSubmitting ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.submitButtonText}>Review Inspection</Text>
+            <Text style={styles.submitButtonText}>{t('createStaffInspection.reviewInspection')}</Text>
           )}
         </TouchableOpacity>
       </ScrollView>

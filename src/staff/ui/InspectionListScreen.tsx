@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Modal from 'react-native-modal';
 import { showMessage } from 'react-native-flash-message';
+import { useTranslation } from 'react-i18next';
 
 type InspectionListScreenRouteProp = RouteProp<RootStackParamList, 'InspectionList'>;
 type InspectionListScreenNavigationProp = StackNavigationProp<RootStackParamList, 'InspectionList'>;
@@ -54,6 +55,7 @@ const getReportStatusColor = (status: string): string => {
 };
 
 const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { t } = useTranslation();
   const { taskAssignmentId, taskDescription } = route.params;
   const [submitting, setSubmitting] = useState(false);
   const [selectedInspection, setSelectedInspection] = useState<EnhancedInspection | null>(null);
@@ -178,10 +180,10 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
     if (hasNoCost) {
       if (item.isprivateasset) {
         statusColor = '#007AFF'; // Blue for private assets
-        statusText = 'Private Asset';
+        statusText = t('inspectionDetail.privateAsset');
       } else {
         statusColor = '#FF9500'; // Orange for no cost
-        statusText = 'No Cost';
+        statusText = t('inspectionDetail.noCost');
       }
     } else {
       statusText = `${item.total_cost} VND`;
@@ -245,7 +247,7 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
                   <Text style={styles.imageCount}>{item.image_urls.length}</Text>
                 </View>
               ) : (
-                <Text style={styles.noImagesText}>No images</Text>
+                <Text style={styles.noImagesText}>{t('inspectionList.noImages')}</Text>
               )}
             </View>
           </View>
@@ -260,7 +262,9 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
               onPress={() => handleMarkAsPrivateAsset(item)}
             >
               <Ionicons name="lock-closed" size={16} color="#FFFFFF" />
-              <Text style={styles.privateAssetButtonText}>Mark as Private Asset</Text>
+              <Text style={styles.privateAssetButtonText}>
+                {t('inspectionList.markAsPrivateAsset')}
+              </Text>
             </TouchableOpacity>
           )}
         </TouchableOpacity>
@@ -271,12 +275,12 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
   const renderEmptyList = () => (
     <View style={styles.emptyContainer}>
       <Ionicons name="document-text-outline" size={60} color="#CCCCCC" />
-      <Text style={styles.emptyText}>No inspections found for this task</Text>
+      <Text style={styles.emptyText}>{t('inspectionList.noInspections')}</Text>
       <TouchableOpacity 
         style={styles.createButton}
         onPress={() => navigation.goBack()}
       >
-        <Text style={styles.createButtonText}>Go Back</Text>
+        <Text style={styles.createButtonText}>{t('inspectionList.goBack')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -290,7 +294,7 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Inspections</Text>
+        <Text style={styles.headerTitle}>{t('inspectionList.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
       
@@ -299,7 +303,7 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
           {taskDescription}
         </Text>
         <Text style={styles.taskId}>
-          Task ID: {taskAssignmentId.substring(0, 8)}...
+          {t('inspectionList.taskId')}: {taskAssignmentId.substring(0, 8)}...
         </Text>
       </View>
 
@@ -330,10 +334,9 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Confirm Action</Text>
+            <Text style={styles.modalTitle}>{t('inspectionList.confirmAction')}</Text>
             <Text style={styles.modalText}>
-              Are you sure you want to mark this inspection as a Private Asset? 
-              This will update the status to 'Pending'.
+              {t('inspectionList.confirmPrivateAsset')}
             </Text>
             
             <View style={styles.modalActions}>
@@ -344,7 +347,7 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
                 }}
                 disabled={submitting}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>{t('inspectionList.cancel')}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -355,7 +358,7 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
                 {submitting ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.confirmButtonText}>Confirm</Text>
+                  <Text style={styles.confirmButtonText}>{t('inspectionList.confirm')}</Text>
                 )}
               </TouchableOpacity>
             </View>

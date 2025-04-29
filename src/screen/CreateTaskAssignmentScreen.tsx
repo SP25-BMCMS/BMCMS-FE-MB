@@ -23,6 +23,7 @@ import { useQuery } from '@tanstack/react-query';
 import instance from '../service/Auth';
 import { VITE_GET_TASK_ASSIGNMENT } from '@env';
 import { showMessage } from 'react-native-flash-message';
+import { useTranslation } from 'react-i18next';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -42,6 +43,7 @@ interface AvailableTask {
 }
 
 const CreateTaskAssignmentScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -162,8 +164,8 @@ const CreateTaskAssignmentScreen = () => {
   const handleSubmit = async () => {
     if (!selectedTaskId || !selectedEmployeeId || !description) {
       showMessage({
-        message: "Missing Fields",
-        description: "Please fill all the fields",
+        message: t('createTaskAssignment.missingFields'),
+        description: t('createTaskAssignment.fillFields'),
         type: "warning",
         duration: 3000,
         icon: "warning",
@@ -189,8 +191,8 @@ const CreateTaskAssignmentScreen = () => {
     
     if (confirmedTaskIds.has(selectedTaskId)) {
       showMessage({
-        message: "Task Unavailable",
-        description: "This task has already been confirmed by another assignment. Please select a different task.",
+        message: t('createTaskAssignment.taskUnavailable'),
+        description: t('createTaskAssignment.taskConfirmed'),
         type: "danger",
         duration: 3000,
         icon: "danger",
@@ -217,8 +219,8 @@ const CreateTaskAssignmentScreen = () => {
       await TaskService.updateStatusAndCreateWorklog(assignmentId, selectedStatus);
       
       showMessage({
-        message: "Success",
-        description: "Task assignment created successfully",
+        message: t('createTaskAssignment.success'),
+        description: t('createTaskAssignment.successMessage'),
         type: "success",
         duration: 3000,
         icon: "success",
@@ -237,8 +239,8 @@ const CreateTaskAssignmentScreen = () => {
     } catch (error) {
       console.error('Error creating task assignment:', error);
       showMessage({
-        message: "Error",
-        description: "Failed to create task assignment. Please try again.",
+        message: t('createTaskAssignment.error'),
+        description: t('createTaskAssignment.errorMessage'),
         type: "danger",
         duration: 3000,
         icon: "danger",
@@ -285,11 +287,11 @@ const CreateTaskAssignmentScreen = () => {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonLoading}>
             <Icon name="arrow-back" size={24} color="#FFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitleLoading}>Create Task Assignment</Text>
+          <Text style={styles.headerTitleLoading}>{t('createTaskAssignment.title')}</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#B77F2E" />
-          <Text style={styles.loadingText}>Loading data...</Text>
+          <Text style={styles.loadingText}>{t('createTaskAssignment.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -304,7 +306,7 @@ const CreateTaskAssignmentScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon name="arrow-back" size={24} color="#FFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Task Assignment</Text>
+        <Text style={styles.headerTitle}>{t('createTaskAssignment.title')}</Text>
       </View>
       
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
@@ -312,19 +314,19 @@ const CreateTaskAssignmentScreen = () => {
           {/* Form Title */}
           <View style={styles.formTitleContainer}>
             <Icon name="assignment" size={24} color="#B77F2E" />
-            <Text style={styles.formTitle}>New Assignment Details</Text>
+            <Text style={styles.formTitle}>{t('createTaskAssignment.formTitle')}</Text>
           </View>
           
           {/* Task Selection */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>
               <Icon name="task" size={18} color="#B77F2E" style={styles.labelIcon} />
-              Select Task
+              {t('createTaskAssignment.selectTask')}
             </Text>
             {availableTasks.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Icon name="error-outline" size={20} color="#FF9500" />
-                <Text style={styles.emptyText}>No available tasks found or all tasks are already confirmed</Text>
+                <Text style={styles.emptyText}>{t('createTaskAssignment.noTasks')}</Text>
               </View>
             ) : (
               <View>
@@ -351,7 +353,7 @@ const CreateTaskAssignmentScreen = () => {
                   >
                     <View style={styles.modalContent}>
                       <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Select Task</Text>
+                        <Text style={styles.modalTitle}>{t('createTaskAssignment.selectTask')}</Text>
                         <TouchableOpacity onPress={() => setTaskDropdownVisible(false)}>
                           <Icon name="close" size={24} color="#333" />
                         </TouchableOpacity>
@@ -395,12 +397,12 @@ const CreateTaskAssignmentScreen = () => {
           <View style={styles.formGroup}>
             <Text style={styles.label}>
               <Icon name="person" size={18} color="#B77F2E" style={styles.labelIcon} />
-              Assign To
+              {t('createTaskAssignment.assignTo')}
             </Text>
             {staffMembers.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Icon name="error-outline" size={20} color="#FF9500" />
-                <Text style={styles.emptyText}>No staff members available</Text>
+                <Text style={styles.emptyText}>{t('createTaskAssignment.noStaff')}</Text>
               </View>
             ) : (
               <View>
@@ -427,7 +429,7 @@ const CreateTaskAssignmentScreen = () => {
                   >
                     <View style={styles.modalContent}>
                       <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Select Employee</Text>
+                        <Text style={styles.modalTitle}>{t('createTaskAssignment.assignTo')}</Text>
                         <TouchableOpacity onPress={() => setEmployeeDropdownVisible(false)}>
                           <Icon name="close" size={24} color="#333" />
                         </TouchableOpacity>
@@ -473,7 +475,7 @@ const CreateTaskAssignmentScreen = () => {
           <View style={styles.formGroup}>
             <Text style={styles.label}>
               <Icon name="flag" size={18} color="#B77F2E" style={styles.labelIcon} />
-              Status
+              {t('createTaskAssignment.status')}
             </Text>
             <View>
               <TouchableOpacity 
@@ -499,7 +501,7 @@ const CreateTaskAssignmentScreen = () => {
                 >
                   <View style={styles.modalContent}>
                     <View style={styles.modalHeader}>
-                      <Text style={styles.modalTitle}>Select Status</Text>
+                      <Text style={styles.modalTitle}>{t('createTaskAssignment.selectStatusTitle')}</Text>
                       <TouchableOpacity onPress={() => setStatusDropdownVisible(false)}>
                         <Icon name="close" size={24} color="#333" />
                       </TouchableOpacity>
@@ -539,11 +541,11 @@ const CreateTaskAssignmentScreen = () => {
           <View style={styles.formGroup}>
             <Text style={styles.label}>
               <Icon name="description" size={18} color="#B77F2E" style={styles.labelIcon} />
-              Description
+              {t('createTaskAssignment.description')}
             </Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter task description"
+              placeholder={t('createTaskAssignment.descriptionPlaceholder')}
               value={description}
               onChangeText={setDescription}
               multiline
@@ -564,12 +566,12 @@ const CreateTaskAssignmentScreen = () => {
             {submitting ? (
               <View style={styles.submitButtonContent}>
                 <ActivityIndicator color="#FFFFFF" size="small" />
-                <Text style={styles.submitButtonText}>Creating...</Text>
+                <Text style={styles.submitButtonText}>{t('createTaskAssignment.creating')}</Text>
               </View>
             ) : (
               <View style={styles.submitButtonContent}>
                 <Icon name="check-circle" size={20} color="#FFFFFF" />
-                <Text style={styles.submitButtonText}>Create Assignment</Text>
+                <Text style={styles.submitButtonText}>{t('createTaskAssignment.createButton')}</Text>
               </View>
             )}
           </TouchableOpacity>

@@ -18,6 +18,7 @@ import { enUS } from 'date-fns/locale';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { showMessage } from 'react-native-flash-message';
+import { useTranslation } from 'react-i18next';
 
 type StaffMaintenanceHistoryScreenRouteProp = RouteProp<RootStackParamList, 'MaintenanceHistory'>;
 type StaffMaintenanceHistoryScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MaintenanceHistory'>;
@@ -142,6 +143,7 @@ interface ScheduleJobResponse {
 }
 
 const StaffMaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
+  const { t } = useTranslation();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { scheduleJobId, buildingName } = route.params;
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
@@ -227,12 +229,12 @@ const StaffMaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
       
       <View style={styles.deviceDetails}>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Manufacturer:</Text>
+          <Text style={styles.detailLabel}>{t('staffMaintenanceHistory.manufacturer')}:</Text>
           <Text style={styles.detailValue}>{item.manufacturer}</Text>
         </View>
         
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Model:</Text>
+          <Text style={styles.detailLabel}>{t('staffMaintenanceHistory.model')}:</Text>
           <Text style={styles.detailValue}>{item.model}</Text>
         </View>
       </View>
@@ -262,7 +264,7 @@ const StaffMaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Maintenance History</Text>
+        <Text style={styles.headerTitle}>{t('staffMaintenanceHistory.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -273,67 +275,66 @@ const StaffMaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
       ) : isError ? (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>
-            {error instanceof Error ? error.message : 'Failed to load maintenance history.'}
+            {error instanceof Error ? error.message : t('staffMaintenanceHistory.loadError')}
           </Text>
           <TouchableOpacity 
             style={styles.retryButton}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.retryButtonText}>Go Back</Text>
+            <Text style={styles.retryButtonText}>{t('common.goBack')}</Text>
           </TouchableOpacity>
         </View>
       ) : scheduleJobData && scheduleJobData.data ? (
         <ScrollView style={styles.scrollView}>
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Building Information</Text>
+            <Text style={styles.sectionTitle}>{t('staffMaintenanceHistory.buildingInfo')}</Text>
             <View style={styles.infoContainer}>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Building Name:</Text>
+                <Text style={styles.infoLabel}>{t('staffMaintenanceHistory.buildingName')}:</Text>
                 <Text style={styles.infoValue}>
                   {scheduleJobData.data.buildingDetail?.building?.name || buildingName || 'N/A'}
                 </Text>
               </View>
               
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Building Detail:</Text>
+                <Text style={styles.infoLabel}>{t('staffMaintenanceHistory.buildingDetail')}:</Text>
                 <Text style={styles.infoValue}>
                   {scheduleJobData.data.buildingDetail?.name || 'N/A'}
                 </Text>
               </View>
               
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Area:</Text>
+                <Text style={styles.infoLabel}>{t('staffMaintenanceHistory.area')}:</Text>
                 <Text style={styles.infoValue}>
                   {scheduleJobData.data.buildingDetail?.building?.area?.name || 'N/A'}
                 </Text>
               </View>
               
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Floors:</Text>
+                <Text style={styles.infoLabel}>{t('staffMaintenanceHistory.floors')}:</Text>
                 <Text style={styles.infoValue}>
                   {scheduleJobData.data.buildingDetail?.building?.numberFloor || 'N/A'}
                 </Text>
               </View>
               
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Status:</Text>
+                <Text style={styles.infoLabel}>{t('staffMaintenanceHistory.status')}:</Text>
                 <View style={[styles.statusBadge, { 
                   backgroundColor: scheduleJobData.data.status === 'Completed' ? '#4CD964' : 
                                   scheduleJobData.data.status === 'InProgress' ? '#007AFF' : '#FF9500' 
                 }]}>
-                  <Text style={styles.statusText}>{scheduleJobData.data.status || 'N/A'}</Text>
+                  <Text style={styles.statusText}>{t(`staffMaintenanceHistory.statusTypes.${scheduleJobData.data.status}`)}</Text>
                 </View>
               </View>
 
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Scheduled Date:</Text>
+                <Text style={styles.infoLabel}>{t('staffMaintenanceHistory.scheduledDate')}:</Text>
                 <Text style={styles.infoValue}>
                   {formatDate(scheduleJobData.data.run_date)}
                 </Text>
               </View>
             </View>
             
-            {/* Add button to navigate to Technical Records */}
             <TouchableOpacity 
               style={styles.viewTechnicalRecordsButton}
               onPress={() => navigation.navigate('TechnicalRecord', {
@@ -342,13 +343,13 @@ const StaffMaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
               })}
             >
               <Ionicons name="document-text-outline" size={18} color="#FFFFFF" style={styles.buttonIcon} />
-              <Text style={styles.viewTechnicalRecordsText}>View Technical Records</Text>
+              <Text style={styles.viewTechnicalRecordsText}>{t('staffMaintenanceHistory.viewTechnicalRecords')}</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Devices for Maintenance</Text>
-            <Text style={styles.sectionSubtitle}>Tap on a device to view its maintenance history</Text>
+            <Text style={styles.sectionTitle}>{t('staffMaintenanceHistory.devicesForMaintenance')}</Text>
+            <Text style={styles.sectionSubtitle}>{t('staffMaintenanceHistory.tapDeviceHint')}</Text>
             
             {scheduleJobData.data.buildingDetail?.device && 
              scheduleJobData.data.buildingDetail.device.length > 0 ? (
@@ -362,7 +363,7 @@ const StaffMaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
             ) : (
               <View style={styles.emptyContainer}>
                 <Ionicons name="construct-outline" size={50} color="#CCCCCC" />
-                <Text style={styles.emptyText}>No devices found for this maintenance task</Text>
+                <Text style={styles.emptyText}>{t('staffMaintenanceHistory.noDevices')}</Text>
               </View>
             )}
           </View>
@@ -370,7 +371,7 @@ const StaffMaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
           {selectedDeviceId && (
             <View style={styles.section}>
               <View style={styles.maintenanceHistoryHeader}>
-                <Text style={styles.sectionTitle}>Maintenance History</Text>
+                <Text style={styles.sectionTitle}>{t('staffMaintenanceHistory.maintenanceHistory')}</Text>
                 {isMaintenanceHistoryLoading && (
                   <ActivityIndicator size="small" color="#B77F2E" />
                 )}
@@ -378,12 +379,12 @@ const StaffMaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
               
               {isMaintenanceHistoryLoading ? (
                 <View style={styles.maintenanceLoadingContainer}>
-                  <Text style={styles.loadingText}>Loading maintenance history...</Text>
+                  <Text style={styles.loadingText}>{t('staffMaintenanceHistory.loadingHistory')}</Text>
                 </View>
               ) : isMaintenanceHistoryError ? (
                 <View style={styles.maintenanceErrorContainer}>
                   <Text style={styles.maintenanceErrorText}>
-                    Could not load maintenance history
+                    {t('staffMaintenanceHistory.loadHistoryError')}
                   </Text>
                 </View>
               ) : maintenanceHistoryData && maintenanceHistoryData.data && maintenanceHistoryData.data.length > 0 ? (
@@ -397,7 +398,7 @@ const StaffMaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
               ) : (
                 <View style={styles.emptyContainer}>
                   <Ionicons name="document-outline" size={40} color="#CCCCCC" />
-                  <Text style={styles.emptyText}>No maintenance history found for this device</Text>
+                  <Text style={styles.emptyText}>{t('staffMaintenanceHistory.noHistory')}</Text>
                 </View>
               )}
             </View>
@@ -406,7 +407,7 @@ const StaffMaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
       ) : (
         <View style={styles.emptyContainer}>
           <Ionicons name="alert-circle-outline" size={50} color="#CCCCCC" />
-          <Text style={styles.emptyText}>No maintenance history available</Text>
+          <Text style={styles.emptyText}>{t('staffMaintenanceHistory.noData')}</Text>
         </View>
       )}
     </SafeAreaView>

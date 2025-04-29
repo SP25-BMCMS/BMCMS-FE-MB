@@ -12,6 +12,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showMessage } from 'react-native-flash-message';
 import { useQuery, useQueryClient, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -38,6 +39,7 @@ interface EmployeeTaskAssignment {
 }
 
 const StaffAssignScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const [tasks, setTasks] = useState<TaskWithAssignments[]>([]);
   const [employeeTasks, setEmployeeTasks] = useState<EmployeeTaskAssignment[]>([]);
@@ -308,11 +310,11 @@ const StaffAssignScreen = () => {
         
         <View style={styles.taskInfo}>
           <Text style={styles.taskInfoText}>
-            <Text style={styles.taskInfoLabel}>Task: </Text>
+            <Text style={styles.taskInfoLabel}>{t('screens.staffAssign.task')}: </Text>
             {assignment.task.description}
           </Text>
           <Text style={styles.taskInfoText}>
-            <Text style={styles.taskInfoLabel}>Created: </Text>
+            <Text style={styles.taskInfoLabel}>{t('screens.staffAssign.created')}: </Text>
             {formatDate(assignment.created_at)}
           </Text>
         </View>
@@ -353,11 +355,11 @@ const StaffAssignScreen = () => {
         
         <View style={styles.taskInfo}>
           <Text style={styles.taskInfoText}>
-            <Text style={styles.taskInfoLabel}>Assignment ID: </Text>
+            <Text style={styles.taskInfoLabel}>{t('screens.staffAssign.assignmentId')}: </Text>
             {assignment.assignment_id.substring(0, 8)}...
           </Text>
           <Text style={styles.taskInfoText}>
-            <Text style={styles.taskInfoLabel}>Assigned to: </Text>
+            <Text style={styles.taskInfoLabel}>{t('screens.staffAssign.assignedTo')}: </Text>
             {isLoadingUserInfo && !userFromCache ? (
               <View style={{flexDirection: 'row', alignItems: 'center'}}>
                 <ActivityIndicator size="small" color="#B77F2E" style={{marginRight: 5}} />
@@ -371,7 +373,7 @@ const StaffAssignScreen = () => {
             )}
           </Text>
           <Text style={styles.taskInfoText}>
-            <Text style={styles.taskInfoLabel}>Created: </Text>
+            <Text style={styles.taskInfoLabel}>{t('screens.staffAssign.created')}: </Text>
             {formatDate(assignment.created_at)}
           </Text>
         </View>
@@ -658,7 +660,7 @@ const StaffAssignScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.headerTitle}>Staff Assign</Text>
+      <Text style={styles.headerTitle}>{t('screens.staffAssign.staffAssign')}</Text>
       
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
@@ -671,7 +673,7 @@ const StaffAssignScreen = () => {
             style={styles.retryButton} 
             onPress={isLeader ? fetchLeaderTaskAssignments : fetchEmployeeTaskAssignments}
           >
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryButtonText}>{t('screens.home.retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -686,7 +688,7 @@ const StaffAssignScreen = () => {
             >
               {employeeTasks.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>No tasks assigned to you yet.</Text>
+                  <Text style={styles.emptyText}>{t('screens.staffAssign.noStaffAssigned')}</Text>
                 </View>
               ) : (
                 employeeTasks.map(renderEmployeeTaskItem)
@@ -696,7 +698,7 @@ const StaffAssignScreen = () => {
             // Hiển thị danh sách task của leader với sticky header
             tasks.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No team assignments available.</Text>
+                <Text style={styles.emptyText}>{t('screens.staffAssign.noTeamAssignments')}</Text>
               </View>
             ) : (
               <SectionList

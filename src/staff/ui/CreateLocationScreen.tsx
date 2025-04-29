@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LocationService } from '../../service/Location';
 import { LocationData } from '../../types';
 import { showMessage } from "react-native-flash-message";
+import { useTranslation } from 'react-i18next';
 
 type CreateLocationScreenRouteProp = RouteProp<RootStackParamList, 'CreateLocation'>;
 type CreateLocationScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CreateLocation'>;
@@ -30,6 +31,7 @@ type AreaType = 'Floor' | 'Wall' | 'Ceiling' | 'column' | 'Other';
 const VALID_AREA_TYPES: AreaType[] = ['Floor', 'Wall', 'Ceiling', 'column', 'Other'];
 
 const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { t } = useTranslation();
   const { onGoBack, initialData } = route.params;
   const isEditing = false;
 
@@ -150,7 +152,7 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isEditing ? 'Edit Location' : 'Create Location'}</Text>
+        <Text style={styles.headerTitle}>{isEditing ? t('location.editTitle') : t('location.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -158,16 +160,16 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="location" size={24} color="#B77F2E" />
-            <Text style={styles.cardTitle}>Location Details</Text>
+            <Text style={styles.cardTitle}>{t('location.locationDetails')}</Text>
           </View>
           
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Room Number <Text style={styles.required}>*</Text></Text>
+            <Text style={styles.label}>{t('location.roomNumber')} <Text style={styles.required}>{t('location.required')}</Text></Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="home-outline" size={20} color="#B77F2E" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Enter room number/name"
+                placeholder={t('location.enterRoom')}
                 value={roomNumber}
                 onChangeText={setRoomNumber}
               />
@@ -175,12 +177,12 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Floor Number <Text style={styles.required}>*</Text></Text>
+            <Text style={styles.label}>{t('location.floorNumber')} <Text style={styles.required}>{t('location.required')}</Text></Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="layers" size={20} color="#B77F2E" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Enter floor number"
+                placeholder={t('location.enterFloor')}
                 value={floorNumber}
                 onChangeText={setFloorNumber}
                 keyboardType="number-pad"
@@ -189,7 +191,7 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Area Type</Text>
+            <Text style={styles.label}>{t('location.areaType')}</Text>
             <View style={styles.areaTypeContainer}>
               {VALID_AREA_TYPES.map((type) => (
                 <TouchableOpacity 
@@ -220,12 +222,12 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Description</Text>
+            <Text style={styles.label}>{t('location.description')}</Text>
             <View style={[styles.inputWrapper, styles.textAreaWrapper]}>
               <Ionicons name="create-outline" size={20} color="#B77F2E" style={[styles.inputIcon, styles.textAreaIcon]} />
               <TextInput
                 style={[styles.input, styles.textArea]}
-                placeholder="Add any additional details about the location"
+                placeholder={t('location.addDetails')}
                 value={description}
                 onChangeText={setDescription}
                 multiline
@@ -247,12 +249,14 @@ const CreateLocationScreen: React.FC<Props> = ({ route, navigation }) => {
           {isSubmitting ? (
             <View style={styles.saveButtonContent}>
               <Ionicons name="refresh" size={20} color="#FFFFFF" style={styles.loadingIcon} />
-              <Text style={styles.saveButtonText}>Saving...</Text>
+              <Text style={styles.saveButtonText}>{t('location.saving')}</Text>
             </View>
           ) : (
             <View style={styles.saveButtonContent}>
               <Ionicons name="save-outline" size={20} color="#FFFFFF" />
-              <Text style={styles.saveButtonText}>{isEditing ? 'Update Location' : 'Save Location'}</Text>
+              <Text style={styles.saveButtonText}>
+                {isEditing ? t('location.updateLocation') : t('location.saveLocation')}
+              </Text>
             </View>
           )}
         </TouchableOpacity>

@@ -16,6 +16,7 @@ import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { Ionicons } from '@expo/vector-icons';
 import Modal from 'react-native-modal';
+import { useTranslation } from 'react-i18next';
 
 type StaffInspectionDetailScreenRouteProp = RouteProp<RootStackParamList, 'StaffInspectionDetail'>;
 type StaffInspectionDetailScreenNavigationProp = StackNavigationProp<RootStackParamList, 'StaffInspectionDetail'>;
@@ -28,6 +29,7 @@ type Props = {
 const windowWidth = Dimensions.get('window').width;
 
 const StaffInspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { t } = useTranslation();
   const { inspection } = route.params;
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(-1);
   const [imageLoading, setImageLoading] = useState<boolean>(false);
@@ -58,58 +60,58 @@ const StaffInspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => 
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Staff Inspection Details</Text>
+        <Text style={styles.headerTitle}>{t('staffInspectionDetail.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.scrollView}>
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>General Information</Text>
+          <Text style={styles.cardTitle}>{t('staffInspectionDetail.generalInfo')}</Text>
           <View style={styles.divider} />
           
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Inspection ID:</Text>
+            <Text style={styles.infoLabel}>{t('staffInspectionDetail.inspectionId')}:</Text>
             <Text style={styles.infoValue}>{inspection.inspection_id}</Text>
           </View>
           
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Task Assignment ID:</Text>
+            <Text style={styles.infoLabel}>{t('staffInspectionDetail.taskAssignmentId')}:</Text>
             <Text style={styles.infoValue}>{inspection.task_assignment_id}</Text>
           </View>
           
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Created:</Text>
+            <Text style={styles.infoLabel}>{t('staffInspectionDetail.created')}:</Text>
             <Text style={styles.infoValue}>{formatDate(inspection.created_at)}</Text>
           </View>
           
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Updated:</Text>
+            <Text style={styles.infoLabel}>{t('staffInspectionDetail.updated')}:</Text>
             <Text style={styles.infoValue}>{formatDate(inspection.updated_at)}</Text>
           </View>
           
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Total Cost:</Text>
+            <Text style={styles.infoLabel}>{t('staffInspectionDetail.totalCost')}:</Text>
             <Text style={[styles.infoValue, styles.costValue]}>
               {parseInt(inspection.total_cost) > 0 
                 ? `${parseInt(inspection.total_cost).toLocaleString()} VND` 
-                : 'No cost assigned'}
+                : t('staffInspectionDetail.noCost')}
             </Text>
           </View>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Description</Text>
+          <Text style={styles.cardTitle}>{t('staffInspectionDetail.description')}</Text>
           <View style={styles.divider} />
           
           <Text style={styles.descriptionText}>
-            {inspection.description || 'No description provided.'}
+            {inspection.description || t('staffInspectionDetail.noDescription')}
           </Text>
         </View>
 
         {inspection.image_urls.length > 0 && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>
-              Images ({inspection.image_urls.length})
+              {t('staffInspectionDetail.images')} ({inspection.image_urls.length})
             </Text>
             <View style={styles.divider} />
             
