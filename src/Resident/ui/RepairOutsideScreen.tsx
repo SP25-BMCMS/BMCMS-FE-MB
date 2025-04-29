@@ -136,36 +136,32 @@ const RepairOutsideScreen = () => {
   };
 
   const handleContinueToReview = () => {
-    // Validate all required fields
     if (!isDescriptionValid) {
-      Alert.alert("Alert", "Please enter a detailed description (minimum 5 characters)");
+      Alert.alert(t('repair.outside.alert'), t('repair.outside.descriptionAlert'));
       return;
     }
 
     if (!isPositionValid) {
-      Alert.alert("Alert", "Please select the area and crack position");
+      Alert.alert(t('repair.outside.alert'), t('repair.outside.positionAlert'));
       return;
     }
     
-    // Hiển thị thông báo xác nhận vị trí
     Alert.alert(
-      "Confirmation",
-      `Report position: ${selectedPosition
-        .split('/')
-        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(' > ')}\n\nAre you sure you want to continue?`,
+      t('repair.outside.confirmPosition'),
+      t('repair.outside.confirmPositionMessage', {
+        position: selectedPosition
+          .split('/')
+          .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(' > ')
+      }),
       [
         {
-          text: "Check again",
+          text: t('repair.outside.checkAgain'),
           style: "cancel"
         },
         { 
-          text: "Continue", 
+          text: t('repair.outside.continue'), 
           onPress: () => {
-            // Sử dụng position từ OUTDOOR_CRACK_POSITIONS
-            console.log('🔍 Position to send:', selectedPosition);
-            
-            // Navigate to review screen with all necessary data
             navigation.navigate("RepairReview", {
               property,
               description,
@@ -173,7 +169,7 @@ const RepairOutsideScreen = () => {
               buildingDetailId,
               selectedRoom: selectedArea,
               selectedPosition,
-              isPrivatesAsset: false // Always false for outdoor repairs
+              isPrivatesAsset: false
             });
           } 
         }
@@ -427,27 +423,30 @@ const RepairOutsideScreen = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('repair.outside.title')}</Text>
         <Text style={styles.stepIndicator}>
-          <Text style={{ color: "#000" }}>Step </Text>
+          <Text style={{ color: "#000" }}>{t('repair.outside.step')} </Text>
           <Text style={{ color: "#B77F2E" }}>{currentStep}</Text>
           <Text style={{ color: "#000" }}>/2</Text>
         </Text>
       </View>
 
-      {/* Thông tin căn hộ */}
+      {/* Property Info */}
       <View style={styles.propertyInfo}>
         <Text style={styles.unitCode}>
           {property.building}
         </Text>
         <Text style={styles.subTitle}>
-          Building {property.description} | Apartment {property.unit} 
+          {t('propertyDetail.buildingInfo', { 
+            description: property.description, 
+            unit: property.unit 
+          })}
         </Text>
       </View>
 
-      {/* Thông báo khu vực công cộng */}
+      {/* Public Area Notice */}
       <View style={styles.noticeContainer}>
         <Icon name="info" size={24} color="#2196F3" />
         <Text style={styles.noticeText}>
-          This report will be sent to the building manager to repair the public area
+          {t('repair.outside.publicAreaNotice')}
         </Text>
       </View>
 

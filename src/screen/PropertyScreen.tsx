@@ -4,8 +4,10 @@ import { checkResidentStatus } from '../ultis/guestResident';
 import GuestPropertyScreen from '../Guest/GuestPropertyScreen';
 import ResidentPropertyScreen from '../Resident/ResidentPropertyScreen';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 const PropertyScreen = () => {
+  const { t } = useTranslation();
   const [isResident, setIsResident] = useState<boolean | null>(null);
   const navigation = useNavigation();
 
@@ -24,7 +26,7 @@ const PropertyScreen = () => {
 
   if (isResident === null) {
     console.log('🕒 PropertyScreen: Loading...');
-    return <View><Text>Loading...</Text></View>;
+    return <View><Text>{t('common.loading')}</Text></View>;
   }
 
   // @ts-ignore

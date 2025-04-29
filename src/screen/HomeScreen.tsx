@@ -20,6 +20,7 @@ import instance from '../service/Auth';
 import { VITE_GET_AREA_LIST } from '@env';
 import { LinearGradient } from 'expo-linear-gradient';
 import { showMessage } from 'react-native-flash-message';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
@@ -58,6 +59,7 @@ interface AreaListResponse {
 }
 
 const HomeScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [expandedArea, setExpandedArea] = useState<string | null>(null);
 
@@ -187,10 +189,10 @@ const HomeScreen = () => {
             style={styles.featuredGradient}
           >
             <View style={styles.featuredContent}>
-              <Text style={styles.featuredLabel}>Featured Building</Text>
+              <Text style={styles.featuredLabel}>{t('screens.home.featured.title')}</Text>
               <Text style={styles.featuredName}>{featuredBuilding.name}</Text>
               <Text style={styles.featuredDescription} numberOfLines={3}>
-                {featuredBuilding.description || `A ${featuredBuilding.numberFloor}-floor building with modern amenities.`}
+                {featuredBuilding.description || t('screens.home.featured.description', { floors: featuredBuilding.numberFloor })}
               </Text>
             </View>
           </LinearGradient>
@@ -230,15 +232,16 @@ const HomeScreen = () => {
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#B77F2E" />
+          <Text style={styles.loadingText}>{t('screens.home.loading')}</Text>
         </View>
       ) : isError ? (
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={50} color="#FF3B30" />
           <Text style={styles.errorText}>
-            {error instanceof Error ? error.message : 'Failed to load areas.'}
+            {error instanceof Error ? error.message : t('screens.home.error.message')}
           </Text>
           <TouchableOpacity style={styles.retryButton}>
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryText}>{t('screens.home.error.retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : areaData && areaData.data ? (
@@ -252,14 +255,14 @@ const HomeScreen = () => {
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{areaData.data.length}</Text>
-              <Text style={styles.statLabel}>Areas</Text>
+              <Text style={styles.statLabel}>{t('screens.home.stats.areas')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>
                 {areaData.data.reduce((sum, area) => sum + area.buildings.length, 0)}
               </Text>
-              <Text style={styles.statLabel}>Buildings</Text>
+              <Text style={styles.statLabel}>{t('screens.home.stats.buildings')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
@@ -270,14 +273,14 @@ const HomeScreen = () => {
                   ), 0
                 )}
               </Text>
-              <Text style={styles.statLabel}>Total Floors</Text>
+              <Text style={styles.statLabel}>{t('screens.home.stats.totalFloors')}</Text>
             </View>
           </View>
           
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Areas</Text>
+            <Text style={styles.sectionTitle}>{t('screens.home.areas.title')}</Text>
             <TouchableOpacity style={styles.viewAllButton}>
-              <Text style={styles.viewAllText}>View All</Text>
+              <Text style={styles.viewAllText}>{t('screens.home.areas.viewAll')}</Text>
             </TouchableOpacity>
           </View>
           
@@ -288,7 +291,7 @@ const HomeScreen = () => {
       ) : (
         <View style={styles.emptyContainer}>
           <Ionicons name="business-outline" size={50} color="#CCCCCC" />
-          <Text style={styles.emptyText}>No building areas available</Text>
+          <Text style={styles.emptyText}>{t('screens.home.empty.message')}</Text>
         </View>
       )}
     </View>
@@ -509,6 +512,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 16,
   },
   errorContainer: {
     flex: 1,

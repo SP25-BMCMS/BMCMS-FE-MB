@@ -520,7 +520,10 @@ const RepairInsideScreen = () => {
           {property.building}
         </Text>
         <Text style={styles.subTitle}>
-          Building {property.description} | Apartment {property.unit} 
+          {t('propertyDetail.buildingInfo', { 
+            description: property.description, 
+            unit: property.unit 
+          })}
         </Text>
       </View>
 

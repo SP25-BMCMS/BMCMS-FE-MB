@@ -81,37 +81,60 @@
   },
   "workProgress": {
     "title": "Work Progress",
-    "crackInfo": "Crack Information",
-    "taskDetails": "Task Details",
-    "statusHistory": "Status History",
-    "maintenanceHistory": "Maintenance History",
-    "feedback": {
-      "title": "Feedback",
-      "giveFeedback": "Give Feedback",
-      "yourFeedback": "Your Feedback",
-      "rating": "Your Rating",
-      "comment": "Your Comment",
-      "submit": "Submit Feedback",
-      "cancel": "Cancel",
-      "required": "Comment Required",
-      "description": "Please add a comment about your experience",
-      "submitted": "Feedback Submitted",
-      "thanks": "Thank you for your {rating}-star rating!",
-      "error": "Error",
-      "failed": "Failed to submit feedback. Please try again.",
-      "placeholder": "Share your experience here..."
+    "loading": "Loading work progress...",
+    "error": {
+      "title": "Error Loading Data",
+      "retry": "Retry"
     },
-    "status": {
-      "pending": "Pending",
+    "empty": {
+      "title": "No Work Progress Found",
+      "message": "No work progress information is available for this crack report.",
+      "goBack": "Go Back"
+    },
+    "timeline": {
+      "title": "Progress Timeline",
+      "reported": "Reported",
+      "assigned": "Assigned",
       "inProgress": "In Progress",
-      "completed": "Completed",
-      "rejected": "Rejected"
+      "completed": "Completed"
     },
-    "date": "Date",
-    "technician": "Technician",
-    "noMaintenanceRecords": "No maintenance records found",
-    "noTechnicians": "No technicians assigned yet",
-    "completedOn": "Completed on"
+    "feedback": {
+      "prompt": "Work has been completed. Please provide your feedback.",
+      "button": "Rate Repair Work",
+      "submitted": "Thank you! You have already provided feedback for this work.",
+      "modal": {
+        "title": "Rate Repair Work",
+        "selectRating": "Select Rating:",
+        "addComment": "Add Comment:",
+        "required": "*",
+        "placeholder": "Share your experience about the repair work...",
+        "cancel": "Cancel",
+        "submit": "Submit"
+      },
+      "validation": {
+        "commentRequired": "Comment Required",
+        "commentMessage": "Please add a comment about your experience"
+      },
+      "success": {
+        "title": "Feedback Submitted",
+        "message": "Thank you for your {{rating}}-star rating!"
+      },
+      "error": {
+        "title": "Error",
+        "message": "Failed to submit feedback. Please try again."
+      }
+    },
+    "details": {
+      "crackReport": "Crack Report Details",
+      "position": "Position",
+      "reported": "Reported",
+      "reportedBy": "by",
+      "description": "Description",
+      "status": "Status",
+      "taskInfo": "Task Information",
+      "reportedImages": "Reported Images",
+      "severity": "Severity"
+    }
   },
   "repair": {
     "outside": {
@@ -129,9 +152,14 @@
       "takePhoto": "Take photo",
       "chooseFromLibrary": "Choose from library",
       "photoWarning": "Please add at least 1 photo",
-      "isDescriptionValid": false,
-      "isPositionValid": false,
-      "isImagesValid": false
+      "step": "Step",
+      "publicAreaNotice": "This report will be sent to the building manager to repair the public area",
+      "confirmPosition": "Confirmation",
+      "confirmPositionMessage": "Report position: {{position}}\n\nAre you sure you want to continue?",
+      "checkAgain": "Check again",
+      "alert": "Alert",
+      "descriptionAlert": "Please enter a detailed description (minimum 5 characters)",
+      "positionAlert": "Please select the area and crack position"
     },
     "inside": {
       "title": "Report Indoor Crack",
@@ -206,7 +234,21 @@
       "errorLoadingData": "Error loading data",
       "retry": "Retry",
       "areas": "Areas",
-      "noAreasFound": "No areas found"
+      "noAreasFound": "No areas found",
+      "loading": "Loading...",
+      "empty": {
+        "title": "No Areas",
+        "message": "No building areas available"
+      },
+      "featured": {
+        "title": "Featured Building",
+        "description": "A {{floors}}-floor building with modern amenities"
+      },
+      "stats": {
+        "areas": "Areas",
+        "buildings": "Buildings",
+        "totalFloors": "Total Floors"
+      }
     },
     "account": {
       "title": "Account",
@@ -232,40 +274,122 @@
       "manageStaffAssignments": "Manage staff assignments and teams",
       "getAssistance": "Get assistance with your questions",
       "viewChatHistory": "View your conversation history",
-      "passwordChangeNotice": "The password change function will be developed later"
+      "passwordChangeNotice": "The password change function will be developed later",
+      "title": {
+        "staff": "Staff Account",
+        "resident": "Account"
+      },
+      "signIn": "Sign In",
+      "menu": {
+        "language": "Language",
+        "aboutUs": "About Us",
+        "english": "English"
+      },
+      "profile": {
+        "resident": "Resident",
+        "staff": "Staff Member"
+      },
+      "cards": {
+        "myReport": "MyReport",
+        "chatHistory": "Chat History",
+        "chatBot": "ChatBot",
+        "profile": "Profile",
+        "myTasks": "My Tasks",
+        "department": "Department"
+      },
+      "options": {
+        "address": "Address",
+        "changePassword": "Change Password",
+        "virtualAssistant": "Virtual Assistant",
+        "workSchedule": "Work Schedule",
+        "support": "Support"
+      },
+      "notifications": {
+        "passwordChange": "The password change function will be developed later"
+      }
     },
     "notification": {
-      "title": "Notifications",
-      "noNotifications": "No notifications yet",
-      "markAllAsRead": "Mark all as read",
-      "clearAll": "Clear all",
-      "today": "Today",
-      "yesterday": "Yesterday",
-      "earlier": "Earlier",
-      "newReport": "New Report",
-      "reportStatus": "Report Status"
+      "title": {
+        "default": "NOTIFICATIONS",
+        "staff": "STAFF NOTIFICATIONS"
+      },
+      "loading": "Loading notifications...",
+      "empty": {
+        "title": "No Notifications",
+        "message": {
+          "default": "You don't have any notifications yet",
+          "staff": "You don't have any staff notifications yet"
+        }
+      },
+      "notSignedIn": {
+        "title": "Not Signed In",
+        "message": "Please sign in to receive notifications",
+        "action": "Sign In"
+      },
+      "actions": {
+        "refresh": "Refresh",
+        "markRead": "Marking all notifications as read...",
+        "markReadSuccess": "{{count}} notifications marked as read",
+        "markReadError": "Failed to mark all notifications as read",
+        "delete": {
+          "title": "Delete All Notifications",
+          "message": "Are you sure you want to delete all notifications? This action cannot be undone.",
+          "cancel": "Cancel",
+          "confirm": "Delete All",
+          "progress": "Deleting all notifications...",
+          "success": "All notifications deleted",
+          "error": "Failed to delete all notifications"
+        }
+      },
+      "toast": {
+        "tryAgain": "Please try again later",
+        "markReadSuccess": "Notification marked as read",
+        "markReadError": "Failed to mark notification as read",
+        "deleteSuccess": "Notification deleted",
+        "deleteError": "Failed to delete notification"
+      }
     },
     "signUp": {
       "title": "Sign Up",
-      "firstName": "First Name",
-      "lastName": "Last Name",
+      "username": "Username",
       "email": "Email",
       "phoneNumber": "Phone Number",
       "password": "Password",
-      "confirmPassword": "Confirm Password",
-      "agreeTerms": "I agree to the Terms & Conditions",
+      "dateOfBirth": "Date of Birth",
+      "gender": "Gender",
+      "genderOptions": {
+        "male": "Male",
+        "female": "Female"
+      },
+      "placeholders": {
+        "username": "Enter your username",
+        "email": "Enter your email",
+        "phone": "0123456789",
+        "password": "Create a password"
+      },
       "signUpButton": "Sign Up",
-      "alreadyHaveAccount": "Already have an account?",
-      "signIn": "Sign In"
+      "errors": {
+        "missingInfo": "Missing Information",
+        "fillFields": "Please fill in all fields",
+        "registrationFailed": "Registration Failed",
+        "tryAgain": "Please try again later",
+        "unexpectedError": "An unexpected error occurred"
+      },
+      "success": {
+        "title": "Registration Success"
+      }
     },
     "otp": {
-      "title": "Verification",
-      "enterCode": "Enter the verification code sent to",
-      "didntReceiveCode": "Didn't receive the code?",
-      "resendCode": "Resend Code",
-      "verifyButton": "Verify",
-      "resendIn": "Resend in",
-      "seconds": "seconds"
+      "title": "Enter OTP",
+      "sentTo": "OTP has been sent to {{identifier}}",
+      "verify": "Verify",
+      "error": {
+        "invalidOTP": "OTP is not valid, please enter again",
+        "noRegistration": "Cannot find registration information",
+        "verificationFailed": "An error occurred during OTP verification"
+      },
+      "success": "Success",
+      "alert": "Alert"
     },
     "task": {
       "title": "Task Assignment",
@@ -828,5 +952,20 @@
     "successMessage": "Task assignment created successfully",
     "error": "Error",
     "errorMessage": "Failed to create task assignment. Please try again."
+  },
+  "propertyDetail": {
+    "title": "Property Detail",
+    "propertyNotFound": "Property information not found",
+    "services": "Services",
+    "residentInformation": "Resident Information",
+    "repairInside": "Repair inside",
+    "repairOutside": "Repair outside",
+    "buildingInfo": "Building {{description}} | Apartment {{unit}}",
+    "propertyDetails": {
+      "numberOfFloors": "Number of Floors",
+      "apartmentCode": "Apartment Code",
+      "area": "Area",
+      "unknown": "Unknown"
+    }
   }
 }

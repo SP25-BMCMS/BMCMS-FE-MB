@@ -20,10 +20,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { showMessage } from "react-native-flash-message";
 import { RootStackParamList } from "../types";
 import { AuthService } from "../service/registerResident";
+import { useTranslation } from 'react-i18next';
 
 type SignUpScreenNavigationProp = StackNavigationProp<RootStackParamList, "SignUp">;
 
 const SignUpScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<SignUpScreenNavigationProp>();
 
   const [username, setUsername] = useState("");
@@ -49,8 +51,8 @@ const SignUpScreen = () => {
   const handleSignUp = async () => {
     if (!username || !email || !phone || !password || !gender || !dateOfBirth) {
       showMessage({
-        message: "Missing Information",
-        description: "Please fill in all fields.",
+        message: t('screens.signUp.errors.missingInfo'),
+        description: t('screens.signUp.errors.fillFields'),
         type: "danger",
         icon: "danger",
         duration: 3000,
@@ -75,7 +77,7 @@ const SignUpScreen = () => {
         await AsyncStorage.setItem('tempUserData', JSON.stringify(signupPayload));
 
         showMessage({
-          message: "Registration Success",
+          message: t('screens.signUp.success.title'),
           description: response.message,
           type: "success",
           icon: "success",
@@ -91,8 +93,8 @@ const SignUpScreen = () => {
 
       } else {
         showMessage({
-          message: "Registration Failed",
-          description: response?.message || "Please try again later.",
+          message: t('screens.signUp.errors.registrationFailed'),
+          description: response?.message || t('screens.signUp.errors.tryAgain'),
           type: "danger",
           icon: "danger",
           duration: 3000,
@@ -100,8 +102,8 @@ const SignUpScreen = () => {
       }
     } catch (error) {
       showMessage({
-        message: "Error",
-        description: "An unexpected error occurred.",
+        message: t('common.error'),
+        description: t('screens.signUp.errors.unexpectedError'),
         type: "danger",
         icon: "danger",
         duration: 3000,
@@ -121,17 +123,17 @@ const SignUpScreen = () => {
             <TouchableOpacity style={styles.backButton} onPress={handleBack}>
               <Icon name="arrow-back" size={24} color="#000" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Sign Up</Text>
+            <Text style={styles.headerTitle}>{t('screens.signUp.title')}</Text>
           </View>
 
           <View style={styles.formContainer}>
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>Username</Text>
+              <Text style={styles.inputLabel}>{t('screens.signUp.username')}</Text>
               <View style={styles.inputContainer}>
                 <Icon name="person" size={20} color="#B77F2E" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your username"
+                  placeholder={t('screens.signUp.placeholders.username')}
                   value={username}
                   onChangeText={setUsername}
                   autoCapitalize="none"
@@ -141,12 +143,12 @@ const SignUpScreen = () => {
             </View>
 
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>Email</Text>
+              <Text style={styles.inputLabel}>{t('screens.signUp.email')}</Text>
               <View style={styles.inputContainer}>
                 <Icon name="email" size={20} color="#B77F2E" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your email"
+                  placeholder={t('screens.signUp.placeholders.email')}
                   value={email}
                   keyboardType="email-address"
                   onChangeText={setEmail}
@@ -157,12 +159,12 @@ const SignUpScreen = () => {
             </View>
 
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>Phone Number</Text>
+              <Text style={styles.inputLabel}>{t('screens.signUp.phoneNumber')}</Text>
               <View style={styles.inputContainer}>
                 <Icon name="phone" size={20} color="#B77F2E" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="0123456789"
+                  placeholder={t('screens.signUp.placeholders.phone')}
                   value={phone}
                   keyboardType="phone-pad"
                   onChangeText={setPhone}
@@ -172,12 +174,12 @@ const SignUpScreen = () => {
             </View>
 
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>Password</Text>
+              <Text style={styles.inputLabel}>{t('screens.signUp.password')}</Text>
               <View style={styles.inputContainer}>
                 <Icon name="lock" size={20} color="#B77F2E" style={styles.inputIcon} />
                 <TextInput
                   style={styles.passwordInput}
-                  placeholder="Create a password"
+                  placeholder={t('screens.signUp.placeholders.password')}
                   value={password}
                   secureTextEntry={!showPassword}
                   onChangeText={setPassword}
@@ -197,7 +199,7 @@ const SignUpScreen = () => {
             </View>
 
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>Date of Birth</Text>
+              <Text style={styles.inputLabel}>{t('screens.signUp.dateOfBirth')}</Text>
               <TouchableOpacity
                 style={styles.datePicker}
                 onPress={() => setShowDatePicker(true)}
@@ -219,7 +221,7 @@ const SignUpScreen = () => {
             )}
 
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>Gender</Text>
+              <Text style={styles.inputLabel}>{t('screens.signUp.gender')}</Text>
               <View style={styles.genderContainer}>
                 {["Male", "Female"].map((item) => (
                   <TouchableOpacity
@@ -238,14 +240,14 @@ const SignUpScreen = () => {
                     <Text style={[
                       styles.genderLabel,
                       gender === item && styles.selectedGenderText
-                    ]}>{item}</Text>
+                    ]}>{t(`screens.signUp.genderOptions.${item.toLowerCase()}`)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
 
             <TouchableOpacity style={styles.signUpButton} onPress={handleSignUp}>
-              <Text style={styles.signUpButtonText}>Sign Up</Text>
+              <Text style={styles.signUpButtonText}>{t('screens.signUp.signUpButton')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -260,6 +262,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    marginTop: 20,
   },
   container: { 
     flex: 1, 

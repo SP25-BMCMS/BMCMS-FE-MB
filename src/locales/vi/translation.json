@@ -80,27 +80,65 @@
     }
   },
   "workProgress": {
-    "title": "Tiến độ công việc",
+    "title": "Tiến Độ Công Việc",
+    "loading": "Đang tải tiến độ công việc...",
+    "error": {
+      "title": "Lỗi Tải Dữ Liệu",
+      "retry": "Thử Lại"
+    },
+    "empty": {
+      "title": "Không Tìm Thấy Tiến Độ",
+      "message": "Không có thông tin tiến độ cho báo cáo vết nứt này.",
+      "goBack": "Quay Lại"
+    },
+    "timeline": {
+      "title": "Dòng Thời Gian",
+      "reported": "Đã Báo Cáo",
+      "assigned": "Đã Phân Công",
+      "inProgress": "Đang Xử Lý",
+      "completed": "Hoàn Thành"
+    },
+    "feedback": {
+      "prompt": "Công việc đã hoàn thành. Vui lòng đánh giá.",
+      "button": "Đánh Giá Công Việc",
+      "submitted": "Cảm ơn! Bạn đã đánh giá công việc này.",
+      "modal": {
+        "title": "Đánh Giá Công Việc",
+        "selectRating": "Chọn Đánh Giá:",
+        "addComment": "Thêm Nhận Xét:",
+        "required": "*",
+        "placeholder": "Chia sẻ trải nghiệm của bạn về công việc sửa chữa...",
+        "cancel": "Hủy",
+        "submit": "Gửi"
+      },
+      "validation": {
+        "commentRequired": "Yêu Cầu Nhận Xét",
+        "commentMessage": "Vui lòng thêm nhận xét về trải nghiệm của bạn"
+      },
+      "success": {
+        "title": "Đã Gửi Đánh Giá",
+        "message": "Cảm ơn bạn đã đánh giá {{rating}} sao!"
+      },
+      "error": {
+        "title": "Lỗi",
+        "message": "Không thể gửi đánh giá. Vui lòng thử lại."
+      }
+    },
+    "details": {
+      "crackReport": "Chi Tiết Báo Cáo Vết Nứt",
+      "position": "Vị Trí",
+      "reported": "Báo Cáo",
+      "reportedBy": "bởi",
+      "description": "Mô Tả",
+      "status": "Trạng Thái",
+      "taskInfo": "Thông Tin Công Việc",
+      "reportedImages": "Hình Ảnh Báo Cáo",
+      "severity": "Mức Độ"
+    },
     "crackInfo": "Thông tin vết nứt",
     "taskDetails": "Chi tiết công việc",
     "statusHistory": "Lịch sử trạng thái",
     "maintenanceHistory": "Lịch sử bảo trì",
-    "feedback": {
-      "title": "Đánh giá",
-      "giveFeedback": "Đánh giá",
-      "yourFeedback": "Đánh giá của bạn",
-      "rating": "Xếp hạng của bạn",
-      "comment": "Nhận xét của bạn",
-      "submit": "Gửi đánh giá",
-      "cancel": "Hủy",
-      "required": "Cần có nhận xét",
-      "description": "Vui lòng chia sẻ trải nghiệm của bạn",
-      "submitted": "Đã gửi đánh giá",
-      "thanks": "Cảm ơn bạn đã đánh giá {rating} sao!",
-      "error": "Lỗi",
-      "failed": "Không thể gửi đánh giá. Vui lòng thử lại.",
-      "placeholder": "Chia sẻ trải nghiệm của bạn ở đây..."
-    },
     "status": {
       "pending": "Chờ xử lý",
       "inProgress": "Đang xử lý",
@@ -115,8 +153,8 @@
   },
   "repair": {
     "outside": {
-      "title": "Báo cáo vết nứt bên ngoài",
-      "details": "Chi tiết",
+      "title": "Báo Cáo Vết Nứt Bên Ngoài",
+      "details": "Chi Tiết",
       "description": "Nhập mô tả",
       "descriptionWarning": "Nhập ít nhất 5 ký tự mô tả",
       "selectArea": "Chọn khu vực",
@@ -129,9 +167,15 @@
       "takePhoto": "Chụp ảnh",
       "chooseFromLibrary": "Chọn từ thư viện",
       "photoWarning": "Vui lòng thêm ít nhất 1 hình ảnh",
-      "isDescriptionValid": false,
-      "isPositionValid": false,
-      "isImagesValid": false
+      "step": "Bước",
+      "publicAreaNotice": "Báo cáo này sẽ được gửi đến quản lý tòa nhà để sửa chữa khu vực công cộng",
+      "confirmPosition": "Xác nhận",
+      "confirmPositionMessage": "Vị trí báo cáo: {{position}}\n\nBạn có chắc chắn muốn tiếp tục?",
+      "checkAgain": "Kiểm tra lại",
+      "continue": "Tiếp tục",
+      "alert": "Thông báo",
+      "descriptionAlert": "Vui lòng nhập mô tả chi tiết (tối thiểu 5 ký tự)",
+      "positionAlert": "Vui lòng chọn khu vực và vị trí vết nứt"
     },
     "inside": {
       "title": "Báo cáo vết nứt bên trong",
@@ -206,7 +250,33 @@
       "errorLoadingData": "Lỗi khi tải dữ liệu",
       "retry": "Thử lại",
       "areas": "Khu vực",
-      "noAreasFound": "Không tìm thấy khu vực nào"
+      "noAreasFound": "Không tìm thấy khu vực nào",
+      "loading": "Đang tải...",
+      "error": {
+        "title": "Lỗi",
+        "message": "Không thể tải dữ liệu khu vực",
+        "retry": "Thử lại"
+      },
+      "empty": {
+        "title": "Không có khu vực",
+        "message": "Không có khu vực tòa nhà nào"
+      },
+      "featured": {
+        "title": "Tòa Nhà Nổi Bật",
+        "description": "Tòa nhà {{floors}} tầng với tiện nghi hiện đại"
+      },
+      "stats": {
+        "areas": "Khu Vực",
+        "buildings": "Tòa Nhà",
+        "totalFloors": "Tổng Số Tầng"
+      },
+      "areas": {
+        "title": "Khu Vực",
+        "viewAll": "Xem Tất Cả",
+        "buildings": "Tòa Nhà",
+        "floors": "tầng",
+        "operational": "Đang Hoạt Động"
+      }
     },
     "account": {
       "title": "Tài khoản",
@@ -232,40 +302,122 @@
       "manageStaffAssignments": "Quản lý phân công và nhóm nhân viên",
       "getAssistance": "Nhận trợ giúp với các câu hỏi của bạn",
       "viewChatHistory": "Xem lịch sử trò chuyện của bạn",
-      "passwordChangeNotice": "Chức năng đổi mật khẩu sẽ được phát triển sau"
+      "passwordChangeNotice": "Chức năng đổi mật khẩu sẽ được phát triển sau",
+      "title": {
+        "staff": "Tài Khoản Nhân Viên",
+        "resident": "Tài Khoản"
+      },
+      "signIn": "Đăng Nhập",
+      "menu": {
+        "language": "Ngôn Ngữ",
+        "aboutUs": "Về Chúng Tôi",
+        "english": "Tiếng Anh"
+      },
+      "profile": {
+        "resident": "Cư Dân",
+        "staff": "Nhân Viên"
+      },
+      "cards": {
+        "myReport": "Báo Cáo Của Tôi",
+        "chatHistory": "Lịch Sử Chat",
+        "chatBot": "Trợ Lý Ảo",
+        "profile": "Hồ Sơ",
+        "myTasks": "Công Việc Của Tôi",
+        "department": "Phòng Ban"
+      },
+      "options": {
+        "address": "Địa Chỉ",
+        "changePassword": "Đổi Mật Khẩu",
+        "virtualAssistant": "Trợ Lý Ảo",
+        "workSchedule": "Lịch Làm Việc",
+        "support": "Hỗ Trợ"
+      },
+      "notifications": {
+        "passwordChange": "Chức năng đổi mật khẩu sẽ được phát triển sau"
+      }
     },
     "notification": {
-      "title": "Thông báo",
-      "noNotifications": "Chưa có thông báo nào",
-      "markAllAsRead": "Đánh dấu tất cả đã đọc",
-      "clearAll": "Xóa tất cả",
-      "today": "Hôm nay",
-      "yesterday": "Hôm qua",
-      "earlier": "Trước đó",
-      "newReport": "Báo cáo mới",
-      "reportStatus": "Trạng thái báo cáo"
+      "title": {
+        "default": "THÔNG BÁO",
+        "staff": "THÔNG BÁO NHÂN VIÊN"
+      },
+      "loading": "Đang tải thông báo...",
+      "empty": {
+        "title": "Không Có Thông Báo",
+        "message": {
+          "default": "Bạn chưa có thông báo nào",
+          "staff": "Bạn chưa có thông báo nhân viên nào"
+        }
+      },
+      "notSignedIn": {
+        "title": "Chưa Đăng Nhập",
+        "message": "Vui lòng đăng nhập để nhận thông báo",
+        "action": "Đăng Nhập"
+      },
+      "actions": {
+        "refresh": "Làm Mới",
+        "markRead": "Đang đánh dấu tất cả thông báo là đã đọc...",
+        "markReadSuccess": "Đã đánh dấu {{count}} thông báo là đã đọc",
+        "markReadError": "Không thể đánh dấu tất cả thông báo là đã đọc",
+        "delete": {
+          "title": "Xóa Tất Cả Thông Báo",
+          "message": "Bạn có chắc chắn muốn xóa tất cả thông báo? Hành động này không thể hoàn tác.",
+          "cancel": "Hủy",
+          "confirm": "Xóa Tất Cả",
+          "progress": "Đang xóa tất cả thông báo...",
+          "success": "Đã xóa tất cả thông báo",
+          "error": "Không thể xóa tất cả thông báo"
+        }
+      },
+      "toast": {
+        "tryAgain": "Vui lòng thử lại sau",
+        "markReadSuccess": "Đã đánh dấu thông báo là đã đọc",
+        "markReadError": "Không thể đánh dấu thông báo là đã đọc",
+        "deleteSuccess": "Đã xóa thông báo",
+        "deleteError": "Không thể xóa thông báo"
+      }
     },
     "signUp": {
-      "title": "Đăng ký",
-      "firstName": "Tên",
-      "lastName": "Họ",
+      "title": "Đăng Ký",
+      "username": "Tên đăng nhập",
       "email": "Email",
       "phoneNumber": "Số điện thoại",
       "password": "Mật khẩu",
-      "confirmPassword": "Xác nhận mật khẩu",
-      "agreeTerms": "Tôi đồng ý với Điều khoản & Điều kiện",
-      "signUpButton": "Đăng ký",
-      "alreadyHaveAccount": "Đã có tài khoản?",
-      "signIn": "Đăng nhập"
+      "dateOfBirth": "Ngày sinh",
+      "gender": "Giới tính",
+      "genderOptions": {
+        "male": "Nam",
+        "female": "Nữ"
+      },
+      "placeholders": {
+        "username": "Nhập tên đăng nhập",
+        "email": "Nhập email",
+        "phone": "0123456789",
+        "password": "Tạo mật khẩu"
+      },
+      "signUpButton": "Đăng Ký",
+      "errors": {
+        "missingInfo": "Thiếu Thông Tin",
+        "fillFields": "Vui lòng điền đầy đủ thông tin",
+        "registrationFailed": "Đăng Ký Thất Bại",
+        "tryAgain": "Vui lòng thử lại sau",
+        "unexpectedError": "Đã xảy ra lỗi không mong muốn"
+      },
+      "success": {
+        "title": "Đăng Ký Thành Công"
+      }
     },
     "otp": {
-      "title": "Xác minh",
-      "enterCode": "Nhập mã xác minh đã gửi đến",
-      "didntReceiveCode": "Không nhận được mã?",
-      "resendCode": "Gửi lại mã",
-      "verifyButton": "Xác minh",
-      "resendIn": "Gửi lại sau",
-      "seconds": "giây"
+      "title": "Nhập Mã OTP",
+      "sentTo": "Mã OTP đã được gửi đến {{identifier}}",
+      "verify": "Xác Thực",
+      "error": {
+        "invalidOTP": "Mã OTP không hợp lệ, vui lòng nhập lại",
+        "noRegistration": "Không tìm thấy thông tin đăng ký",
+        "verificationFailed": "Đã xảy ra lỗi trong quá trình xác thực OTP"
+      },
+      "success": "Thành Công",
+      "alert": "Thông Báo"
     },
     "task": {
       "title": "Quản lý công việc",
@@ -828,5 +980,20 @@
     "successMessage": "Đã tạo phân công công việc thành công",
     "error": "Lỗi",
     "errorMessage": "Không thể tạo phân công công việc. Vui lòng thử lại."
+  },
+  "propertyDetail": {
+    "title": "Chi Tiết Căn Hộ",
+    "propertyNotFound": "Không tìm thấy thông tin căn hộ",
+    "services": "Dịch Vụ",
+    "residentInformation": "Thông Tin Cư Dân",
+    "repairInside": "Sửa Chữa Bên Trong",
+    "repairOutside": "Sửa Chữa Bên Ngoài",
+    "buildingInfo": "Tòa Nhà {{description}} | Căn Hộ {{unit}}",
+    "propertyDetails": {
+      "numberOfFloors": "Số Tầng",
+      "apartmentCode": "Mã Căn Hộ",
+      "area": "Diện Tích",
+      "unknown": "Chưa Xác Định"
+    }
   }
 }
