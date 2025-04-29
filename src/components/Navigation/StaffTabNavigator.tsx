@@ -18,15 +18,17 @@ const StaffTabNavigator = () => {
 
   useEffect(() => {
     const checkUserRole = async () => {
-      const userDataStr = await AsyncStorage.getItem('userData');
-      
-      if (userDataStr) {
+      try {
+        const userDataStr = await AsyncStorage.getItem('userData');
+        if (!userDataStr) return;
+        
         const userData = JSON.parse(userDataStr);
-        if (userData.role && (userData.role.includes('leader') || userData.role.includes('1'))) {
-          setIsLeader(true);
-        } else {
-          setIsLeader(false);
-        }
+        const positionName = userData?.userDetails?.position?.positionName || '';
+        const isUserLeader = positionName.toLowerCase().includes('leader');
+        
+        setIsLeader(isUserLeader);
+      } catch (error) {
+        console.error('Error checking user position:', error);
       }
     };
     
