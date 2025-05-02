@@ -978,7 +978,23 @@
     "success": "Inspection created successfully",
     "error": "Failed to create inspection",
     "tryAgain": "Please try again",
-    "submitError": "An error occurred while submitting the form"
+    "submitError": "An error occurred while submitting the form",
+    "toast": {
+      "success": {
+        "title": "Success",
+        "noMaterials": "Inspection created successfully without repair materials"
+      },
+      "error": {
+        "title": "Error",
+        "description": "Failed to create inspection",
+        "tryAgain": "Please try again later",
+        "networkError": "Network connection error. Please check your connection"
+      },
+      "validation": {
+        "description": "Please enter a description",
+        "pdf": "Please select a PDF file"
+      }
+    }
   },
   "staffInspectionDetail": {
     "title": "Staff Inspection Details",

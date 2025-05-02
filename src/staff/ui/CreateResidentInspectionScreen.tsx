@@ -15,12 +15,12 @@ import { RouteProp, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, TaskAssignmentDetail } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
 import * as DocumentPicker from 'expo-document-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { VITE_CREATE_INSPECTION } from '@env';
 import { showMessage } from 'react-native-flash-message';
 import { useTranslation } from 'react-i18next';
+import instance from '../../service/Auth';
 
 type CreateResidentInspectionScreenRouteProp = RouteProp<RootStackParamList, 'CreateResidentInspection'>;
 type CreateResidentInspectionScreenNavigationProp = StackNavigationProp<RootStackParamList>;
@@ -66,16 +66,20 @@ const CreateResidentInspectionScreen: React.FC<Props> = ({ route }) => {
   const handleSubmit = async () => {
     if (!description.trim()) {
       showMessage({
-        message: t('createResidentInspection.addDescription'),
-        type: 'danger',
+        message: t('createResidentInspection.toast.validation.description'),
+        type: 'warning',
+        duration: 3000,
+        style: { marginTop: 40 }
       });
       return;
     }
     
     if (!pdfFile || pdfFile.canceled) {
       showMessage({
-        message: t('createResidentInspection.selectPdf'),
-        type: 'danger',
+        message: t('createResidentInspection.toast.validation.pdf'),
+        type: 'warning',
+        duration: 3000,
+        style: { marginTop: 40 }
       });
       return;
     }
@@ -83,6 +87,19 @@ const CreateResidentInspectionScreen: React.FC<Props> = ({ route }) => {
     try {
       setIsSubmitting(true);
       
+      const token = await AsyncStorage.getItem('accessToken');
+      if (!token) {
+        showMessage({
+          message: t('common.error'),
+          description: t('createResidentInspection.toast.error.description'),
+          type: 'danger',
+          duration: 3000,
+          style: { marginTop: 40 }
+        });
+        navigation.navigate('Login');
+        return;
+      }
+
       const formData = new FormData();
       formData.append('task_assignment_id', taskDetail.assignment_id);
       formData.append('description', description);
@@ -92,49 +109,69 @@ const CreateResidentInspectionScreen: React.FC<Props> = ({ route }) => {
         const fileName = pdfFile.assets[0].name;
         const fileType = 'application/pdf';
         
-        // Add the PDF file to the form data
-        // @ts-ignore: Known issue with FormData types in React Native
+        console.log('PDF File Details:', {
+          uri: fileUri,
+          name: fileName,
+          type: fileType
+        });
+        
         formData.append('pdfFile', {
           uri: Platform.OS === 'ios' ? fileUri.replace('file://', '') : fileUri,
           name: fileName,
           type: fileType,
-        });
+        } as any);
       }
+
+      console.log('FormData:', formData);
       
-      // Send the request
-      const token = await AsyncStorage.getItem('access_token');
-      const response = await axios.post(
-        VITE_CREATE_INSPECTION,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await instance.post(VITE_CREATE_INSPECTION, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
+        },
+        timeout: 30000
+      });
+
+      console.log('Response:', response.data);
       
-      if (response.data.statusCode === 201 || response.data.success) {
+      if (response.data.isSuccess) {
         showMessage({
-          message: t('createResidentInspection.success'),
+          message: t('createResidentInspection.toast.success.title'),
+          description: t('createResidentInspection.toast.success.noMaterials'),
           type: 'success',
+          duration: 3000,
+          style: { marginTop: 40 }
         });
         
-        // Navigate back to task detail
         navigation.navigate('TaskDetail', { assignmentId: taskDetail.assignment_id });
       } else {
         showMessage({
-          message: t('createResidentInspection.error'),
-          description: response.data.message || t('createResidentInspection.tryAgain'),
+          message: t('createResidentInspection.toast.error.title'),
+          description: response.data.message || t('createResidentInspection.toast.error.tryAgain'),
           type: 'danger',
+          duration: 3000,
+          style: { marginTop: 40 }
         });
       }
     } catch (error) {
       console.error('Error creating inspection:', error);
+      console.error('Error details:', error.response?.data);
+      
+      let errorMessage = t('createResidentInspection.toast.error.description');
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else if (!error.response) {
+        errorMessage = t('createResidentInspection.toast.error.networkError');
+      }
+
       showMessage({
-        message: t('createResidentInspection.error'),
-        description: t('createResidentInspection.submitError'),
+        message: t('createResidentInspection.toast.error.title'),
+        description: errorMessage,
         type: 'danger',
+        duration: 3000,
+        style: { marginTop: 40 }
       });
     } finally {
       setIsSubmitting(false);

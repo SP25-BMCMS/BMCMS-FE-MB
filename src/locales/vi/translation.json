@@ -993,7 +993,23 @@
     "success": "Đã tạo kiểm tra thành công",
     "error": "Không thể tạo kiểm tra",
     "tryAgain": "Vui lòng thử lại",
-    "submitError": "Đã xảy ra lỗi khi gửi biểu mẫu"
+    "submitError": "Đã xảy ra lỗi khi gửi biểu mẫu",
+    "toast": {
+      "success": {
+        "title": "Thành Công",
+        "noMaterials": "Tạo kiểm tra thành công không có vật liệu sửa chữa"
+      },
+      "error": {
+        "title": "Lỗi",
+        "description": "Không thể tạo kiểm tra",
+        "tryAgain": "Vui lòng thử lại sau",
+        "networkError": "Lỗi kết nối mạng. Vui lòng kiểm tra kết nối của bạn"
+      },
+      "validation": {
+        "description": "Vui lòng nhập mô tả",
+        "pdf": "Vui lòng chọn tệp PDF"
+      }
+    }
   },
   "staffInspectionDetail": {
     "title": "Chi Tiết Kiểm Tra Nhân Viên",
