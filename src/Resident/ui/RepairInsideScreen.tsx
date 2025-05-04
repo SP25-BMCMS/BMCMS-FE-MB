@@ -213,13 +213,17 @@ const RepairInsideScreen = () => {
   const isPositionValid = selectedRoom && (selectedRoom === 'OTHER' || selectedPosition);
 
   const handleRoomSelect = (room: keyof typeof CRACK_POSITIONS | 'OTHER') => {
+    // Get building name from buildingDetails
+    const buildingName = property.buildingDetails?.[0]?.name || property.building;
+
     setSelectedRoom(room);
     setRoomDisplayText(room === 'OTHER' ? t('repair.inside.other') : t(`repair.inside.${room.toLowerCase()}`));
     setIsRoomDropdownOpen(false);
     
     // Reset position when room changes
     if (room === 'OTHER') {
-      setSelectedPosition('other');
+      const formattedPosition = `other/${buildingName}/${property.unit}/other`;
+      setSelectedPosition(formattedPosition);
       setPositionDisplayText(t('repair.inside.other'));
     } else {
       setSelectedPosition('');
@@ -228,11 +232,18 @@ const RepairInsideScreen = () => {
   };
 
   const handlePositionSelect = (key: string, value: string) => {
+    // Get building name from buildingDetails
+    const buildingName = property.buildingDetails?.[0]?.name || property.building;
+
     if (key === 'OTHER') {
-      setSelectedPosition('other');
+      // Format for OTHER: other/building/unit/other
+      const formattedPosition = `other/${buildingName}/${property.unit}/other`;
+      setSelectedPosition(formattedPosition);
       setPositionDisplayText(t('repair.inside.other'));
-    } else {
-      setSelectedPosition(value);
+    } else if (selectedRoom !== 'OTHER') {
+      // Format: room/building/unit/position
+      const formattedPosition = `${selectedRoom.toLowerCase()}/${buildingName}/${property.unit}/${key.toLowerCase()}`;
+      setSelectedPosition(formattedPosition);
       setPositionDisplayText(t(`repair.inside.${key.toLowerCase()}`));
     }
     setIsPositionDropdownOpen(false);
@@ -250,7 +261,7 @@ const RepairInsideScreen = () => {
       return;
     }
 
-    // Use position from CRACK_POSITIONS or 'other' for OTHER room
+    // Use the correct position value
     const finalPosition = selectedRoom === 'OTHER' ? 'other' : selectedPosition;
     console.log('🔍 Position to send:', finalPosition);
 
@@ -268,7 +279,7 @@ const RepairInsideScreen = () => {
   const renderRoomDropdown = () => {
     const roomOptions = [
       { key: 'KITCHEN', translation: t('repair.inside.kitchen') },
-      { key: 'LIVING_ROOM', translation: t('repair.inside.livingRoom') },
+      { key: 'LIVING_ROOM', translation: t('repair.inside.living_room') },
       { key: 'BEDROOM', translation: t('repair.inside.bedroom') },
       { key: 'BATHROOM', translation: t('repair.inside.bathroom') },
       { key: 'OTHER', translation: t('repair.inside.other') }

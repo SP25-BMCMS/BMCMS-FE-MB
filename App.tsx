@@ -75,6 +75,7 @@ const App = () => {
           <Stack.Screen name='ChatHistory' component={ChatHistoryScreen} />
           <Stack.Screen name='LocationDetail' component={LocationDetailScreen} />
           <Stack.Screen name='MaintenanceHistory' component={MaintenanceHistoryScreen} />
+          {/* @ts-ignore */}
           <Stack.Screen name='StaffMaintenanceHistory' component={StaffMaintenanceHistoryScreen} />
           <Stack.Screen name='TechnicalRecord' component={TechnicalRecordScreen} />
         </Stack.Navigator>
