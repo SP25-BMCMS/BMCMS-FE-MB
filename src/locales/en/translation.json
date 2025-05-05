@@ -76,7 +76,8 @@
       "InProgress": "In Progress",
       "Reviewing": "Reviewing",
       "Completed": "Completed",
-      "Pending": "Pending"
+      "Pending": "Pending",
+      "WaitingConfirm": "Waiting Confirm"
     }
   },
   "workProgress": {
@@ -85,6 +86,12 @@
     "error": {
       "title": "Error Loading Data",
       "retry": "Retry"
+    },
+    "confirm": {
+      "title": "Confirm Report",
+      "message": "Are you sure you want to confirm this report?",
+      "accept": "Accept",
+      "reject": "Reject"
     },
     "empty": {
       "title": "No Work Progress Found",
@@ -139,7 +146,8 @@
       "Completed": "Completed",
       "InProgress": "In Progress",
       "Assigned": "Assigned",
-      "Pending": "Pending"
+      "Pending": "Pending",
+      "WaitingConfirm": "Waiting Confirm"
     }
   },
   "repair": {

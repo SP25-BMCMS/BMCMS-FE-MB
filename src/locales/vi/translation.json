@@ -76,7 +76,8 @@
       "InProgress": "Đang xử lý",
       "Reviewing": "Đang xem xét",
       "Completed": "Hoàn thành",
-      "Pending": "Chờ xử lý"
+      "Pending": "Chờ xử lý",
+      "WaitingConfirm": "Chờ xác nhận"
     }
   },
   "workProgress": {
@@ -85,6 +86,12 @@
     "error": {
       "title": "Lỗi Tải Dữ Liệu",
       "retry": "Thử Lại"
+    },
+    "confirm": {
+      "title": "Xác nhận báo cáo",
+      "message": "Bạn có đồng ý với báo cáo này không?",
+      "accept": "Đồng ý",
+      "reject": "Không đồng ý"
     },
     "empty": {
       "title": "Không Tìm Thấy Tiến Độ",
@@ -143,7 +150,8 @@
       "Completed": "Hoàn thành",
       "InProgress": "Đang xử lý",
       "Assigned": "Đã phân công",
-      "Pending": "Chờ xử lý"
+      "Pending": "Chờ xử lý",
+      "WaitingConfirm": "Chờ xác nhận"
     },
     "date": "Ngày",
     "technician": "Kỹ thuật viên",
