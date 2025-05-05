@@ -77,7 +77,9 @@
       "Reviewing": "Reviewing",
       "Completed": "Completed",
       "Pending": "Pending",
-      "WaitingConfirm": "Waiting Confirm"
+      "WaitingConfirm": "Waiting Confirm",
+      "Rejected": "Rejected",
+      "InFixing": "In Fixing"
     }
   },
   "workProgress": {
@@ -89,7 +91,7 @@
     },
     "confirm": {
       "title": "Confirm Report",
-      "message": "Are you sure you want to confirm this report?",
+      "message": "Are you sure you want to confirm this report?", 
       "accept": "Accept",
       "reject": "Reject"
     },
@@ -147,7 +149,9 @@
       "InProgress": "In Progress",
       "Assigned": "Assigned",
       "Pending": "Pending",
-      "WaitingConfirm": "Waiting Confirm"
+      "WaitingConfirm": "Waiting Confirm",
+      "Rejected": "Rejected",
+      "InFixing": "In Fixing"
     }
   },
   "repair": {

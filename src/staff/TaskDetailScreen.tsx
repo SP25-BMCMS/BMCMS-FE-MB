@@ -83,30 +83,34 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Pending':
-        return '#FFA500'; // Orange
-      case 'InProgress':
-        return '#007AFF'; // Blue
-      case 'Confirmed':
-        return '#4CD964'; // Green
       case 'Completed':
-        return '#4CD964'; // Green
+        return '#4CD964';
+      case 'InProgress':
+        return '#007AFF';
+      case 'InFixing':
+        return '#5AC8FA'; // Light Blue
+      case 'Assigned':
+        return '#FF9800';
+      case 'Pending':
+        return '#FFA500';
+      case 'Confirmed':
+        return '#4CD964';
       case 'Canceled':
-        return '#FF3B30'; // Red
+        return '#FF3B30';
       case 'Reassigned':
         return '#9C27B0';
       case 'Reviewing':
-        return '#5856D6'; // Purple
-      case 'InFixing':
-        return '#5AC8FA'; // Light blue
+        return '#5856D6';
       case 'Verified':
-        return '#4CD964'; // Green
+        return '#4CD964';
       case 'Unverified':
-        return '#FF9500'; // Orange
+        return '#FF9500';
       case 'WaitingConfirm':
-        return '#E91E63'; // Pink
+        return '#E91E63';
+      case 'Rejected':
+        return '#DC3545'; // Bootstrap's danger color - một màu đỏ đậm hơn
       default:
-        return '#8E8E93'; // Gray
+        return '#8E8E93';
     }
   };
 
@@ -488,7 +492,8 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
 
             {taskDetail.building && 
               !isWarrantyValid(taskDetail.building.Warranty_date) && 
-              taskDetail.crackInfo?.data?.[0]?.status !== 'WaitingConfirm' && (
+              taskDetail.crackInfo?.data?.[0] &&
+              !['Rejected', 'InFixing', 'Confirmed', 'Completed', 'WaitingConfirm'].includes(taskDetail.crackInfo.data[0].status) && (
               <TouchableOpacity
                 style={[styles.actionButton, styles.sendReportButton]}
                 onPress={handleSendReportToResident}

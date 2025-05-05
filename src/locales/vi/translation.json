@@ -77,7 +77,9 @@
       "Reviewing": "Đang xem xét",
       "Completed": "Hoàn thành",
       "Pending": "Chờ xử lý",
-      "WaitingConfirm": "Chờ xác nhận"
+      "WaitingConfirm": "Chờ xác nhận",
+      "Rejected": "Từ chối",
+      "InFixing": "Đang sửa chữa"
     }
   },
   "workProgress": {
@@ -151,7 +153,9 @@
       "InProgress": "Đang xử lý",
       "Assigned": "Đã phân công",
       "Pending": "Chờ xử lý",
-      "WaitingConfirm": "Chờ xác nhận"
+      "WaitingConfirm": "Chờ xác nhận",
+      "Rejected": "Từ chối",
+      "InFixing": "Đang sửa chữa"
     },
     "date": "Ngày",
     "technician": "Kỹ thuật viên",

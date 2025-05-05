@@ -62,4 +62,6 @@ declare module '@env'{
   export const VITE_GET_WORKLOG_BY_RESIDENT_ID: string;
   export const VITE_CHANGE_STATUS_SCHEDULE_JOB_ID: string;
   export const VITE_POST_FEEDBACK: string;
+  export const VITE_PUT_CONFIRM_BY_TASK_ASSGINMENT_ID: string;
+  export const VITE_PUT_REJECT_BY_TASK_ASSGINMENT_ID: string;
 }

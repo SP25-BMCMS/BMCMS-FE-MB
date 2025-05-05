@@ -14,7 +14,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { WorkLogService, WorkLog } from "../service/WorkLog";
 import { showMessage } from "react-native-flash-message";
 import instance from "../service/Auth";
@@ -39,6 +39,8 @@ const WorkProgressScreen = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
+  const queryClient = useQueryClient();
+
   const {
     data: worklogsData,
     isLoading,
@@ -53,7 +55,6 @@ const WorkProgressScreen = () => {
         throw new Error("User ID not found");
       }
       const response = await WorkLogService.getWorklogsByResidentId(userId);
-      // Filter to only return the specific crack report
       const filteredData = response.data.filter(
         (worklog) => worklog.crackReport.crackReportId === crackReportId
       );
@@ -94,14 +95,8 @@ const WorkProgressScreen = () => {
   });
 
   const hasFeedback = (): boolean => {
-    if (!taskFeedback?.data || taskFeedback.data.length === 0) {
-      console.log('No feedback found for this task');
-      return false;
-    }
-    
-    const hasExistingFeedback = taskFeedback.data.length > 0;
-    console.log(`Task ${taskId} has feedback: ${hasExistingFeedback}`);
-    return hasExistingFeedback;
+    if (!taskFeedback?.data || taskFeedback.data.length === 0) return false;
+    return taskFeedback.data.length > 0;
   };
 
   const handleCreateFeedback = () => {
@@ -110,7 +105,95 @@ const WorkProgressScreen = () => {
     setFeedbackModalVisible(true);
   };
 
-  const queryClient = useQueryClient();
+  const confirmMutation = useMutation({
+    mutationFn: async () => {
+      if (!worklogsData || !worklogsData.taskAssignments || worklogsData.taskAssignments.length === 0) {
+        throw new Error('No task assignments found');
+      }
+
+      const taskAssignment = worklogsData.taskAssignments[0];
+      const assignment_id = taskAssignment.assignment_id;
+      if (!assignment_id) {
+        throw new Error('Assignment ID not found');
+      }
+
+      console.log('[Task Confirmation] Processing task:', {
+        assignmentId: assignment_id,
+        status: taskAssignment.status,
+        description: taskAssignment.description
+      });
+      
+      return await WorkLogService.confirmTask(assignment_id);
+    },
+    onSuccess: () => {
+      setShowConfirmModal(false);
+      showMessage({
+        message: t('workProgress.confirm.success'),
+        type: "success",
+        duration: 3000,
+        icon: "success",
+      });
+      queryClient.invalidateQueries({ queryKey: ["worklogs", crackReportId] });
+    },
+    onError: (error) => {
+      console.error('[Task Confirmation] Failed:', error);
+      showMessage({
+        message: t('workProgress.confirm.error'),
+        type: "danger",
+        duration: 3000,
+        icon: "danger",
+      });
+    }
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async () => {
+      if (!worklogsData || !worklogsData.taskAssignments || worklogsData.taskAssignments.length === 0) {
+        throw new Error('No task assignments found');
+      }
+
+      const taskAssignment = worklogsData.taskAssignments[0];
+      const assignment_id = taskAssignment.assignment_id;
+      if (!assignment_id) {
+        throw new Error('Assignment ID not found');
+      }
+
+      console.log('[Task Rejection] Processing task:', {
+        assignmentId: assignment_id,
+        status: taskAssignment.status,
+        description: taskAssignment.description
+      });
+
+      return await WorkLogService.rejectTask(assignment_id);
+    },
+    onSuccess: () => {
+      setShowConfirmModal(false);
+      showMessage({
+        message: t('workProgress.reject.success'),
+        type: "success",
+        duration: 3000,
+        icon: "success",
+      });
+      queryClient.invalidateQueries({ queryKey: ["worklogs", crackReportId] });
+    },
+    onError: (error) => {
+      console.error('[Task Rejection] Failed:', error);
+      showMessage({
+        message: t('workProgress.reject.error'),
+        type: "danger",
+        duration: 3000,
+        icon: "danger",
+      });
+    }
+  });
+
+  const handleConfirm = () => {
+    confirmMutation.mutate();
+  };
+
+  const handleReject = () => {
+    rejectMutation.mutate();
+  };
 
   const submitFeedback = async () => {
     if (!worklogsData) return;
@@ -140,7 +223,6 @@ const WorkProgressScreen = () => {
       }
       
       const currentTaskId = getTaskId();
-      
       if (!currentTaskId) {
         throw new Error("Cannot determine task ID for feedback");
       }
@@ -151,6 +233,11 @@ const WorkProgressScreen = () => {
         comments: comment,
         rating: rating
       };
+
+      console.log('[Feedback Submission] Submitting feedback:', {
+        taskId: currentTaskId,
+        rating: rating
+      });
       
       const response = await instance.post('/feedbacks', feedbackData);
       
@@ -173,7 +260,7 @@ const WorkProgressScreen = () => {
       queryClient.invalidateQueries({ queryKey: ['taskFeedback', currentTaskId] });
       
     } catch (error) {
-      console.error('Error submitting feedback:', error);
+      console.error('[Feedback Submission] Failed:', error);
       showMessage({
         message: t('workProgress.feedback.error.title'),
         description: t('workProgress.feedback.error.message'),
@@ -196,16 +283,6 @@ const WorkProgressScreen = () => {
     if (worklogsData?.crackReport?.status === "WaitingConfirm") {
       setShowConfirmModal(true);
     }
-  };
-
-  const handleConfirm = () => {
-    setShowConfirmModal(false);
-    // TODO: Add API call later
-  };
-
-  const handleReject = () => {
-    setShowConfirmModal(false);
-    // TODO: Add API call later
   };
 
   if (isLoading) {
@@ -255,237 +332,273 @@ const WorkProgressScreen = () => {
         return "#4CAF50";
       case "InProgress":
         return "#2196F3";
+      case "InFixing":
+        return "#03A9F4"; // Light Blue
       case "Assigned":
         return "#FF9800";
       case "Pending":
         return "#757575";
       case "WaitingConfirm":
         return "#E91E63";
+      case "Rejected":
+        return "#FF3B30";
       default:
         return "#757575";
     }
   };
 
+  // Add this new function to determine if feedback should be shown
+  const shouldShowFeedback = () => {
+    if (!worklogsData) return false;
+    
+    // Check if worklog is completed and no feedback yet
+    const isWorklogCompleted = worklogsData.status === "Completed";
+    const hasNoFeedbackYet = !hasFeedback();
+    
+    // Check if crack report is not rejected
+    const isCrackReportValid = worklogsData.crackReport?.status !== "Rejected";
+
+    return isWorklogCompleted && hasNoFeedbackYet && isCrackReportValid;
+  };
+
+  // Add this function to check if task is rejected
+  const isTaskRejected = () => {
+    if (!worklogsData) return false;
+    return worklogsData.status === "Rejected" || worklogsData.crackReport?.status === "Rejected";
+  };
+
   return (
     <>
-      <ScrollView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Icon name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{t('workProgress.title')}</Text>
+      </View>
+
+      <View style={styles.progressSection}>
+        <Text style={styles.sectionTitle}>{t('workProgress.timeline.title')}</Text>
+        <View style={styles.timeline}>
+          <View
+            style={[
+              styles.timelineStep,
+              { backgroundColor: "#4CAF50" },
+              status === "Pending" && styles.timelineStepInactive,
+            ]}
           >
-            <Icon name="arrow-back" size={24} color="#000" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{t('workProgress.title')}</Text>
-        </View>
-
-        <View style={styles.progressSection}>
-          <Text style={styles.sectionTitle}>{t('workProgress.timeline.title')}</Text>
-          <View style={styles.timeline}>
-            <View
-              style={[
-                styles.timelineStep,
-                { backgroundColor: "#4CAF50" },
-                status === "Pending" && styles.timelineStepInactive,
-              ]}
-            >
-              <Icon
-                name="report-problem"
-                size={24}
-                color={status === "Pending" ? "#757575" : "#FFFFFF"}
-              />
-            </View>
-            <View
-              style={[
-                styles.timelineConnector,
-                status !== "Pending" && styles.timelineConnectorActive,
-              ]}
+            <Icon
+              name="report-problem"
+              size={24}
+              color={status === "Pending" ? "#757575" : "#FFFFFF"}
             />
-            <View
-              style={[
-                styles.timelineStep,
-                status !== "Pending" && { backgroundColor: "#2196F3" },
-                (status === "Pending") && styles.timelineStepInactive,
-              ]}
-            >
-              <Icon
-                name="assignment"
-                size={24}
-                color={status === "Pending" ? "#757575" : "#FFFFFF"}
-              />
-            </View>
-            <View
-              style={[
-                styles.timelineConnector,
-                (status === "InProgress" || status === "Completed") &&
-                  styles.timelineConnectorActive,
-              ]}
-            />
-            <View
-              style={[
-                styles.timelineStep,
-                (status === "InProgress" || status === "Completed") && {
-                  backgroundColor: "#FF9800",
-                },
-                (status === "Pending" || status === "Assigned") &&
-                  styles.timelineStepInactive,
-              ]}
-            >
-              <Icon
-                name="build"
-                size={24}
-                color={
-                  status === "InProgress" || status === "Completed"
-                    ? "#FFFFFF"
-                    : "#757575"
-                }
-              />
-            </View>
-            <View
-              style={[
-                styles.timelineConnector,
-                status === "Completed" && styles.timelineConnectorActive,
-              ]}
-            />
-            <View
-              style={[
-                styles.timelineStep,
-                status === "Completed" && { backgroundColor: "#4CAF50" },
-                status !== "Completed" && styles.timelineStepInactive,
-              ]}
-            >
-              <Icon
-                name="check-circle"
-                size={24}
-                color={status === "Completed" ? "#FFFFFF" : "#757575"}
-              />
-            </View>
           </View>
-          <View style={styles.timelineLabels}>
-            <Text style={styles.timelineLabel}>{t('workProgress.timeline.reported')}</Text>
-            <Text style={styles.timelineLabel}>{t('workProgress.timeline.assigned')}</Text>
-            <Text style={styles.timelineLabel}>{t('workProgress.timeline.inProgress')}</Text>
-            <Text style={styles.timelineLabel}>{t('workProgress.timeline.completed')}</Text>
+          <View
+            style={[
+              styles.timelineConnector,
+              status !== "Pending" && styles.timelineConnectorActive,
+            ]}
+          />
+          <View
+            style={[
+              styles.timelineStep,
+              status !== "Pending" && { backgroundColor: "#2196F3" },
+              (status === "Pending") && styles.timelineStepInactive,
+            ]}
+          >
+            <Icon
+              name="assignment"
+              size={24}
+              color={status === "Pending" ? "#757575" : "#FFFFFF"}
+            />
           </View>
-          
-          {status === "Completed" && !hasFeedback() && (
-            <View style={styles.feedbackContainer}>
-              <Text style={styles.feedbackText}>
-                {t('workProgress.feedback.prompt')}
-              </Text>
-              <TouchableOpacity
-                style={styles.feedbackButton}
-                onPress={handleCreateFeedback}
-              >
-                <Icon name="star" size={20} color="#FFFFFF" />
-                <Text style={styles.feedbackButtonText}>{t('workProgress.feedback.button')}</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          
-          {status === "Completed" && hasFeedback() && (
-            <View style={[styles.feedbackContainer, { backgroundColor: "#E8F5E9", borderLeftColor: "#4CAF50" }]}>
-              <Icon name="check-circle" size={24} color="#4CAF50" />
-              <Text style={[styles.feedbackText, { marginTop: 8 }]}>
-                {t('workProgress.feedback.submitted')}
-              </Text>
-            </View>
-          )}
+          <View
+            style={[
+              styles.timelineConnector,
+              (status === "InProgress" || status === "Completed" || status === "Rejected") &&
+                styles.timelineConnectorActive,
+            ]}
+          />
+          <View
+            style={[
+              styles.timelineStep,
+              (status === "InProgress" || status === "Completed") && {
+                backgroundColor: "#FF9800"
+              },
+              status === "Rejected" && {
+                backgroundColor: "#FF3B30"
+              },
+              (status === "Pending" || status === "Assigned") &&
+                styles.timelineStepInactive,
+            ]}
+          >
+            <Icon
+              name={status === "Rejected" ? "cancel" : "build"}
+              size={24}
+              color={
+                status === "InProgress" || status === "Completed" || status === "Rejected"
+                  ? "#FFFFFF"
+                  : "#757575"
+              }
+            />
+          </View>
+          <View
+            style={[
+              styles.timelineConnector,
+              (status === "Completed" || status === "Rejected") && styles.timelineConnectorActive,
+            ]}
+          />
+          <View
+            style={[
+              styles.timelineStep,
+              status === "Completed" && { backgroundColor: "#4CAF50" },
+              status === "Rejected" && { backgroundColor: "#FF3B30" },
+              (!["Completed", "Rejected"].includes(status)) && styles.timelineStepInactive,
+            ]}
+          >
+            <Icon
+              name={status === "Rejected" ? "cancel" : "check-circle"}
+              size={24}
+              color={["Completed", "Rejected"].includes(status) ? "#FFFFFF" : "#757575"}
+            />
+          </View>
         </View>
+        <View style={styles.timelineLabels}>
+          <Text style={styles.timelineLabel}>{t('workProgress.timeline.reported')}</Text>
+          <Text style={styles.timelineLabel}>{t('workProgress.timeline.assigned')}</Text>
+          <Text style={styles.timelineLabel}>
+            {status === "Rejected" 
+              ? t('workProgress.timeline.rejected')
+              : t('workProgress.timeline.inProgress')}
+          </Text>
+          <Text style={styles.timelineLabel}>
+            {status === "Rejected" 
+              ? t('workProgress.timeline.rejected')
+              : t('workProgress.timeline.completed')}
+          </Text>
+        </View>
+        
+        {shouldShowFeedback() && (
+          <View style={styles.feedbackContainer}>
+            <Text style={styles.feedbackText}>
+              {t('workProgress.feedback.prompt')}
+            </Text>
+            <TouchableOpacity
+              style={styles.feedbackButton}
+              onPress={handleCreateFeedback}
+            >
+              <Icon name="star" size={20} color="#FFFFFF" />
+              <Text style={styles.feedbackButtonText}>{t('workProgress.feedback.button')}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        
+        {status === "Completed" && hasFeedback() && (
+          <View style={[styles.feedbackContainer, { backgroundColor: "#E8F5E9", borderLeftColor: "#4CAF50" }]}>
+            <Icon name="check-circle" size={24} color="#4CAF50" />
+            <Text style={[styles.feedbackText, { marginTop: 8 }]}>
+              {t('workProgress.feedback.submitted')}
+            </Text>
+          </View>
+        )}
+      </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('workProgress.details.crackReport')}</Text>
-          <View style={styles.card}>
-            <View style={styles.cardRow}>
-              <Text style={styles.cardLabel}>{t('workProgress.details.position')}:</Text>
-              <Text style={styles.cardValue}>{crackReport.position.split('/').join(' - ')}</Text>
-            </View>
-            <View style={styles.cardRow}>
-              <Text style={styles.cardLabel}>{t('workProgress.details.reported')}:</Text>
-              <Text style={styles.cardValue}>
-                {new Date(crackReport.createdAt).toLocaleDateString()} {t('workProgress.details.reportedBy')}{" "}
-                {crackReport.reportedBy.username}
-              </Text>
-            </View>
-            <View style={styles.cardRow}>
-              <Text style={styles.cardLabel}>{t('workProgress.details.description')}:</Text>
-              <Text style={styles.cardValue}>{crackReport.description}</Text>
-            </View>
-            <View style={styles.cardRow}>
-              <Text style={styles.cardLabel}>{t('workProgress.details.status')}:</Text>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t('workProgress.details.crackReport')}</Text>
+        <View style={styles.card}>
+          <View style={styles.cardRow}>
+            <Text style={styles.cardLabel}>{t('workProgress.details.position')}:</Text>
+            <Text style={styles.cardValue}>{crackReport.position.split('/').join(' - ')}</Text>
+          </View>
+          <View style={styles.cardRow}>
+            <Text style={styles.cardLabel}>{t('workProgress.details.reported')}:</Text>
+            <Text style={styles.cardValue}>
+              {new Date(crackReport.createdAt).toLocaleDateString()} {t('workProgress.details.reportedBy')}{" "}
+              {crackReport.reportedBy.username}
+            </Text>
+          </View>
+          <View style={styles.cardRow}>
+            <Text style={styles.cardLabel}>{t('workProgress.details.description')}:</Text>
+            <Text style={styles.cardValue}>{crackReport.description}</Text>
+          </View>
+          <View style={styles.cardRow}>
+            <Text style={styles.cardLabel}>{t('workProgress.details.status')}:</Text>
               <TouchableOpacity
                 onPress={handleStatusPress}
                 disabled={crackReport.status !== "WaitingConfirm"}
               >
-                <View
-                  style={[
-                    styles.statusBadge,
-                    { backgroundColor: getStatusColor(crackReport.status) + "20" },
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: getStatusColor(crackReport.status) + "20" },
                     crackReport.status === "WaitingConfirm" && styles.waitingConfirmBadge
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.statusText,
-                      { color: getStatusColor(crackReport.status) },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.statusText,
+                  { color: getStatusColor(crackReport.status) },
                       crackReport.status === "WaitingConfirm" && styles.waitingConfirmText
-                    ]}
-                  >
-                    {t(`workProgress.status.${crackReport.status}`)}
+                ]}
+              >
+                {t(`workProgress.status.${crackReport.status}`)}
                     {crackReport.status === "WaitingConfirm" && (
                       <Icon name="touch-app" size={14} color="#E91E63" style={styles.touchIcon} />
                     )}
-                  </Text>
-                </View>
+              </Text>
+            </View>
               </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t('workProgress.details.taskInfo')}</Text>
+        <View style={styles.card}>
+          <View style={styles.cardRow}>
+            <Text style={styles.cardLabel}>{t('workProgress.details.description')}:</Text>
+            <Text style={styles.cardValue}>{description}</Text>
+          </View>
+          <View style={styles.cardRow}>
+            <Text style={styles.cardLabel}>{t('workProgress.details.status')}:</Text>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: getStatusColor(status) + "20" },
+              ]}
+            >
+              <Text
+                style={[styles.statusText, { color: getStatusColor(status) }]}
+              >
+                {t(`workProgress.status.${status}`)}
+              </Text>
             </View>
           </View>
         </View>
+      </View>
 
+      {crackReport.crackDetails && crackReport.crackDetails.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('workProgress.details.taskInfo')}</Text>
-          <View style={styles.card}>
-            <View style={styles.cardRow}>
-              <Text style={styles.cardLabel}>{t('workProgress.details.description')}:</Text>
-              <Text style={styles.cardValue}>{description}</Text>
-            </View>
-            <View style={styles.cardRow}>
-              <Text style={styles.cardLabel}>{t('workProgress.details.status')}:</Text>
-              <View
-                style={[
-                  styles.statusBadge,
-                  { backgroundColor: getStatusColor(status) + "20" },
-                ]}
-              >
-                <Text
-                  style={[styles.statusText, { color: getStatusColor(status) }]}
-                >
-                  {t(`workProgress.status.${status}`)}
+          <Text style={styles.sectionTitle}>{t('workProgress.details.reportedImages')}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {crackReport.crackDetails.map((detail, index) => (
+              <View key={index} style={styles.imageContainer}>
+                <Image
+                  source={{ uri: detail.photoUrl }}
+                  style={styles.crackImage}
+                  resizeMode="cover"
+                />
+                <Text style={styles.imageSeverity}>
+                  {t('workProgress.details.severity')}: {detail.severity}
                 </Text>
               </View>
-            </View>
-          </View>
+            ))}
+          </ScrollView>
         </View>
-
-        {crackReport.crackDetails && crackReport.crackDetails.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('workProgress.details.reportedImages')}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {crackReport.crackDetails.map((detail, index) => (
-                <View key={index} style={styles.imageContainer}>
-                  <Image
-                    source={{ uri: detail.photoUrl }}
-                    style={styles.crackImage}
-                    resizeMode="cover"
-                  />
-                  <Text style={styles.imageSeverity}>
-                    {t('workProgress.details.severity')}: {detail.severity}
-                  </Text>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        )}
+      )}
       </ScrollView>
 
       {/* Feedback Modal */}
@@ -581,21 +694,35 @@ const WorkProgressScreen = () => {
               <TouchableOpacity
                 style={[styles.confirmModalButton, styles.rejectButton]}
                 onPress={handleReject}
+                disabled={rejectMutation.isPending || confirmMutation.isPending}
               >
-                <Icon name="close" size={20} color="#FFFFFF" />
-                <Text style={styles.confirmModalButtonText}>
-                  {t('workProgress.confirm.reject')}
-                </Text>
+                {rejectMutation.isPending ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Icon name="close" size={20} color="#FFFFFF" />
+                    <Text style={styles.confirmModalButtonText}>
+                      {t('workProgress.confirm.reject')}
+                    </Text>
+                  </>
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.confirmModalButton, styles.acceptButton]}
                 onPress={handleConfirm}
+                disabled={confirmMutation.isPending || rejectMutation.isPending}
               >
-                <Icon name="check" size={20} color="#FFFFFF" />
-                <Text style={styles.confirmModalButtonText}>
-                  {t('workProgress.confirm.accept')}
-                </Text>
+                {confirmMutation.isPending ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Icon name="check" size={20} color="#FFFFFF" />
+                    <Text style={styles.confirmModalButtonText}>
+                      {t('workProgress.confirm.accept')}
+                    </Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
           </View>
