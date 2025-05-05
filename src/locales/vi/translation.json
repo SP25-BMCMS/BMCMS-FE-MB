@@ -674,7 +674,12 @@
     "sendReport": {
       "confirmTitle": "Gửi báo cáo đến cư dân",
       "confirmMessage": "Bạn có chắc chắn muốn gửi báo cáo đến cư dân không?",
-      "button": "Gửi báo cáo"
+      "button": "Gửi báo cáo",
+      "reasonLabel": "Lý do cập nhật",
+      "reasonPlaceholder": "Nhập lý do cập nhật trạng thái...",
+      "reasonRequired": "Vui lòng nhập lý do cập nhật",
+      "success": "Cập nhật trạng thái thành công",
+      "error": "Không thể cập nhật trạng thái. Vui lòng thử lại"
     }
   },
   "staffProfile": {
@@ -766,7 +771,8 @@
       "Unverified": "Chưa xác minh",
       "Reviewing": "Đang xem xét",
       "Assigned": "Đã phân công",
-      "Canceled": "Đã hủy"
+      "Canceled": "Đã hủy",
+      "WaitingConfirm": "Chờ xác nhận"
     }
   },
   "inspectionList": {

@@ -659,7 +659,12 @@
     "sendReport": {
       "confirmTitle": "Send Report to Resident",
       "confirmMessage": "Are you sure you want to send this report to the resident?",
-      "button": "Send Report"
+      "button": "Send Report",
+      "reasonLabel": "Reason for update",
+      "reasonPlaceholder": "Enter reason for update status...",
+      "reasonRequired": "Please enter reason for update",
+      "success": "Update status successfully",
+      "error": "Failed to update status. Please try again"
     }
   },
   "staffProfile": {
@@ -751,7 +756,8 @@
       "Unverified": "Unverified",
       "Reviewing": "Reviewing",
       "Assigned": "Assigned",
-      "Canceled": "Canceled"
+      "Canceled": "Canceled",
+      "WaitingConfirm": "Waiting Confirm"
     }
   },
   "inspectionList": {

@@ -9,7 +9,8 @@ import {
   TouchableOpacity, 
   ActivityIndicator,
   Alert,
-  Modal
+  Modal,
+  TextInput
 } from 'react-native';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -21,6 +22,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { showMessage } from "react-native-flash-message";
+import instance from '../service/Auth';
+import { VITE_CHANGE_STATUS_CRACK } from '@env';
 
 type TaskDetailScreenRouteProp = RouteProp<RootStackParamList, 'TaskDetail'>;
 type TaskDetailScreenNavigationProp = StackNavigationProp<RootStackParamList, 'TaskDetail'>;
@@ -39,6 +42,8 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
   const [error, setError] = useState<string | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [reason, setReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchTaskDetail();
@@ -84,20 +89,22 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
         return '#007AFF'; // Blue
       case 'Confirmed':
         return '#4CD964'; // Green
-        case 'Completed':
-          return '#4CD964'; // Green
+      case 'Completed':
+        return '#4CD964'; // Green
       case 'Canceled':
         return '#FF3B30'; // Red
-        case 'Reassigned':
+      case 'Reassigned':
         return '#9C27B0';
-        case 'Reviewing':
-          return '#5856D6'; // Purple
-        case 'InFixing':
+      case 'Reviewing':
+        return '#5856D6'; // Purple
+      case 'InFixing':
         return '#5AC8FA'; // Light blue
       case 'Verified':
-        return '#4CD964'; // Green (same as Completed)
+        return '#4CD964'; // Green
       case 'Unverified':
         return '#FF9500'; // Orange
+      case 'WaitingConfirm':
+        return '#E91E63'; // Pink
       default:
         return '#8E8E93'; // Gray
     }
@@ -182,27 +189,55 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
     );
   };
 
-  const handleSendReportToResident = async () => {
+  const handleSendReportToResident = () => {
+    setReason('');
     setShowConfirmModal(true);
   };
 
   const handleConfirmSend = async () => {
+    if (!reason.trim()) {
+      showMessage({
+        message: t('taskDetail.sendReport.reasonRequired'),
+        type: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
     try {
+      setIsSubmitting(true);
+      const crackId = taskDetail?.crackInfo?.data?.[0]?.crackReportId;
+      
+      if (!crackId) {
+        throw new Error('Crack ID not found');
+      }
+
+      const url = VITE_CHANGE_STATUS_CRACK.replace('{id}', crackId);
+      await instance.patch(url, {
+        status: "WaitingConfirm",
+        description: reason.trim()
+      });
+
       setShowConfirmModal(false);
-      // TODO: Call API to send notification
       showMessage({
         message: t('taskDetail.sendReport.success'),
         type: "success",
         duration: 3000,
         icon: "success",
       });
+
+      // Refresh task details
+      fetchTaskDetail();
     } catch (error) {
+      console.error('Error updating crack status:', error);
       showMessage({
         message: t('taskDetail.sendReport.error'),
         type: "danger",
         duration: 3000,
         icon: "danger",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -451,7 +486,9 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
               </TouchableOpacity>
             )}
 
-            {taskDetail.building && !isWarrantyValid(taskDetail.building.Warranty_date) && (
+            {taskDetail.building && 
+              !isWarrantyValid(taskDetail.building.Warranty_date) && 
+              taskDetail.crackInfo?.data?.[0]?.status !== 'WaitingConfirm' && (
               <TouchableOpacity
                 style={[styles.actionButton, styles.sendReportButton]}
                 onPress={handleSendReportToResident}
@@ -504,20 +541,45 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
             
             <Text style={styles.modalMessage}>{t('taskDetail.sendReport.confirmMessage')}</Text>
             
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>{t('taskDetail.sendReport.reasonLabel')}</Text>
+              <TextInput
+                style={styles.reasonInput}
+                placeholder={t('taskDetail.sendReport.reasonPlaceholder')}
+                value={reason}
+                onChangeText={setReason}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
+            </View>
+
             <View style={styles.modalActions}>
               <TouchableOpacity 
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setShowConfirmModal(false)}
+                disabled={isSubmitting}
               >
                 <Text style={styles.cancelButtonText}>{t('taskDetail.common.cancel')}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={[styles.modalButton, styles.confirmButton]}
+                style={[
+                  styles.modalButton, 
+                  styles.confirmButton,
+                  !reason.trim() && styles.disabledButton
+                ]}
                 onPress={handleConfirmSend}
+                disabled={isSubmitting || !reason.trim()}
               >
-                <Icon name="send" size={18} color="#FFFFFF" style={styles.confirmButtonIcon} />
-                <Text style={styles.confirmButtonText}>{t('taskDetail.common.confirm')}</Text>
+                {isSubmitting ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <>
+                    <Icon name="send" size={18} color="#FFFFFF" style={styles.confirmButtonIcon} />
+                    <Text style={styles.confirmButtonText}>{t('taskDetail.common.confirm')}</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -888,6 +950,27 @@ const styles = StyleSheet.create({
   },
   confirmButtonIcon: {
     marginRight: 8,
+  },
+  inputContainer: {
+    marginBottom: 24,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  reasonInput: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#F9F9F9',
+    minHeight: 80,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });
 
