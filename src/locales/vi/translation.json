@@ -657,7 +657,25 @@
     "viewDetails": "Xem Chi Tiết",
     "viewInspections": "Xem Kiểm Tra",
     "noDetailsFound": "Không tìm thấy chi tiết.",
-    "loadingProfile": "Đang tải hồ sơ..."
+    "loadingProfile": "Đang tải hồ sơ...",
+    "buildingInfo": "Thông tin tòa nhà",
+    "area": "Khu vực",
+    "building": "Tòa nhà",
+    "warranty": "Bảo hành",
+    "warrantyInfo": {
+      "title": "Thông tin bảo hành",
+      "message": "Thời hạn bảo hành là khoảng thời gian mà nhà thầu chịu trách nhiệm sửa chữa các lỗi phát sinh trong công trình. Sau thời hạn này, chi phí sửa chữa sẽ do chủ đầu tư chi trả."
+    },
+    "common": {
+      "ok": "OK",
+      "cancel": "Hủy",
+      "confirm": "Xác nhận"
+    },
+    "sendReport": {
+      "confirmTitle": "Gửi báo cáo đến cư dân",
+      "confirmMessage": "Bạn có chắc chắn muốn gửi báo cáo đến cư dân không?",
+      "button": "Gửi báo cáo"
+    }
   },
   "staffProfile": {
     "title": "Hồ Sơ Nhân Viên",

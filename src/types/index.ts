@@ -494,6 +494,15 @@ export interface TaskAssignmentDetail {
     employee_id: string;
     username: string;
   };
+  building?: {
+    buildingId: string;
+    name: string;
+    description: string;
+    Warranty_date: string;
+    area: {
+      name: string;
+    };
+  };
 }
 
 export interface TaskAssignmentDetailResponse {

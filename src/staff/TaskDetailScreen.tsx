@@ -7,7 +7,9 @@ import {
   ScrollView, 
   Image, 
   TouchableOpacity, 
-  ActivityIndicator 
+  ActivityIndicator,
+  Alert,
+  Modal
 } from 'react-native';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -17,6 +19,8 @@ import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { showMessage } from "react-native-flash-message";
 
 type TaskDetailScreenRouteProp = RouteProp<RootStackParamList, 'TaskDetail'>;
 type TaskDetailScreenNavigationProp = StackNavigationProp<RootStackParamList, 'TaskDetail'>;
@@ -34,6 +38,7 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
     fetchTaskDetail();
@@ -163,6 +168,44 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
     return position;
   };
 
+  const isWarrantyValid = (warrantyDate: string) => {
+    const warranty = new Date(warrantyDate);
+    const now = new Date();
+    return warranty > now;
+  };
+
+  const showWarrantyInfo = () => {
+    Alert.alert(
+      t('taskDetail.warrantyInfo.title'),
+      t('taskDetail.warrantyInfo.message'),
+      [{ text: t('taskDetail.common.ok'), style: 'default' }]
+    );
+  };
+
+  const handleSendReportToResident = async () => {
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmSend = async () => {
+    try {
+      setShowConfirmModal(false);
+      // TODO: Call API to send notification
+      showMessage({
+        message: t('taskDetail.sendReport.success'),
+        type: "success",
+        duration: 3000,
+        icon: "success",
+      });
+    } catch (error) {
+      showMessage({
+        message: t('taskDetail.sendReport.error'),
+        type: "danger",
+        duration: 3000,
+        icon: "danger",
+      });
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -189,6 +232,52 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
         </View>
       ) : taskDetail ? (
         <ScrollView style={styles.scrollView}>
+          {/* Building Information Section */}
+          {taskDetail.building && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{t('taskDetail.buildingInfo')}</Text>
+              <View style={styles.infoContainer}>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>{t('taskDetail.area')}:</Text>
+                  <Text style={styles.infoValue}>{taskDetail.building.area.name}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>{t('taskDetail.building')}:</Text>
+                  <Text style={styles.infoValue}>{taskDetail.building.name}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>{t('taskDetail.warranty')}:</Text>
+                  <View style={styles.warrantyWrapper}>
+                    <View style={styles.warrantyContainer}>
+                      <Icon 
+                        name={isWarrantyValid(taskDetail.building.Warranty_date) ? "verified-user" : "gpp-bad"} 
+                        size={20} 
+                        color={isWarrantyValid(taskDetail.building.Warranty_date) ? "#4CAF50" : "#FF3B30"} 
+                        style={styles.warrantyIcon}
+                      />
+                      <Text style={[
+                        styles.warrantyText,
+                        { color: isWarrantyValid(taskDetail.building.Warranty_date) ? "#4CAF50" : "#FF3B30" }
+                      ]}>
+                        {formatDate(taskDetail.building.Warranty_date)}
+                      </Text>
+                    </View>
+                    <TouchableOpacity 
+                      onPress={showWarrantyInfo}
+                      style={styles.infoIconContainer}
+                    >
+                      <Icon 
+                        name="info-outline" 
+                        size={16} 
+                        color="#666"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
+
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('taskDetail.taskInfo')}</Text>
             <View style={styles.infoContainer}>
@@ -362,6 +451,25 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
               </TouchableOpacity>
             )}
 
+            {taskDetail.building && !isWarrantyValid(taskDetail.building.Warranty_date) && (
+              <TouchableOpacity
+                style={[styles.actionButton, styles.sendReportButton]}
+                onPress={handleSendReportToResident}
+              >
+                <View style={styles.sendReportContent}>
+                  <View style={styles.sendIconWrapper}>
+                    <Icon name="notification-important" size={20} color="#FFFFFF" />
+                  </View>
+                  <View style={styles.sendTextContainer}>
+                    <Text style={[styles.buttonText, styles.sendReportTitle]}>
+                      {t('taskDetail.sendReport.button')}
+                    </Text>
+                  </View>
+                  <Icon name="chevron-right" size={24} color="#FFFFFF" style={styles.arrowIcon} />
+                </View>
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity 
               style={[styles.actionButton, styles.viewInspectionsButton]}
               onPress={() => {
@@ -380,6 +488,41 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
           <Text style={styles.emptyText}>{t('taskDetail.noDetailsFound')}</Text>
         </View>
       )}
+
+      {/* Confirm Modal */}
+      <Modal
+        visible={showConfirmModal}
+        transparent={true}
+        animationType="fade"
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Icon name="warning" size={32} color="#FF3B30" />
+              <Text style={styles.modalTitle}>{t('taskDetail.sendReport.confirmTitle')}</Text>
+            </View>
+            
+            <Text style={styles.modalMessage}>{t('taskDetail.sendReport.confirmMessage')}</Text>
+            
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setShowConfirmModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>{t('taskDetail.common.cancel')}</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={handleConfirmSend}
+              >
+                <Icon name="send" size={18} color="#FFFFFF" style={styles.confirmButtonIcon} />
+                <Text style={styles.confirmButtonText}>{t('taskDetail.common.confirm')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -614,6 +757,137 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  warrantyWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  warrantyContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  warrantyIcon: {
+    marginRight: 4,
+  },
+  warrantyText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  infoIconContainer: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  sendReportButton: {
+    backgroundColor: '#FF3B30',
+    marginVertical: 12,
+    paddingVertical: 16,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  sendReportContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  sendIconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  sendTextContainer: {
+    flex: 1,
+  },
+  sendReportTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  sendReportSubtext: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    opacity: 0.8,
+  },
+  arrowIcon: {
+    marginLeft: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  cancelButton: {
+    backgroundColor: '#F5F5F5',
+  },
+  confirmButton: {
+    backgroundColor: '#FF3B30',
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  confirmButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  confirmButtonIcon: {
+    marginRight: 8,
   },
 });
 

@@ -642,7 +642,25 @@
     "viewDetails": "View Details",
     "viewInspections": "View Inspections",
     "noDetailsFound": "No details found.",
-    "loadingProfile": "Loading profile..."
+    "loadingProfile": "Loading profile...",
+    "buildingInfo": "Building Information",
+    "area": "Area",
+    "building": "Building",
+    "warranty": "Warranty",
+    "warrantyInfo": {
+      "title": "Warranty Information",
+      "message": "The warranty period is the time period during which the contractor is responsible for repairing any issues that occur in the construction. After this period, the cost of repairs will be covered by the investor."
+    },
+    "common": {
+      "ok": "OK",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+    "sendReport": {
+      "confirmTitle": "Send Report to Resident",
+      "confirmMessage": "Are you sure you want to send this report to the resident?",
+      "button": "Send Report"
+    }
   },
   "staffProfile": {
     "title": "Staff Profile",
