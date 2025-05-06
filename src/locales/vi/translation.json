@@ -213,7 +213,8 @@
       "maxImagesReached": "Bạn chỉ có thể chọn tối đa 5 ảnh",
       "cameraError": "Không thể mở camera. Vui lòng thử lại",
       "floor": "Tầng",
-      "searchBuilding": "Tìm tòa nhà"
+      "searchBuilding": "Tìm tòa nhà",
+      "noBuildingFound": "Không tìm thấy tòa nhà"
     },
     "inside": {
       "title": "Báo cáo vết nứt bên trong",

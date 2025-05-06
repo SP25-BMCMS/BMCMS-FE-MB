@@ -203,7 +203,8 @@
       "maxImagesReached": "You can only select up to 5 images",
       "cameraError": "Cannot access camera. Please try again.",
       "floor": "Floor",
-      "searchBuilding": "Search Building"
+      "searchBuilding": "Search Building",
+      "noBuildingFound": "No building found"
     },
     "inside": {
       "title": "Report Indoor Crack",

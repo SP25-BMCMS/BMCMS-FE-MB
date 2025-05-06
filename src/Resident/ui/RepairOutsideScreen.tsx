@@ -230,14 +230,28 @@ const RepairOutsideScreen = () => {
     setIsBuildingDropdownOpen(false);
   };
 
+  const formatAreaName = (area: string): string => {
+    // Convert area names to lowercase without underscores
+    return area.toLowerCase().replace(/_/g, '');
+  };
+
+  const getSimplePosition = (value: string): string => {
+    // Extract only the last part of the position path
+    // e.g., from "common/building/1/stairs" get "stairs"
+    const parts = value.split('/');
+    return parts[parts.length - 1];
+  };
+
   const handlePositionSelect = (key: string, value: string) => {
     if (key === 'OTHER') {
       setSelectedPosition('other');
       setPositionDisplayText(t('repair.outside.other'));
     } else {
       // Format: area/building/floor/direction
+      // Example: commonarea/s1007/1/stair
+      const simplePosition = getSimplePosition(value);
       const formattedPosition = selectedBuilding
-        ? `${selectedArea}/${selectedBuilding.name}/1/${value}`
+        ? `${formatAreaName(selectedArea)}/${selectedBuilding.name}/1/${simplePosition}`
         : value;
       setSelectedPosition(formattedPosition);
       setPositionDisplayText(t(`repair.outside.${key.toLowerCase()}`));
@@ -257,8 +271,8 @@ const RepairOutsideScreen = () => {
     }
 
     // For OTHER area, create a simple position format
-    const finalPosition = selectedArea === 'OTHER' 
-      ? `${selectedArea}/${selectedBuilding.name}/1/other`
+    const finalPosition = selectedArea === 'OTHER'
+      ? `other/${selectedBuilding.name}/1/other`
       : selectedPosition;
 
     Alert.alert(
