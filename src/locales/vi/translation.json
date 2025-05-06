@@ -204,7 +204,16 @@
       "ceiling": "Trần",
       "garden": "Vườn",
       "playground": "Sân chơi",
-      "walkway": "Lối đi"
+      "walkway": "Lối đi",
+      "selectBuilding": "Chọn tòa nhà",
+      "selectFloor": "Chọn tầng",
+      "selectImageSource": "Chọn nguồn ảnh",
+      "chooseFromGallery": "Chọn từ thư viện",
+      "imagePickerError": "Không thể chọn ảnh. Vui lòng thử lại",
+      "maxImagesReached": "Bạn chỉ có thể chọn tối đa 5 ảnh",
+      "cameraError": "Không thể mở camera. Vui lòng thử lại",
+      "floor": "Tầng",
+      "searchBuilding": "Tìm tòa nhà"
     },
     "inside": {
       "title": "Báo cáo vết nứt bên trong",

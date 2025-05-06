@@ -194,7 +194,16 @@
       "ceiling": "Ceiling",
       "garden": "Garden",
       "playground": "Playground",
-      "walkway": "Walkway"
+      "walkway": "Walkway",
+      "selectBuilding": "Select Building",
+      "selectFloor": "Select Floor",
+      "selectImageSource": "Select Image Source",
+      "chooseFromGallery": "Choose from Gallery",
+      "imagePickerError": "Cannot select image. Please try again.",
+      "maxImagesReached": "You can only select up to 5 images",
+      "cameraError": "Cannot access camera. Please try again.",
+      "floor": "Floor",
+      "searchBuilding": "Search Building"
     },
     "inside": {
       "title": "Report Indoor Crack",

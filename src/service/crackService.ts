@@ -3,10 +3,26 @@ import { VITE_SEND_DESPCRIPTION_CRACK, VITE_API_SECRET } from '@env';
 import instance from './Auth';
 import { 
   CrackReportPayload, 
-  CrackReportResponse 
+  CrackReportResponse,
+  BuildingDetail 
 } from '../types';
 
 export const CrackService = {
+  async getAllBuildingDetails(): Promise<BuildingDetail[]> {
+    try {
+      const response = await instance.get('/buildingdetails', {
+        params: {
+          limit: 9999,
+          page: 1
+        }
+      });
+      return response.data.data || []; // Access the data array from the response
+    } catch (error) {
+      console.error('Error fetching building details:', error);
+      return [];
+    }
+  },
+
   async reportCrack(payload: CrackReportPayload): Promise<CrackReportResponse | null> {
     try {
       // Validate payload
