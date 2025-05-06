@@ -83,6 +83,7 @@
     }
   },
   "workProgress": {
+    "viewInspections": "View Details Inspection",
     "title": "Work Progress",
     "loading": "Loading work progress...",
     "error": {
@@ -620,7 +621,47 @@
     "type": "Type",
     "images": "Images",
     "notes": "Notes",
-    "confirmSubmit": "Confirm & Submit"
+    "confirmSubmit": "Confirm & Submit",
+    "details": "Inspection Details",
+    "loading": "Loading inspection details...",
+    "error": "Error",
+    "errorTitle": "Failed to Load Data",
+    "errorMessage": "An error occurred while loading data. Please try again.",
+    "noData": "No Data Available",
+    "retry": "Retry",
+    "taskInfo": "Task Information",
+    "crackInfo": "Crack Information",
+    "building": "Building",
+    "position": "Position",
+    "severity": "Severity",
+    "cost": "Cost",
+    "date": "Created Date",
+    "description": "Description",
+    "status": "Status",
+    "images": "Images",
+    "original": "Original Image",
+    "aiDetection": "AI Analysis",
+    "report": "Report",
+    "viewReport": "View Report",
+    "reportedBy": "Reported By",
+    "verifiedBy": "Verified By",
+    "severityLevel": {
+      "High": "High",
+      "Medium": "Medium",
+      "Low": "Low"
+    },
+    "statusTypes": {
+      "Completed": "Completed",
+      "InProgress": "In Progress",
+      "Pending": "Pending",
+      "WaitingConfirm": "Waiting Confirmation",
+      "Rejected": "Rejected",
+      "InFixing": "In Fixing",
+      "Verified": "Verified",
+      "Confirmed": "Confirmed",
+      "Unverified": "Unverified",
+      "Reviewing": "Reviewing"
+    }
   },
   "location": {
     "title": "Create Location",

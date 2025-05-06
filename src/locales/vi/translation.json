@@ -83,6 +83,7 @@
     }
   },
   "workProgress": {
+    "viewInspections": "Xem Chi Tiết Kiểm Tra",
     "title": "Tiến Độ Công Việc",
     "loading": "Đang tải tiến độ công việc...",
     "error": {
@@ -635,7 +636,46 @@
     "type": "Loại",
     "images": "Hình Ảnh",
     "notes": "Ghi Chú",
-    "confirmSubmit": "Xác Nhận & Gửi"
+    "confirmSubmit": "Xác Nhận & Gửi",
+    "details": "Chi Tiết Kiểm Tra",
+    "loading": "Đang tải chi tiết kiểm tra...",
+    "error": "Lỗi",
+    "errorTitle": "Không Thể Tải Dữ Liệu",
+    "errorMessage": "Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.",
+    "noData": "Không Có Dữ Liệu",
+    "retry": "Thử Lại",
+    "taskInfo": "Thông Tin Công Việc",
+    "crackInfo": "Thông Tin Vết Nứt",
+    "building": "Tòa Nhà",
+    "position": "Vị Trí",
+    "severity": "Mức Độ",
+    "cost": "Chi Phí",
+    "date": "Ngày Tạo",
+    "description": "Mô Tả",
+    "status": "Trạng Thái",
+    "original": "Hình Gốc",
+    "aiDetection": "Phân Tích AI",
+    "report": "Báo Cáo",
+    "viewReport": "Xem Báo Cáo",
+    "reportedBy": "Người Báo Cáo",
+    "verifiedBy": "Người Xác Nhận",
+    "severityLevel": {
+      "High": "Nghiêm Trọng",
+      "Medium": "Trung Bình",
+      "Low": "Nhẹ"
+    },
+    "statusTypes": {
+      "Completed": "Hoàn Thành",
+      "InProgress": "Đang Xử Lý",
+      "Pending": "Chờ Xử Lý",
+      "WaitingConfirm": "Chờ Xác Nhận",
+      "Rejected": "Từ Chối",
+      "InFixing": "Đang Sửa Chữa",
+      "Verified": "Đã Xác Minh",
+      "Confirmed": "Đã Xác Nhận",
+      "Unverified": "Chưa Xác Minh",
+      "Reviewing": "Đang Xem Xét"
+    }
   },
   "location": {
     "title": "Tạo Vị Trí",

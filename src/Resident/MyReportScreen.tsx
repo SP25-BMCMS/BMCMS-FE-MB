@@ -88,7 +88,13 @@ const MyReportScreen = () => {
         return { backgroundColor: '#FFF9C4', textColor: '#F57F17' }; // Yellow
       case 'Completed':
         return { backgroundColor: '#E8F5E9', textColor: '#388E3C' }; // Green
-      default: // Pending or other
+      case 'Pending':
+        return { backgroundColor: '#FFEBEE', textColor: '#D32F2F' }; // Red
+      case 'WaitingConfirm':
+        return { backgroundColor: '#F3E5F5', textColor: '#7B1FA2' }; // Purple
+      case 'Rejected':
+        return { backgroundColor: '#FFEBEE', textColor: '#D32F2F' }; // Red
+      default:
         return { backgroundColor: '#FFF3E0', textColor: '#B77F2E' }; // Default orange
     }
   };
@@ -234,6 +240,24 @@ const MyReportScreen = () => {
               }}
             >
               <Text style={styles.filterOptionText}>{t('myReport.status.InProgress')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.filterOption}
+              onPress={() => {
+                setStatusFilter('Pending');
+                setShowFilterDropdown(false);
+              }}
+            >
+              <Text style={styles.filterOptionText}>{t('myReport.status.Pending')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.filterOption}
+              onPress={() => {
+                setStatusFilter('WaitingConfirm');
+                setShowFilterDropdown(false);
+              }}
+            >
+              <Text style={styles.filterOptionText}>{t('myReport.status.WaitingConfirm')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.filterOption}

@@ -577,6 +577,23 @@ const WorkProgressScreen = () => {
               </Text>
             </View>
           </View>
+          
+          {taskAssignments && taskAssignments.length > 0 && (
+            <TouchableOpacity
+              style={styles.inspectionButton}
+              onPress={() => {
+                // @ts-ignore
+                navigation.navigate('ResidentInspection', {
+                  task_assignment_id: taskAssignments[0].assignment_id
+                });
+              }}
+            >
+              <Icon name="assignment" size={20} color="#FFFFFF" />
+              <Text style={styles.inspectionButtonText}>
+                {t('workProgress.viewInspections')}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -1116,6 +1133,21 @@ const styles = StyleSheet.create({
   },
   touchIcon: {
     marginLeft: 4,
+  },
+  inspectionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#B77F2E',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  inspectionButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    marginLeft: 8,
+    fontSize: 14,
   },
 });
 

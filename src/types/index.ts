@@ -40,6 +40,9 @@ export type RootStackParamList = {
   WorkProgress: {
     crackReportId: string;
   };
+  ResidentInspection: {
+    task_assignment_id: string;
+  };
   StaffProfile: undefined;
   TaskDetail: {
     assignmentId: string;
