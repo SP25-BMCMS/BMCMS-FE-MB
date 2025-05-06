@@ -661,6 +661,15 @@
       "Confirmed": "Confirmed",
       "Unverified": "Unverified",
       "Reviewing": "Reviewing"
+    },
+    "confirmation": {
+      "priceQuestion": "Do you agree with this price?",
+      "title": "Confirm Price",
+      "message": "Please confirm if you agree with the repair cost",
+      "accept": "Accept",
+      "reject": "Reject",
+      "success": "Status updated successfully",
+      "error": "Failed to update status. Please try again"
     }
   },
   "location": {

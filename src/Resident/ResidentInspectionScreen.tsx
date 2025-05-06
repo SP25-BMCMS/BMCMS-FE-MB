@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -11,14 +11,17 @@ import {
   Linking,
   Platform,
   StatusBar,
+  Modal,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import instance from "../service/Auth";
 import { LinearGradient } from "expo-linear-gradient";
+import { showMessage } from "react-native-flash-message";
+import { WorkLogService } from "../service/WorkLog";
 
 interface RouteParams {
   task_assignment_id: string;
@@ -58,6 +61,7 @@ interface Task {
   statusLabel: string;
   created_at: string;
   updated_at: string;
+  assignment_id: string;
 }
 
 interface TaskAssignment {
@@ -119,6 +123,8 @@ const ResidentInspectionScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { task_assignment_id } = route.params as RouteParams;
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const queryClient = useQueryClient();
 
   const handleOpenReport = async (url: string) => {
     try {
@@ -149,6 +155,74 @@ const ResidentInspectionScreen = () => {
       }
     },
   });
+
+  const confirmMutation = useMutation({
+    mutationFn: async () => {
+      if (!inspectionData || !inspectionData.data || inspectionData.data.length === 0) {
+        throw new Error('No inspection data found');
+      }
+
+      return await WorkLogService.confirmTask(task_assignment_id);
+    },
+    onSuccess: () => {
+      setShowConfirmModal(false);
+      showMessage({
+        message: t('inspection.confirmation.success'),
+        type: "success",
+        duration: 3000,
+        icon: "success",
+      });
+      navigation.goBack();
+      queryClient.invalidateQueries({ queryKey: ["worklogs"] });
+    },
+    onError: (error) => {
+      console.error('Task Confirmation Failed:', error);
+      showMessage({
+        message: t('inspection.confirmation.error'),
+        type: "danger",
+        duration: 3000,
+        icon: "danger",
+      });
+    }
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async () => {
+      if (!inspectionData || !inspectionData.data || inspectionData.data.length === 0) {
+        throw new Error('No inspection data found');
+      }
+
+      return await WorkLogService.rejectTask(task_assignment_id);
+    },
+    onSuccess: () => {
+      setShowConfirmModal(false);
+      showMessage({
+        message: t('inspection.confirmation.success'),
+        type: "success",
+        duration: 3000,
+        icon: "success",
+      });
+      navigation.goBack();
+      queryClient.invalidateQueries({ queryKey: ["worklogs"] });
+    },
+    onError: (error) => {
+      console.error('Task Rejection Failed:', error);
+      showMessage({
+        message: t('inspection.confirmation.error'),
+        type: "danger",
+        duration: 3000,
+        icon: "danger",
+      });
+    }
+  });
+
+  const handleConfirm = () => {
+    confirmMutation.mutate();
+  };
+
+  const handleReject = () => {
+    rejectMutation.mutate();
+  };
 
   if (isLoading) {
     return (
@@ -354,6 +428,16 @@ const ResidentInspectionScreen = () => {
               <Text style={[styles.costValue, { color: COLORS.primary }]}>
                 {formatCurrency(inspection.total_cost)}
               </Text>
+              {crackInfo.status === "WaitingConfirm" && (
+                <TouchableOpacity
+                  style={styles.confirmButton}
+                  onPress={() => setShowConfirmModal(true)}
+                >
+                  <Text style={styles.confirmButtonText}>
+                    {t("inspection.confirmation.priceQuestion")}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </LinearGradient>
             <View style={styles.infoRow}>
               <View style={styles.iconContainer}>
@@ -495,6 +579,62 @@ const ResidentInspectionScreen = () => {
           </View>
         )}
       </ScrollView>
+
+      {/* Add Confirmation Modal */}
+      <Modal
+        visible={showConfirmModal}
+        transparent={true}
+        animationType="fade"
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.confirmModalContent}>
+            <View style={styles.confirmModalHeader}>
+              <Icon name="help-outline" size={40} color={COLORS.primary} />
+              <Text style={styles.confirmModalTitle}>{t('inspection.confirmation.title')}</Text>
+            </View>
+            
+            <Text style={styles.confirmModalMessage}>
+              {t('inspection.confirmation.message')}
+            </Text>
+
+            <View style={styles.confirmModalActions}>
+              <TouchableOpacity
+                style={[styles.confirmModalButton, styles.rejectButton]}
+                onPress={handleReject}
+                disabled={rejectMutation.isPending || confirmMutation.isPending}
+              >
+                {rejectMutation.isPending ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <>
+                    <Icon name="close" size={20} color="#FFF" />
+                    <Text style={styles.confirmModalButtonText}>
+                      {t('inspection.confirmation.reject')}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.confirmModalButton, styles.acceptButton]}
+                onPress={handleConfirm}
+                disabled={confirmMutation.isPending || rejectMutation.isPending}
+              >
+                {confirmMutation.isPending ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <>
+                    <Icon name="check" size={20} color="#FFF" />
+                    <Text style={styles.confirmModalButtonText}>
+                      {t('inspection.confirmation.accept')}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -521,6 +661,8 @@ const getStatusColor = (status: string) => {
     case "Completed":
       return "#4CAF50";
     case "InProgress":
+      return "#2196F3";
+      case "InFixing":
       return "#2196F3";
     case "Pending":
       return "#FFC107";
@@ -883,6 +1025,87 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#FFF",
+  },
+  confirmButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  confirmButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  confirmModalContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
+  },
+  confirmModalHeader: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  confirmModalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#333',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  confirmModalMessage: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  confirmModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  confirmModalButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  rejectButton: {
+    backgroundColor: '#FF3B30',
+  },
+  acceptButton: {
+    backgroundColor: '#4CAF50',
+  },
+  confirmModalButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

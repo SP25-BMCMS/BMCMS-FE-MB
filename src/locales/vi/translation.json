@@ -675,6 +675,15 @@
       "Confirmed": "Đã Xác Nhận",
       "Unverified": "Chưa Xác Minh",
       "Reviewing": "Đang Xem Xét"
+    },
+    "confirmation": {
+      "priceQuestion": "Bạn có đồng ý với chi phí này không?",
+      "title": "Xác nhận chi phí",
+      "message": "Vui lòng xác nhận nếu bạn đồng ý với chi phí sửa chữa",
+      "accept": "Đồng ý",
+      "reject": "Không đồng ý",
+      "success": "Đã cập nhật trạng thái thành công",
+      "error": "Không thể cập nhật trạng thái. Vui lòng thử lại"
     }
   },
   "location": {
