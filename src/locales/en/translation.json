@@ -14,7 +14,8 @@
     "retry": "Retry",
     "submit": "Submit",
     "cancel": "Cancel",
-    "success": "Success"
+    "success": "Success",
+    "delete": "Delete"
   },
   "languages": {
     "english": "English",
@@ -72,6 +73,10 @@
     "noReportsFiltered": "No reports with status",
     "noReports": "No reports yet.",
     "clearFilter": "Clear Filter",
+    "deleteConfirmTitle": "Delete Report",
+    "deleteConfirmMessage": "Are you sure you want to delete this report?",
+    "deleteSuccess": "Report deleted successfully",
+    "deleteError": "Failed to delete report",
     "status": {
       "InProgress": "In Progress",
       "Reviewing": "Reviewing",
@@ -1051,7 +1056,8 @@
       "Verified": "Verified",
       "Confirmed": "Confirmed",
       "Unverified": "Unverified",
-      "Reviewing": "Reviewing"
+      "Reviewing": "Reviewing",
+      "Completed": "Completed"
     },
     "severityTypes": {
       "Low": "Low",

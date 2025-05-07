@@ -8,18 +8,23 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Modal,
+  Dimensions,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useNavigation } from "@react-navigation/native";
 import { getUserCrackReports } from "../service/Auth";
+import { CrackService } from "../service/crackService";
 import { useTranslation } from "react-i18next";
+import { showMessage } from "react-native-flash-message";
 
 const MyReportScreen = () => {
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const navigation = useNavigation();
   const { t } = useTranslation();
 
@@ -71,13 +76,50 @@ const MyReportScreen = () => {
     return unsubscribe;
   }, [navigation]);
 
-  const handleClearAll = async () => {
-    setReports([]);
-  };
+  
 
   const handleViewProgress = (reportId: string) => {
     // @ts-ignore
     navigation.navigate("WorkProgress", { crackReportId: reportId });
+  };
+
+  const handleDeleteReport = (reportId: string) => {
+    setSelectedReportId(reportId);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedReportId) return;
+
+    try {
+      const success = await CrackService.deleteCrackReport(selectedReportId);
+      if (success) {
+        setReports(prevReports => prevReports.filter(report => report.crackReportId !== selectedReportId));
+        showMessage({
+          message: t('myReport.deleteSuccess'),
+          type: "success",
+          icon: "success",
+          duration: 2000,
+        });
+      } else {
+        showMessage({
+          message: t('myReport.deleteError'),
+          type: "danger",
+          icon: "danger",
+          duration: 2000,
+        });
+      }
+    } catch (error) {
+      showMessage({
+        message: t('myReport.deleteError'),
+        type: "danger",
+        icon: "danger",
+        duration: 2000,
+      });
+    } finally {
+      setShowDeleteModal(false);
+      setSelectedReportId(null);
+    }
   };
 
   const getStatusStyle = (status: string) => {
@@ -118,107 +160,117 @@ const MyReportScreen = () => {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t('myReport.title')} ({reports.length})</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity 
-            style={styles.filterButton}
-            onPress={() => setShowFilterDropdown(true)}
-          >
-            <Icon name="filter-list" size={20} color="#B77F2E" />
-            <Text style={styles.filterText}>
-              {statusFilter ? getTranslatedStatus(statusFilter) : t('myReport.filter')}
-            </Text>
-          </TouchableOpacity>
-          
-          {reports.length > 0 && (
-            <TouchableOpacity onPress={handleClearAll} style={styles.clearBtn}>
-              <Icon name="delete" size={20} color="#B77F2E" />
-              <Text style={styles.clearText}>{t('myReport.clearAll')}</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {statusFilter && (
-        <View style={styles.activeFilterContainer}>
-          <Text style={styles.activeFilterText}>
-            {t('myReport.filteredBy')}: {getTranslatedStatus(statusFilter)}
-          </Text>
-          <TouchableOpacity onPress={() => setStatusFilter(null)}>
-            <Icon name="cancel" size={20} color="#B77F2E" />
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {filteredReports.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Image
-            source={require("../../assets/sadBuilding.png")}
-            style={styles.emptyImage}
-          />
-          <Text style={styles.emptyText}>
-            {statusFilter 
-              ? `${t('myReport.noReportsFiltered')} '${getTranslatedStatus(statusFilter)}'` 
-              : t('myReport.noReports')}
-          </Text>
-          {statusFilter && (
+    <>
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>{t('myReport.title')} ({reports.length})</Text>
+          <View style={styles.headerActions}>
             <TouchableOpacity 
-              style={styles.clearFilterButton}
-              onPress={() => setStatusFilter(null)}
+              style={styles.filterButton}
+              onPress={() => setShowFilterDropdown(true)}
             >
-              <Text style={styles.clearFilterText}>{t('myReport.clearFilter')}</Text>
+              <Icon name="filter-list" size={20} color="#B77F2E" />
+              <Text style={styles.filterText}>
+                {statusFilter ? getTranslatedStatus(statusFilter) : t('myReport.filter')}
+              </Text>
             </TouchableOpacity>
-          )}
+            
+           
+          </View>
         </View>
-      ) : (
-        filteredReports.map((item, index) => {
-          const statusStyle = getStatusStyle(item.status);
-          
-          return (
-            <TouchableOpacity
-              key={index}
-              style={styles.card}
-              onPress={() => handleViewProgress(item.crackReportId)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.cardHeader}>
-                <View>
-                  <Text style={styles.unitText}>
-                    {item.position.split('/').join(' - ')}
-                  </Text>
-                  <Text style={styles.dateText}>
-                    {new Date(item.createdAt).toLocaleString()}
-                  </Text>
-                </View>
-                <View style={[styles.statusTag, { backgroundColor: statusStyle.backgroundColor }]}>
-                  <Text style={[styles.statusText, { color: statusStyle.textColor }]}>
-                    {getTranslatedStatus(item.status)}
-                  </Text>
-                </View>
-              </View>
-              <Text style={styles.descriptionText}>{item.description}</Text>
-              {item.crackDetails && item.crackDetails.length > 0 && (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  {item.crackDetails.map((detail: any, idx: number) => (
-                    <Image
-                      key={idx}
-                      source={{ uri: detail.photoUrl }}
-                      style={styles.reportImage}
-                    />
-                  ))}
-                </ScrollView>
-              )}
-              
-              <View style={styles.cardFooter}>
-                <Icon name="visibility" size={16} color="#666" />
-                <Text style={styles.viewDetailsText}>Tap to view progress details</Text>
-              </View>
+
+        {statusFilter && (
+          <View style={styles.activeFilterContainer}>
+            <Text style={styles.activeFilterText}>
+              {t('myReport.filteredBy')}: {getTranslatedStatus(statusFilter)}
+            </Text>
+            <TouchableOpacity onPress={() => setStatusFilter(null)}>
+              <Icon name="cancel" size={20} color="#B77F2E" />
             </TouchableOpacity>
-          );
-        })
-      )}
+          </View>
+        )}
+
+        {filteredReports.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Image
+              source={require("../../assets/sadBuilding.png")}
+              style={styles.emptyImage}
+            />
+            <Text style={styles.emptyText}>
+              {statusFilter 
+                ? `${t('myReport.noReportsFiltered')} '${getTranslatedStatus(statusFilter)}'` 
+                : t('myReport.noReports')}
+            </Text>
+            {statusFilter && (
+              <TouchableOpacity 
+                style={styles.clearFilterButton}
+                onPress={() => setStatusFilter(null)}
+              >
+                <Text style={styles.clearFilterText}>{t('myReport.clearFilter')}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : (
+          filteredReports.map((item, index) => {
+            const statusStyle = getStatusStyle(item.status);
+            
+            return (
+              <TouchableOpacity
+                key={index}
+                style={styles.card}
+                onPress={() => handleViewProgress(item.crackReportId)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.cardHeader}>
+                  <View>
+                    <Text style={styles.unitText}>
+                      {item.position.split('/').join(' - ')}
+                    </Text>
+                    <Text style={styles.dateText}>
+                      {new Date(item.createdAt).toLocaleString()}
+                    </Text>
+                  </View>
+                  <View style={styles.headerActions}>
+                    {item.status === 'Pending' && (
+                      <TouchableOpacity
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleDeleteReport(item.crackReportId);
+                        }}
+                        style={styles.deleteButton}
+                      >
+                        <Icon name="delete" size={20} color="#D32F2F" />
+                      </TouchableOpacity>
+                    )}
+                    <View style={[styles.statusTag, { backgroundColor: statusStyle.backgroundColor }]}>
+                      <Text style={[styles.statusText, { color: statusStyle.textColor }]}>
+                        {getTranslatedStatus(item.status)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+                <Text style={styles.descriptionText}>{item.description}</Text>
+                {item.crackDetails && item.crackDetails.length > 0 && (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {item.crackDetails.map((detail: any, idx: number) => (
+                      <Image
+                        key={idx}
+                        source={{ uri: detail.photoUrl }}
+                        style={styles.reportImage}
+                      />
+                    ))}
+                  </ScrollView>
+                )}
+                
+                <View style={styles.cardFooter}>
+                  <Icon name="visibility" size={16} color="#666" />
+                  <Text style={styles.viewDetailsText}>Tap to view progress details</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })
+        )}
+      </ScrollView>
 
       <Modal
         visible={showFilterDropdown}
@@ -280,7 +332,48 @@ const MyReportScreen = () => {
           </View>
         </TouchableOpacity>
       </Modal>
-    </ScrollView>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowDeleteModal(false)}
+      >
+        <View style={styles.deleteModalOverlay}>
+          <View style={styles.deleteModalContent}>
+            <View style={styles.deleteModalHeader}>
+              <Icon name="warning" size={40} color="#D32F2F" />
+              <Text style={styles.deleteModalTitle}>{t('myReport.deleteConfirmTitle')}</Text>
+            </View>
+            
+            <Text style={styles.deleteModalMessage}>
+              {t('myReport.deleteConfirmMessage')}
+            </Text>
+
+            <View style={styles.deleteModalActions}>
+              <TouchableOpacity
+                style={[styles.deleteModalButton, styles.cancelButton]}
+                onPress={() => {
+                  setShowDeleteModal(false);
+                  setSelectedReportId(null);
+                }}
+              >
+                <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.deleteModalButton, styles.confirmButton]}
+                onPress={handleConfirmDelete}
+              >
+                <Icon name="delete" size={20} color="#FFF" />
+                <Text style={styles.confirmButtonText}>{t('common.delete')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 };
 
@@ -299,8 +392,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   headerActions: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   title: { fontSize: 22, fontWeight: "bold" },
   clearBtn: { flexDirection: "row", alignItems: "center", marginLeft: 10 },
@@ -438,6 +532,77 @@ const styles = StyleSheet.create({
   clearFilterText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
+  },
+  deleteButton: {
+    padding: 8,
+  },
+  deleteModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  deleteModalContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  deleteModalHeader: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  deleteModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#D32F2F',
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  deleteModalMessage: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  deleteModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  deleteModalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  cancelButton: {
+    backgroundColor: '#F5F5F5',
+  },
+  confirmButton: {
+    backgroundColor: '#D32F2F',
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  confirmButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

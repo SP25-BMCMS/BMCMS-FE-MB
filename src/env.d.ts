@@ -65,4 +65,5 @@ declare module '@env'{
   export const VITE_PUT_CONFIRM_BY_TASK_ASSGINMENT_ID: string;
   export const VITE_PUT_REJECT_BY_TASK_ASSGINMENT_ID: string;
   export const VITE_REAL_TIME_NOTIFICATION: string;
+  export const VITE_DELETE_CRACK_REPORT: string;
 }

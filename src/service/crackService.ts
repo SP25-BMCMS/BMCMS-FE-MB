@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { VITE_SEND_DESPCRIPTION_CRACK, VITE_API_SECRET } from '@env';
+import { VITE_SEND_DESPCRIPTION_CRACK, VITE_API_SECRET, VITE_DELETE_CRACK_REPORT } from '@env';
 import instance from './Auth';
 import { 
   CrackReportPayload, 
@@ -175,6 +175,16 @@ export const CrackService = {
     } catch (error) {
       console.error('❌ Total Error:', error);
       return null;
+    }
+  },
+
+  async deleteCrackReport(id: string): Promise<boolean> {
+    try {
+      const response = await instance.delete(VITE_DELETE_CRACK_REPORT.replace('{id}', id));
+      return response.status === 200;
+    } catch (error) {
+      console.error('Error deleting crack report:', error);
+      return false;
     }
   }
 }; 

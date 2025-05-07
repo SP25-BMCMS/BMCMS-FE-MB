@@ -14,7 +14,8 @@
     "retry": "Thử lại",
     "submit": "Gửi",
     "cancel": "Hủy",
-    "success": "Thành công"
+    "success": "Thành công",
+    "delete": "Xóa"
   },
   "languages": {
     "english": "Tiếng Anh",
@@ -72,6 +73,10 @@
     "noReportsFiltered": "Không có báo cáo với trạng thái",
     "noReports": "Chưa có báo cáo nào.",
     "clearFilter": "Xóa bộ lọc",
+    "deleteConfirmTitle": "Xóa báo cáo",
+    "deleteConfirmMessage": "Bạn có chắc chắn muốn xóa báo cáo này không?",
+    "deleteSuccess": "Báo cáo đã được xóa thành công",
+    "deleteError": "Không thể xóa báo cáo",
     "status": {
       "InProgress": "Đang xử lý",
       "Reviewing": "Đang xem xét",
@@ -1065,7 +1070,8 @@
       "Verified": "Đã Xác Minh",
       "Confirmed": "Đã Xác Nhận",
       "Unverified": "Chưa Xác Minh",
-      "Reviewing": "Đang Xem Xét"
+      "Reviewing": "Đang Xem Xét",
+      "Completed": "Đã Hoàn Thành"
     },
     "severityTypes": {
       "Low": "Thấp",
