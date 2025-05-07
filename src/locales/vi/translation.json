@@ -34,7 +34,7 @@
       "enterPhonePassword": "Vui lòng nhập số điện thoại và mật khẩu.",
       "enterUsernamePassword": "Vui lòng nhập tên đăng nhập và mật khẩu.",
       "accountNotActivated": "Tài khoản chưa kích hoạt",
-      "checkEmail": "Tài khoản của bạn chưa được kích hoạt. Vui lòng kiểm tra email để kích hoạt.",
+      "checkEmail": "Tài khoản của bạn chưa được kích hoạt. Vui lòng liên hệ Quản Lí Tòa nhà để kích hoạt tài khoản.",
       "loginFailed": "Đăng nhập thất bại",
       "invalidCredentials": "Số điện thoại hoặc mật khẩu không đúng.",
       "invalidStaffCredentials": "Tên đăng nhập hoặc mật khẩu không đúng.",
@@ -76,15 +76,25 @@
       "InProgress": "Đang xử lý",
       "Reviewing": "Đang xem xét",
       "Completed": "Hoàn thành",
-      "Pending": "Chờ xử lý"
+      "Pending": "Chờ xử lý",
+      "WaitingConfirm": "Chờ xác nhận",
+      "Rejected": "Từ chối",
+      "InFixing": "Đang sửa chữa"
     }
   },
   "workProgress": {
+    "viewInspections": "Xem Chi Tiết Kiểm Tra",
     "title": "Tiến Độ Công Việc",
     "loading": "Đang tải tiến độ công việc...",
     "error": {
       "title": "Lỗi Tải Dữ Liệu",
       "retry": "Thử Lại"
+    },
+    "confirm": {
+      "title": "Xác nhận báo cáo",
+      "message": "Bạn có đồng ý với báo cáo này không?",
+      "accept": "Đồng ý",
+      "reject": "Không đồng ý"
     },
     "empty": {
       "title": "Không Tìm Thấy Tiến Độ",
@@ -143,7 +153,10 @@
       "Completed": "Hoàn thành",
       "InProgress": "Đang xử lý",
       "Assigned": "Đã phân công",
-      "Pending": "Chờ xử lý"
+      "Pending": "Chờ xử lý",
+      "WaitingConfirm": "Chờ xác nhận",
+      "Rejected": "Từ chối",
+      "InFixing": "Đang sửa chữa"
     },
     "date": "Ngày",
     "technician": "Kỹ thuật viên",
@@ -192,7 +205,17 @@
       "ceiling": "Trần",
       "garden": "Vườn",
       "playground": "Sân chơi",
-      "walkway": "Lối đi"
+      "walkway": "Lối đi",
+      "selectBuilding": "Chọn tòa nhà",
+      "selectFloor": "Chọn tầng",
+      "selectImageSource": "Chọn nguồn ảnh",
+      "chooseFromGallery": "Chọn từ thư viện",
+      "imagePickerError": "Không thể chọn ảnh. Vui lòng thử lại",
+      "maxImagesReached": "Bạn chỉ có thể chọn tối đa 5 ảnh",
+      "cameraError": "Không thể mở camera. Vui lòng thử lại",
+      "floor": "Tầng",
+      "searchBuilding": "Tìm tòa nhà",
+      "noBuildingFound": "Không tìm thấy tòa nhà"
     },
     "inside": {
       "title": "Báo cáo vết nứt bên trong",
@@ -217,7 +240,7 @@
       "cameraError": "Không thể truy cập máy ảnh. Vui lòng thử lại.",
       "photoLibraryError": "Không thể truy cập thư viện ảnh. Vui lòng thử lại.",
       "kitchen": "Nhà bếp",
-      "livingRoom": "Phòng khách",
+      "living_Room": "Phòng khách",
       "bedroom": "Phòng ngủ",
       "bathroom": "Phòng tắm",
       "wall": "Tường",
@@ -613,7 +636,55 @@
     "type": "Loại",
     "images": "Hình Ảnh",
     "notes": "Ghi Chú",
-    "confirmSubmit": "Xác Nhận & Gửi"
+    "confirmSubmit": "Xác Nhận & Gửi",
+    "details": "Chi Tiết Kiểm Tra",
+    "loading": "Đang tải chi tiết kiểm tra...",
+    "error": "Lỗi",
+    "errorTitle": "Không Thể Tải Dữ Liệu",
+    "errorMessage": "Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.",
+    "noData": "Không Có Dữ Liệu",
+    "retry": "Thử Lại",
+    "taskInfo": "Thông Tin Công Việc",
+    "crackInfo": "Thông Tin Vết Nứt",
+    "building": "Tòa Nhà",
+    "position": "Vị Trí",
+    "severity": "Mức Độ",
+    "cost": "Chi Phí",
+    "date": "Ngày Tạo",
+    "description": "Mô Tả",
+    "status": "Trạng Thái",
+    "original": "Hình Gốc",
+    "aiDetection": "Phân Tích AI",
+    "report": "Báo Cáo",
+    "viewReport": "Xem Báo Cáo",
+    "reportedBy": "Người Báo Cáo",
+    "verifiedBy": "Người Xác Nhận",
+    "severityLevel": {
+      "High": "Nghiêm Trọng",
+      "Medium": "Trung Bình",
+      "Low": "Nhẹ"
+    },
+    "statusTypes": {
+      "Completed": "Hoàn Thành",
+      "InProgress": "Đang Xử Lý",
+      "Pending": "Chờ Xử Lý",
+      "WaitingConfirm": "Chờ Xác Nhận",
+      "Rejected": "Từ Chối",
+      "InFixing": "Đang Sửa Chữa",
+      "Verified": "Đã Xác Minh",
+      "Confirmed": "Đã Xác Nhận",
+      "Unverified": "Chưa Xác Minh",
+      "Reviewing": "Đang Xem Xét"
+    },
+    "confirmation": {
+      "priceQuestion": "Bạn có đồng ý với chi phí này không?",
+      "title": "Xác nhận chi phí",
+      "message": "Vui lòng xác nhận nếu bạn đồng ý với chi phí sửa chữa",
+      "accept": "Đồng ý",
+      "reject": "Không đồng ý",
+      "success": "Đã cập nhật trạng thái thành công",
+      "error": "Không thể cập nhật trạng thái. Vui lòng thử lại"
+    }
   },
   "location": {
     "title": "Tạo Vị Trí",
@@ -657,7 +728,30 @@
     "viewDetails": "Xem Chi Tiết",
     "viewInspections": "Xem Kiểm Tra",
     "noDetailsFound": "Không tìm thấy chi tiết.",
-    "loadingProfile": "Đang tải hồ sơ..."
+    "loadingProfile": "Đang tải hồ sơ...",
+    "buildingInfo": "Thông tin tòa nhà",
+    "area": "Khu vực",
+    "building": "Tòa nhà",
+    "warranty": "Bảo hành",
+    "warrantyInfo": {
+      "title": "Thông tin bảo hành",
+      "message": "Thời hạn bảo hành là khoảng thời gian mà nhà thầu chịu trách nhiệm sửa chữa các lỗi phát sinh trong công trình. Sau thời hạn này, chi phí sửa chữa sẽ do chủ đầu tư chi trả."
+    },
+    "common": {
+      "ok": "OK",
+      "cancel": "Hủy",
+      "confirm": "Xác nhận"
+    },
+    "sendReport": {
+      "confirmTitle": "Gửi báo cáo đến cư dân",
+      "confirmMessage": "Bạn có chắc chắn muốn gửi báo cáo đến cư dân không?",
+      "button": "Gửi báo cáo",
+      "reasonLabel": "Lý do cập nhật",
+      "reasonPlaceholder": "Nhập lý do cập nhật trạng thái...",
+      "reasonRequired": "Vui lòng nhập lý do cập nhật",
+      "success": "Cập nhật trạng thái thành công",
+      "error": "Không thể cập nhật trạng thái. Vui lòng thử lại"
+    }
   },
   "staffProfile": {
     "title": "Hồ Sơ Nhân Viên",
@@ -748,7 +842,8 @@
       "Unverified": "Chưa xác minh",
       "Reviewing": "Đang xem xét",
       "Assigned": "Đã phân công",
-      "Canceled": "Đã hủy"
+      "Canceled": "Đã hủy",
+      "WaitingConfirm": "Chờ xác nhận"
     }
   },
   "inspectionList": {

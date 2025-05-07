@@ -81,6 +81,11 @@ export const AuthService = {
     try {
       const response = await instance.post<LoginResponse>(VITE_LOGIN_RESIDENT, payload);
       
+      // Kiểm tra trạng thái account
+      if (response.data.accountStatus === 'inactive') {
+        throw new Error('Account is inactive. Please verify your email first.');
+      }
+      
       // Lưu token vào AsyncStorage
       if (response.data.accessToken) {
         await AsyncStorage.setItem('accessToken', response.data.accessToken);

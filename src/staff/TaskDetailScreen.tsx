@@ -7,7 +7,10 @@ import {
   ScrollView, 
   Image, 
   TouchableOpacity, 
-  ActivityIndicator 
+  ActivityIndicator,
+  Alert,
+  Modal,
+  TextInput
 } from 'react-native';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -17,6 +20,10 @@ import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { showMessage } from "react-native-flash-message";
+import instance from '../service/Auth';
+import { VITE_CHANGE_STATUS_CRACK } from '@env';
 
 type TaskDetailScreenRouteProp = RouteProp<RootStackParamList, 'TaskDetail'>;
 type TaskDetailScreenNavigationProp = StackNavigationProp<RootStackParamList, 'TaskDetail'>;
@@ -34,6 +41,9 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [reason, setReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchTaskDetail();
@@ -73,28 +83,34 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Pending':
-        return '#FFA500'; // Orange
+      case 'Completed':
+        return '#4CD964';
       case 'InProgress':
-        return '#007AFF'; // Blue
+        return '#007AFF';
+      case 'InFixing':
+        return '#5AC8FA'; // Light Blue
+      case 'Assigned':
+        return '#FF9800';
+      case 'Pending':
+        return '#FFA500';
       case 'Confirmed':
-        return '#4CD964'; // Green
-        case 'Completed':
-          return '#4CD964'; // Green
+        return '#4CD964';
       case 'Canceled':
-        return '#FF3B30'; // Red
-        case 'Reassigned':
+        return '#FF3B30';
+      case 'Reassigned':
         return '#9C27B0';
-        case 'Reviewing':
-          return '#5856D6'; // Purple
-        case 'InFixing':
-        return '#5AC8FA'; // Light blue
+      case 'Reviewing':
+        return '#5856D6';
       case 'Verified':
-        return '#4CD964'; // Green (same as Completed)
+        return '#4CD964';
       case 'Unverified':
-        return '#FF9500'; // Orange
+        return '#FF9500';
+      case 'WaitingConfirm':
+        return '#E91E63';
+      case 'Rejected':
+        return '#DC3545'; // Bootstrap's danger color - một màu đỏ đậm hơn
       default:
-        return '#8E8E93'; // Gray
+        return '#8E8E93';
     }
   };
 
@@ -163,6 +179,20 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
     return position;
   };
 
+  const isWarrantyValid = (warrantyDate: string) => {
+    const warranty = new Date(warrantyDate);
+    const now = new Date();
+    return warranty > now;
+  };
+
+  const showWarrantyInfo = () => {
+    Alert.alert(
+      t('taskDetail.warrantyInfo.title'),
+      t('taskDetail.warrantyInfo.message'),
+      [{ text: t('taskDetail.common.ok'), style: 'default' }]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -189,6 +219,52 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
         </View>
       ) : taskDetail ? (
         <ScrollView style={styles.scrollView}>
+          {/* Building Information Section */}
+          {taskDetail.building && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{t('taskDetail.buildingInfo')}</Text>
+              <View style={styles.infoContainer}>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>{t('taskDetail.area')}:</Text>
+                  <Text style={styles.infoValue}>{taskDetail.building.area.name}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>{t('taskDetail.building')}:</Text>
+                  <Text style={styles.infoValue}>{taskDetail.building.name}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>{t('taskDetail.warranty')}:</Text>
+                  <View style={styles.warrantyWrapper}>
+                    <View style={styles.warrantyContainer}>
+                      <Icon 
+                        name={isWarrantyValid(taskDetail.building.Warranty_date) ? "verified-user" : "gpp-bad"} 
+                        size={20} 
+                        color={isWarrantyValid(taskDetail.building.Warranty_date) ? "#4CAF50" : "#FF3B30"} 
+                        style={styles.warrantyIcon}
+                      />
+                      <Text style={[
+                        styles.warrantyText,
+                        { color: isWarrantyValid(taskDetail.building.Warranty_date) ? "#4CAF50" : "#FF3B30" }
+                      ]}>
+                        {formatDate(taskDetail.building.Warranty_date)}
+                      </Text>
+                    </View>
+                    <TouchableOpacity 
+                      onPress={showWarrantyInfo}
+                      style={styles.infoIconContainer}
+                    >
+                      <Icon 
+                        name="info-outline" 
+                        size={16} 
+                        color="#666"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
+
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('taskDetail.taskInfo')}</Text>
             <View style={styles.infoContainer}>
@@ -615,6 +691,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  warrantyWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  warrantyContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  warrantyIcon: {
+    marginRight: 4,
+  },
+  warrantyText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  infoIconContainer: {
+    marginLeft: 8,
+    padding: 4,
+  }
 });
 
 export default TaskDetailScreen; 

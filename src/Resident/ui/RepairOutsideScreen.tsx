@@ -12,6 +12,7 @@ import {
   Alert,
   FlatList,
   BackHandler,
+  Dimensions,
 } from "react-native";
 import Modal from "react-native-modal";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -25,10 +26,19 @@ import * as ImagePicker from "expo-image-picker";
 import { Property, OUTDOOR_CRACK_POSITIONS } from "../../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from 'react-i18next';
+import { CrackService } from "../../service/crackService";
 
 // Update type definitions at the top of the file
 type OutdoorArea = keyof typeof OUTDOOR_CRACK_POSITIONS;
 type AreaType = OutdoorArea | 'OTHER';
+
+interface BuildingDetail {
+  buildingDetailId: string;
+  name: string;
+  building: {
+    numberFloor: number;
+  };
+}
 
 const RepairOutsideScreen = () => {
   const { t } = useTranslation();
@@ -45,14 +55,26 @@ const RepairOutsideScreen = () => {
   const [selectedArea, setSelectedArea] = useState<AreaType>('BUILDING_EXTERIOR');
   const [selectedPosition, setSelectedPosition] = useState('');
   const [buildingDetailId, setBuildingDetailId] = useState<string | undefined>(undefined);
-  const [customArea, setCustomArea] = useState('');
-  const [customPosition, setCustomPosition] = useState('');
-
+  const [selectedBuilding, setSelectedBuilding] = useState<BuildingDetail | null>(null);
+  
   // Dropdown states
   const [isAreaDropdownOpen, setIsAreaDropdownOpen] = useState(false);
+  const [isBuildingDropdownOpen, setIsBuildingDropdownOpen] = useState(false);
   const [isPositionDropdownOpen, setIsPositionDropdownOpen] = useState(false);
   const [areaDisplayText, setAreaDisplayText] = useState(t('repair.outside.selectArea'));
   const [positionDisplayText, setPositionDisplayText] = useState(t('repair.outside.selectPosition'));
+
+  // Add loading state
+  const [isLoadingBuildings, setIsLoadingBuildings] = useState(true);
+
+  // Add back buildingDetails state
+  const [buildingDetails, setBuildingDetails] = useState<BuildingDetail[]>([]);
+
+  // Add search state for building
+  const [buildingSearchQuery, setBuildingSearchQuery] = useState('');
+  const filteredBuildings = buildingDetails.filter(building => 
+    building.name.toLowerCase().includes(buildingSearchQuery.toLowerCase())
+  );
 
   // Update navigation params type
   type RootStackParamList = {
@@ -67,6 +89,23 @@ const RepairOutsideScreen = () => {
       isPrivatesAsset: boolean;
     };
   };
+
+  // Update useEffect to handle loading state
+  useEffect(() => {
+    const fetchBuildingDetails = async () => {
+      setIsLoadingBuildings(true);
+      try {
+        const details = await CrackService.getAllBuildingDetails();
+        setBuildingDetails(details || []); // Ensure we always set an array
+      } catch (error) {
+        console.error('Error fetching building details:', error);
+        setBuildingDetails([]); // Set empty array on error
+      } finally {
+        setIsLoadingBuildings(false);
+      }
+    };
+    fetchBuildingDetails();
+  }, []);
 
   // Fetch building detail ID when screen loads
   React.useEffect(() => {
@@ -85,6 +124,23 @@ const RepairOutsideScreen = () => {
     }
   }, [property]);
 
+  // Request permissions when component mounts
+  useEffect(() => {
+    (async () => {
+      if (Platform.OS !== 'web') {
+        const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+        const { status: libraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        
+        if (cameraStatus !== 'granted' || libraryStatus !== 'granted') {
+          Alert.alert(
+            t('common.permissionDenied'),
+            t('common.cameraPermissionMessage')
+          );
+        }
+      }
+    })();
+  }, []);
+
   const openImageSourceModal = () => {
     setImageSourceModalVisible(true);
   };
@@ -94,25 +150,54 @@ const RepairOutsideScreen = () => {
   };
 
   const pickImageFromLibrary = async () => {
-    closeImageSourceModal();
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 1,
-    });
+    try {
+      closeImageSourceModal();
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+      });
 
-    if (!result.canceled) {
-      setImages([...images, result.assets[0].uri]);
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const newImages = [...images];
+        result.assets.forEach(asset => {
+          if (newImages.length < 5) { // Limit to 5 images
+            newImages.push(asset.uri);
+          }
+        });
+        setImages(newImages);
+      }
+    } catch (error) {
+      console.error('Error picking image from library:', error);
+      Alert.alert(
+        t('common.error'),
+        t('repair.outside.imagePickerError')
+      );
     }
   };
 
   const takePhoto = async () => {
-    closeImageSourceModal();
-    const result = await ImagePicker.launchCameraAsync({
-      quality: 1,
-    });
+    try {
+      closeImageSourceModal();
+      const result = await ImagePicker.launchCameraAsync({
+        quality: 0.8,
+      });
 
-    if (!result.canceled) {
-      setImages([...images, result.assets[0].uri]);
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        if (images.length < 5) { // Limit to 5 images
+          setImages([...images, result.assets[0].uri]);
+        } else {
+          Alert.alert(
+            t('common.error'),
+            t('repair.outside.maxImagesReached')
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      Alert.alert(
+        t('common.error'),
+        t('repair.outside.cameraError')
+      );
     }
   };
 
@@ -135,13 +220,26 @@ const RepairOutsideScreen = () => {
     setIsAreaDropdownOpen(false);
     
     // Reset position when area changes
-    if (area === 'OTHER') {
-      setSelectedPosition('other');
-      setPositionDisplayText(t('repair.outside.other'));
-    } else {
-      setSelectedPosition('');
-      setPositionDisplayText(t('repair.outside.selectPosition'));
-    }
+    setSelectedPosition('');
+    setPositionDisplayText(t('repair.outside.selectPosition'));
+  };
+
+  const handleBuildingSelect = (building: BuildingDetail) => {
+    setSelectedBuilding(building);
+    setBuildingDetailId(building.buildingDetailId);
+    setIsBuildingDropdownOpen(false);
+  };
+
+  const formatAreaName = (area: string): string => {
+    // Convert area names to lowercase without underscores
+    return area.toLowerCase().replace(/_/g, '');
+  };
+
+  const getSimplePosition = (value: string): string => {
+    // Extract only the last part of the position path
+    // e.g., from "common/building/1/stairs" get "stairs"
+    const parts = value.split('/');
+    return parts[parts.length - 1];
   };
 
   const handlePositionSelect = (key: string, value: string) => {
@@ -149,40 +247,38 @@ const RepairOutsideScreen = () => {
       setSelectedPosition('other');
       setPositionDisplayText(t('repair.outside.other'));
     } else {
-      setSelectedPosition(value);
+      // Format: area/building/floor/direction
+      // Example: commonarea/s1007/1/stair
+      const simplePosition = getSimplePosition(value);
+      const formattedPosition = selectedBuilding
+        ? `${formatAreaName(selectedArea)}/${selectedBuilding.name}/1/${simplePosition}`
+        : value;
+      setSelectedPosition(formattedPosition);
       setPositionDisplayText(t(`repair.outside.${key.toLowerCase()}`));
     }
     setIsPositionDropdownOpen(false);
   };
 
-  const handleCustomAreaChange = (text: string) => {
-    setCustomArea(text);
-    setSelectedPosition(text);
-  };
-
-  const handleCustomPositionChange = (text: string) => {
-    setCustomPosition(text);
-    setSelectedPosition(text);
-  };
-
   const handleContinueToReview = () => {
     if (!isDescriptionValid) {
-      Alert.alert(t('repair.outside.alert'), t('repair.outside.descriptionAlert'));
+      Alert.alert(t('repair.outside.alert'), t('repair.outside.descriptionWarning'));
       return;
     }
 
-    if (!isPositionValid) {
-      Alert.alert(t('repair.outside.alert'), t('repair.outside.positionAlert'));
+    if (!selectedBuilding) {
+      Alert.alert(t('repair.outside.alert'), t('repair.outside.buildingAlert'));
       return;
     }
-    
+
+    // For OTHER area, create a simple position format
+    const finalPosition = selectedArea === 'OTHER'
+      ? `other/${selectedBuilding.name}/1/other`
+      : selectedPosition;
+
     Alert.alert(
       t('repair.outside.confirmPosition'),
       t('repair.outside.confirmPositionMessage', {
-        position: selectedPosition
-          .split('/')
-          .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-          .join(' > ')
+        position: finalPosition
       }),
       [
         {
@@ -198,7 +294,7 @@ const RepairOutsideScreen = () => {
               images,
               buildingDetailId,
               selectedRoom: selectedArea === 'OTHER' ? undefined : selectedArea as OutdoorArea,
-              selectedPosition: selectedArea === 'OTHER' ? 'other' : selectedPosition,
+              selectedPosition: finalPosition,
               isPrivatesAsset: false
             };
             navigation.navigate("RepairReview", navigationParams);
@@ -267,13 +363,97 @@ const RepairOutsideScreen = () => {
     );
   };
 
-  const renderPositionDropdown = () => {
-    if (!selectedArea) return null;
+  const renderBuildingDropdown = () => {
+    return (
+      <>
+        <Text style={styles.label}>{t('repair.outside.selectBuilding')}</Text>
+        <TouchableOpacity 
+          style={styles.dropdownButton}
+          onPress={() => {
+            setIsBuildingDropdownOpen(!isBuildingDropdownOpen);
+            setIsPositionDropdownOpen(false);
+          }}
+        >
+          <Icon name="business" size={20} color="#B77F2E" style={styles.dropdownIcon} />
+          <Text style={styles.dropdownButtonText}>
+            {selectedBuilding ? selectedBuilding.name : t('repair.outside.selectBuilding')}
+          </Text>
+          <Icon 
+            name={isBuildingDropdownOpen ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+            size={24} 
+            color="#B77F2E" 
+          />
+        </TouchableOpacity>
 
-    if (selectedArea === 'OTHER') {
-      return null; // Don't show position dropdown for OTHER
-    }
-    
+        {isBuildingDropdownOpen && (
+          <View style={styles.dropdownMenu}>
+            {/* Search input */}
+            <View style={styles.searchContainer}>
+              <Icon name="search" size={20} color="#666" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder={t('repair.outside.searchBuilding')}
+                value={buildingSearchQuery}
+                onChangeText={setBuildingSearchQuery}
+                autoCapitalize="none"
+              />
+              {buildingSearchQuery.length > 0 && (
+                <TouchableOpacity 
+                  onPress={() => setBuildingSearchQuery('')}
+                  style={styles.clearSearch}
+                >
+                  <Icon name="close" size={20} color="#666" />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <ScrollView nestedScrollEnabled={true} style={styles.scrollList}>
+              {isLoadingBuildings ? (
+                <View style={styles.dropdownItem}>
+                  <Text style={styles.dropdownItemText}>{t('common.loading')}</Text>
+                </View>
+              ) : filteredBuildings.length === 0 ? (
+                <View style={styles.dropdownItem}>
+                  <Text style={styles.dropdownItemText}>
+                    {buildingSearchQuery.length > 0 
+                      ? t('repair.outside.noBuildingsFound')
+                      : t('repair.outside.noBuildings')}
+                  </Text>
+                </View>
+              ) : (
+                filteredBuildings.map((building) => (
+                  <TouchableOpacity 
+                    key={building.buildingDetailId}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      handleBuildingSelect(building);
+                      setBuildingSearchQuery(''); // Clear search after selection
+                    }}
+                  >
+                    <Text 
+                      style={[
+                        styles.dropdownItemText,
+                        selectedBuilding?.buildingDetailId === building.buildingDetailId ? styles.selectedDropdownItem : {}
+                      ]}
+                    >
+                      {building.name}
+                    </Text>
+                    {selectedBuilding?.buildingDetailId === building.buildingDetailId && (
+                      <Icon name="check" size={18} color="#B77F2E" />
+                    )}
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        )}
+      </>
+    );
+  };
+
+  const renderPositionDropdown = () => {
+    if (!selectedArea || selectedArea === 'OTHER' || !selectedBuilding) return null;
+
     const positions = OUTDOOR_CRACK_POSITIONS[selectedArea] ? 
       Object.entries(OUTDOOR_CRACK_POSITIONS[selectedArea]).map(([key, value]) => ({
         key,
@@ -346,6 +526,74 @@ const RepairOutsideScreen = () => {
     );
   };
 
+  const renderImagePicker = () => {
+    return (
+      <View style={styles.imagePickerContainer}>
+        <Text style={styles.label}>
+          {t('repair.outside.addPhotos')} 
+          <Text style={styles.imageLimit}>
+            ({images.length}/5)
+          </Text>
+        </Text>
+        
+        {images.length < 5 && (
+          <TouchableOpacity
+            style={styles.imagePicker}
+            onPress={openImageSourceModal}
+          >
+            <Icon name="add-a-photo" size={30} color="#B77F2E" />
+            <Text>{t('repair.outside.choosePhoto')}</Text>
+          </TouchableOpacity>
+        )}
+
+        <View style={styles.imageContainer}>
+          {images.map((image, index) => (
+            <View key={index} style={styles.imageWrapper}>
+              <Image 
+                source={{ uri: image }} 
+                style={styles.image}
+                resizeMode="cover"
+              />
+              <TouchableOpacity
+                style={styles.removeImageButton}
+                onPress={() => removeImage(index)}
+              >
+                <Icon name="close" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+
+        <Modal
+          isVisible={isImageSourceModalVisible}
+          onBackdropPress={closeImageSourceModal}
+          onBackButtonPress={closeImageSourceModal}
+          style={styles.modal}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{t('repair.outside.selectImageSource')}</Text>
+            
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={takePhoto}
+            >
+              <Icon name="camera-alt" size={24} color="#B77F2E" />
+              <Text style={styles.modalOptionText}>{t('repair.outside.takePhoto')}</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={pickImageFromLibrary}
+            >
+              <Icon name="photo-library" size={24} color="#B77F2E" />
+              <Text style={styles.modalOptionText}>{t('repair.outside.chooseFromGallery')}</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+      </View>
+    );
+  };
+
   const renderStep = () => {
     switch (currentStep) {
       case 1:
@@ -364,11 +612,14 @@ const RepairOutsideScreen = () => {
               <Text style={styles.warningText}>{t('repair.outside.descriptionWarning')}</Text>
             )}
 
-            {/* Custom Area Dropdown */}
+            {/* Area Dropdown */}
             {renderAreaDropdown()}
 
-            {/* Custom Position Dropdown */}
-            {renderPositionDropdown()}
+            {/* Building Dropdown */}
+            {renderBuildingDropdown()}
+
+            {/* Position Dropdown - only show if area is not OTHER */}
+            {selectedArea !== 'OTHER' && renderPositionDropdown()}
 
             {/* Continue Button */}
             <TouchableOpacity
@@ -376,12 +627,16 @@ const RepairOutsideScreen = () => {
                 styles.continueButton,
                 { 
                   backgroundColor: 
-                    isDescriptionValid && isPositionValid 
+                    isDescriptionValid && 
+                    selectedBuilding && 
+                    (selectedArea === 'OTHER' || isPositionValid)
                       ? "#B77F2E" 
                       : "#ccc" 
                 },
               ]}
-              disabled={!(isDescriptionValid && isPositionValid)}
+              disabled={!(isDescriptionValid && 
+                        selectedBuilding && 
+                        (selectedArea === 'OTHER' || isPositionValid))}
               onPress={() => setCurrentStep(2)}
             >
               <Text style={styles.continueButtonText}>{t('repair.outside.continue')}</Text>
@@ -392,37 +647,8 @@ const RepairOutsideScreen = () => {
       case 2:
         return (
           <View style={styles.stepContainer}>
-            {/* Add photos */}
-            <Text style={styles.label}>{t('repair.outside.addPhotos')}</Text>
-            <TouchableOpacity
-              style={styles.imagePicker}
-              onPress={openImageSourceModal}
-            >
-              <Icon name="add-a-photo" size={30} color="#B77F2E" />
-              <Text>{t('repair.outside.choosePhoto')}</Text>
-            </TouchableOpacity>
-
-            {/* Display chosen images */}
-            <View style={styles.imageContainer}>
-              {images.map((image, index) => (
-                <View key={index} style={styles.imageWrapper}>
-                  <Image source={{ uri: image }} style={styles.image} />
-                  <TouchableOpacity
-                    style={styles.removeImageButton}
-                    onPress={() => removeImage(index)}
-                  >
-                    <Icon name="close" size={20} color="#fff" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-            {images.length === 0 && (
-              <Text style={styles.warningText}>
-                {t('repair.outside.photoWarning')}
-              </Text>
-            )}
-
-            {/* Navigation buttons */}
+            {renderImagePicker()}
+            
             <TouchableOpacity
               style={[
                 styles.continueButton,
@@ -478,53 +704,6 @@ const RepairOutsideScreen = () => {
         <Text style={styles.noticeText}>
           {t('repair.outside.publicAreaNotice')}
         </Text>
-      </View>
-
-      {/* Progress indicator */}
-      <View style={styles.progressContainer}>
-        <View style={styles.stepIndicator}>
-          <View
-            style={[
-              styles.stepCircle,
-              {
-                backgroundColor: currentStep >= 1 ? "#B77F2E" : "#E0E0E0",
-              },
-            ]}
-          >
-            <Text style={styles.stepText}>1</Text>
-          </View>
-          <Text
-            style={[
-              styles.stepLabel,
-              { color: currentStep >= 1 ? "#B77F2E" : "#999" },
-            ]}
-          >
-            {t('repair.outside.details')}
-          </Text>
-        </View>
-
-        <View style={styles.stepLine} />
-
-        <View style={styles.stepIndicator}>
-          <View
-            style={[
-              styles.stepCircle,
-              {
-                backgroundColor: currentStep >= 2 ? "#B77F2E" : "#E0E0E0",
-              },
-            ]}
-          >
-            <Text style={styles.stepText}>2</Text>
-          </View>
-          <Text
-            style={[
-              styles.stepLabel,
-              { color: currentStep >= 2 ? "#B77F2E" : "#999" },
-            ]}
-          >
-            {t('repair.outside.addPhotos')}
-          </Text>
-        </View>
       </View>
 
       {/* Dynamic Step Rendering */}
@@ -661,37 +840,53 @@ const styles = StyleSheet.create({
     fontSize: 12, 
     marginBottom: 10 
   },
+  imagePickerContainer: {
+    marginBottom: 20,
+  },
+  imageLimit: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: 'normal',
+  },
   imagePicker: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 10,
+    padding: 15,
     borderWidth: 1,
+    borderStyle: 'dashed',
     borderColor: "#B77F2E",
     borderRadius: 8,
     justifyContent: "center",
+    marginVertical: 10,
+    backgroundColor: '#FDF7F0',
   },
   imageContainer: {
     flexDirection: "row",
-    marginTop: 10,
     flexWrap: "wrap",
+    gap: 10,
+    marginTop: 10,
   },
   imageWrapper: {
     position: "relative",
-    marginRight: 10,
-    marginBottom: 10,
+    width: (Dimensions.get('window').width - 52) / 3, // 3 images per row with gap
+    height: (Dimensions.get('window').width - 52) / 3,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
   image: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
+    width: '100%',
+    height: '100%',
   },
   removeImageButton: {
     position: "absolute",
-    top: -5,
-    right: -5,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    borderRadius: 10,
-    padding: 2,
+    top: 5,
+    right: 5,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   continueButton: {
     marginTop: 20,
@@ -713,12 +908,14 @@ const styles = StyleSheet.create({
     padding: 22,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    minHeight: 200,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "bold",
     textAlign: "center",
-    marginBottom: 15,
+    marginBottom: 20,
+    color: '#333',
   },
   modalOption: {
     flexDirection: "row",
@@ -728,8 +925,9 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f0f0f0",
   },
   modalOptionText: {
-    marginLeft: 10,
+    marginLeft: 15,
     fontSize: 16,
+    color: '#333',
   },
   // Custom dropdown styles
   dropdownButton: {
@@ -821,6 +1019,27 @@ const styles = StyleSheet.create({
   },
   stepContainer: {
     padding: 16,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    backgroundColor: '#fff',
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    fontSize: 16,
+    color: '#333',
+  },
+  clearSearch: {
+    padding: 5,
   },
 });
 

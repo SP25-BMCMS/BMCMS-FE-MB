@@ -34,7 +34,7 @@
       "enterPhonePassword": "Please enter phone number and password.",
       "enterUsernamePassword": "Please enter username and password.",
       "accountNotActivated": "Account Not Activated",
-      "checkEmail": "Your account is not activated. Please check your email for activation link.",
+      "checkEmail": "Your account is not activated. Please call Manager to activate your account.",
       "loginFailed": "Login Failed",
       "invalidCredentials": "Invalid phone number or password.",
       "invalidStaffCredentials": "Invalid username or password.",
@@ -76,15 +76,25 @@
       "InProgress": "In Progress",
       "Reviewing": "Reviewing",
       "Completed": "Completed",
-      "Pending": "Pending"
+      "Pending": "Pending",
+      "WaitingConfirm": "Waiting Confirm",
+      "Rejected": "Rejected",
+      "InFixing": "In Fixing"
     }
   },
   "workProgress": {
+    "viewInspections": "View Details Inspection",
     "title": "Work Progress",
     "loading": "Loading work progress...",
     "error": {
       "title": "Error Loading Data",
       "retry": "Retry"
+    },
+    "confirm": {
+      "title": "Confirm Report",
+      "message": "Are you sure you want to confirm this report?", 
+      "accept": "Accept",
+      "reject": "Reject"
     },
     "empty": {
       "title": "No Work Progress Found",
@@ -139,7 +149,10 @@
       "Completed": "Completed",
       "InProgress": "In Progress",
       "Assigned": "Assigned",
-      "Pending": "Pending"
+      "Pending": "Pending",
+      "WaitingConfirm": "Waiting Confirm",
+      "Rejected": "Rejected",
+      "InFixing": "In Fixing"
     }
   },
   "repair": {
@@ -182,7 +195,17 @@
       "ceiling": "Ceiling",
       "garden": "Garden",
       "playground": "Playground",
-      "walkway": "Walkway"
+      "walkway": "Walkway",
+      "selectBuilding": "Select Building",
+      "selectFloor": "Select Floor",
+      "selectImageSource": "Select Image Source",
+      "chooseFromGallery": "Choose from Gallery",
+      "imagePickerError": "Cannot select image. Please try again.",
+      "maxImagesReached": "You can only select up to 5 images",
+      "cameraError": "Cannot access camera. Please try again.",
+      "floor": "Floor",
+      "searchBuilding": "Search Building",
+      "noBuildingFound": "No building found"
     },
     "inside": {
       "title": "Report Indoor Crack",
@@ -207,7 +230,7 @@
       "cameraError": "Cannot access camera. Please try again.",
       "photoLibraryError": "Cannot access photo library. Please try again.",
       "kitchen": "Kitchen",
-      "livingRoom": "Living Room",
+      "living_room": "Living Room",
       "bedroom": "Bedroom",
       "bathroom": "Bathroom",
       "wall": "Wall",
@@ -598,7 +621,56 @@
     "type": "Type",
     "images": "Images",
     "notes": "Notes",
-    "confirmSubmit": "Confirm & Submit"
+    "confirmSubmit": "Confirm & Submit",
+    "details": "Inspection Details",
+    "loading": "Loading inspection details...",
+    "error": "Error",
+    "errorTitle": "Failed to Load Data",
+    "errorMessage": "An error occurred while loading data. Please try again.",
+    "noData": "No Data Available",
+    "retry": "Retry",
+    "taskInfo": "Task Information",
+    "crackInfo": "Crack Information",
+    "building": "Building",
+    "position": "Position",
+    "severity": "Severity",
+    "cost": "Cost",
+    "date": "Created Date",
+    "description": "Description",
+    "status": "Status",
+    "images": "Images",
+    "original": "Original Image",
+    "aiDetection": "AI Analysis",
+    "report": "Report",
+    "viewReport": "View Report",
+    "reportedBy": "Reported By",
+    "verifiedBy": "Verified By",
+    "severityLevel": {
+      "High": "High",
+      "Medium": "Medium",
+      "Low": "Low"
+    },
+    "statusTypes": {
+      "Completed": "Completed",
+      "InProgress": "In Progress",
+      "Pending": "Pending",
+      "WaitingConfirm": "Waiting Confirmation",
+      "Rejected": "Rejected",
+      "InFixing": "In Fixing",
+      "Verified": "Verified",
+      "Confirmed": "Confirmed",
+      "Unverified": "Unverified",
+      "Reviewing": "Reviewing"
+    },
+    "confirmation": {
+      "priceQuestion": "Do you agree with this price?",
+      "title": "Confirm Price",
+      "message": "Please confirm if you agree with the repair cost",
+      "accept": "Accept",
+      "reject": "Reject",
+      "success": "Status updated successfully",
+      "error": "Failed to update status. Please try again"
+    }
   },
   "location": {
     "title": "Create Location",
@@ -642,7 +714,30 @@
     "viewDetails": "View Details",
     "viewInspections": "View Inspections",
     "noDetailsFound": "No details found.",
-    "loadingProfile": "Loading profile..."
+    "loadingProfile": "Loading profile...",
+    "buildingInfo": "Building Information",
+    "area": "Area",
+    "building": "Building",
+    "warranty": "Warranty",
+    "warrantyInfo": {
+      "title": "Warranty Information",
+      "message": "The warranty period is the time period during which the contractor is responsible for repairing any issues that occur in the construction. After this period, the cost of repairs will be covered by the investor."
+    },
+    "common": {
+      "ok": "OK",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+    "sendReport": {
+      "confirmTitle": "Send Report to Resident",
+      "confirmMessage": "Are you sure you want to send this report to the resident?",
+      "button": "Send Report",
+      "reasonLabel": "Reason for update",
+      "reasonPlaceholder": "Enter reason for update status...",
+      "reasonRequired": "Please enter reason for update",
+      "success": "Update status successfully",
+      "error": "Failed to update status. Please try again"
+    }
   },
   "staffProfile": {
     "title": "Staff Profile",
@@ -733,7 +828,8 @@
       "Unverified": "Unverified",
       "Reviewing": "Reviewing",
       "Assigned": "Assigned",
-      "Canceled": "Canceled"
+      "Canceled": "Canceled",
+      "WaitingConfirm": "Waiting Confirm"
     }
   },
   "inspectionList": {

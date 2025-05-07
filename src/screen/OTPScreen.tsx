@@ -29,7 +29,8 @@ const OTPScreen = () => {
   const route = useRoute();
   const params = route.params as {
     userType: "resident" | "staff";
-    identifier: string; // Giờ đây identifier sẽ là email
+    identifier: string;
+    onVerificationSuccess?: () => void;
   };
 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]); 
@@ -92,19 +93,25 @@ const OTPScreen = () => {
   
       if (response?.isSuccess) {
         // Xóa dữ liệu tạm thời
-        await AsyncStorage.removeItem('tempUserData');
+        await AsyncStorage.clear();
         
-        // Lưu thông tin người dùng đã đăng ký thành công
-        await AsyncStorage.setItem(
-          "userData",
-          JSON.stringify({
-            email: params.identifier,
-            userType: params.userType,
-          })
-        );
-        
-        Alert.alert(t('screens.otp.success'), response.message);
-        navigation.navigate("MainApp");
+        Alert.alert(t('screens.otp.success'), response.message, [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Gọi callback nếu có
+              if (params.onVerificationSuccess) {
+                params.onVerificationSuccess();
+              } else {
+                // Fallback: chuyển về trang SignIn
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'SignIn' }],
+                });
+              }
+            }
+          }
+        ]);
       } else {
         setError(true);
         triggerErrorAnimation();

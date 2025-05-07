@@ -13,6 +13,7 @@ import RepairReviewScreen from './src/Resident/ui/RepairReviewScreen';
 import RepairSuccessScreen from './src/Resident/ui/RepairSuccessScreen';
 import MyReportScreen from './src/Resident/MyReportScreen';
 import WorkProgressScreen from './src/Resident/WorkProgressScreen';
+import ResidentInspectionScreen from './src/Resident/ResidentInspectionScreen';
 import SignUpScreen from './src/screen/SignUpScreen';
 import FlashMessage from "react-native-flash-message";
 import StaffProfileScreen from './src/staff/StaffProfileScreen';
@@ -58,6 +59,7 @@ const App = () => {
           <Stack.Screen name="RepairSuccess" component={RepairSuccessScreen} />
           <Stack.Screen name='MyReport' component={MyReportScreen}/>
           <Stack.Screen name='WorkProgress' component={WorkProgressScreen}/>
+          <Stack.Screen name='ResidentInspection' component={ResidentInspectionScreen}/>
           <Stack.Screen name='StaffProfile' component={StaffProfileScreen}/>
           <Stack.Screen name='TaskDetail' component={TaskDetailScreen}/>
           <Stack.Screen name='StaffTaskDetail' component={StaffTaskDetailScreen}/>
@@ -75,6 +77,7 @@ const App = () => {
           <Stack.Screen name='ChatHistory' component={ChatHistoryScreen} />
           <Stack.Screen name='LocationDetail' component={LocationDetailScreen} />
           <Stack.Screen name='MaintenanceHistory' component={MaintenanceHistoryScreen} />
+          {/* @ts-ignore */}
           <Stack.Screen name='StaffMaintenanceHistory' component={StaffMaintenanceHistoryScreen} />
           <Stack.Screen name='TechnicalRecord' component={TechnicalRecordScreen} />
         </Stack.Navigator>

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { VITE_API_SECRET, VITE_GET_WORKLOG_BY_RESIDENT_ID } from '@env';
+import { VITE_API_SECRET, VITE_GET_WORKLOG_BY_RESIDENT_ID, VITE_PUT_CONFIRM_BY_TASK_ASSGINMENT_ID, VITE_PUT_REJECT_BY_TASK_ASSGINMENT_ID } from '@env';
 
 export interface WorkLogResponse {
   isSuccess: boolean;
@@ -93,19 +93,45 @@ export const WorkLogService = {
   getWorklogsByResidentId: async (residentId: string): Promise<WorkLogResponse> => {
     try {
       const endpoint = VITE_GET_WORKLOG_BY_RESIDENT_ID.replace('{resident_Id}', residentId);
-      console.log("DEBUG - WorkLog API Request:", {
-        url: `${VITE_API_SECRET}${endpoint}`,
-        residentId
-      });
-      
       const response = await instance.get(endpoint);
-      console.log("DEBUG - WorkLog API Response Status:", response.status);
       return response.data;
     } catch (error: any) {
-      console.error('DEBUG - WorkLog API Error:', {
+      console.error('Error fetching worklogs:', {
         status: error.response?.status,
         data: error.response?.data,
         message: error.message
+      });
+      throw error;
+    }
+  },
+
+  confirmTask: async (assignmentId: string): Promise<any> => {
+    try {
+      const endpoint = VITE_PUT_CONFIRM_BY_TASK_ASSGINMENT_ID.replace('{taskAssignmentId}', assignmentId);
+      const response = await instance.put(endpoint);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error confirming task:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        config: error.config
+      });
+      throw error;
+    }
+  },
+
+  rejectTask: async (assignmentId: string): Promise<any> => {
+    try {
+      const endpoint = VITE_PUT_REJECT_BY_TASK_ASSGINMENT_ID.replace('{taskAssignmentId}', assignmentId);
+      const response = await instance.put(endpoint);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error rejecting task:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        config: error.config
       });
       throw error;
     }

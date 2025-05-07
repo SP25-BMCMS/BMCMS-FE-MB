@@ -197,7 +197,7 @@ const ChatBotScreen = () => {
       // Add bot response to chat
       const botMessage: ChatMessage = {
         id: `bot-${Date.now()}`,
-        text: response.message || 'Sorry, I cannot process your request at this time.',
+        text: `${response.message}${response.url_img ? `\n${response.url_img}` : ''}`,
         isBot: true,
         timestamp: Date.now(),
       };

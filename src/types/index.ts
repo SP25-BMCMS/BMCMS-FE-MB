@@ -21,6 +21,7 @@ export type RootStackParamList = {
   OTPScreen: {
     userType: "resident" | "staff";
     identifier: string;
+    onVerificationSuccess?: () => void;
   };
   More: undefined;
   PropertyDetail: undefined;
@@ -39,6 +40,9 @@ export type RootStackParamList = {
   MyReport: undefined;
   WorkProgress: {
     crackReportId: string;
+  };
+  ResidentInspection: {
+    task_assignment_id: string;
   };
   StaffProfile: undefined;
   TaskDetail: {
@@ -115,6 +119,7 @@ export interface LoginResponse {
   username: string;
   statusCode: number;
   message: string;
+  accountStatus: string;
 }
 export interface LoginPayload {
   phone: string;
@@ -493,6 +498,15 @@ export interface TaskAssignmentDetail {
   employee?: {
     employee_id: string;
     username: string;
+  };
+  building?: {
+    buildingId: string;
+    name: string;
+    description: string;
+    Warranty_date: string;
+    area: {
+      name: string;
+    };
   };
 }
 
