@@ -36,6 +36,7 @@ type RootStackParamList = {
     buildingDetailId?: string;
     selectedRoom?: keyof typeof CRACK_POSITIONS | 'OTHER';
     selectedPosition?: string;
+    isPrivatesAsset: boolean;
   };
 };
 
@@ -272,7 +273,8 @@ const RepairInsideScreen = () => {
       images,
       buildingDetailId,
       selectedRoom,
-      selectedPosition: finalPosition
+      selectedPosition: finalPosition,
+      isPrivatesAsset: true  // Set to true for inside repairs
     });
   };
 

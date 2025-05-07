@@ -1130,7 +1130,7 @@
     "status": "Trạng Thái",
     "description": "Mô Tả",
     "descriptionPlaceholder": "Nhập mô tả công việc",
-    "createButton": "Tạo Phân Công",
+    "createButton": "Tạo Công Việc",
     "creating": "Đang tạo...",
     "missingFields": "Thiếu Thông Tin",
     "fillFields": "Vui lòng điền đầy đủ thông tin",

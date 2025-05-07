@@ -1116,7 +1116,7 @@
     "status": "Status",
     "description": "Description",
     "descriptionPlaceholder": "Enter task description",
-    "createButton": "Create Assignment",
+    "createButton": "Create Task",
     "creating": "Creating...",
     "missingFields": "Missing Fields",
     "fillFields": "Please fill in all required fields",

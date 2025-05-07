@@ -288,16 +288,15 @@ const RepairOutsideScreen = () => {
         { 
           text: t('repair.outside.continue'), 
           onPress: () => {
-            const navigationParams = {
+            navigation.navigate("RepairReview", {
               property,
               description,
               images,
               buildingDetailId,
               selectedRoom: selectedArea === 'OTHER' ? undefined : selectedArea as OutdoorArea,
               selectedPosition: finalPosition,
-              isPrivatesAsset: false
-            };
-            navigation.navigate("RepairReview", navigationParams);
+              isPrivatesAsset: false // Always false for outside repairs
+            });
           } 
         }
       ]

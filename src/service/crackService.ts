@@ -65,7 +65,7 @@ export const CrackService = {
       const requestBody = {
         buildingDetailId: payload.buildingDetailId,
         description: payload.description.trim(),
-        isPrivatesAsset: payload.isPrivatesAsset !== undefined ? payload.isPrivatesAsset : true,
+        isPrivatesAsset: payload.isPrivatesAsset,
         position: payload.position || '',
       };
 
@@ -73,7 +73,7 @@ export const CrackService = {
       console.log('🔍 Request Body Details:', {
         buildingDetailId: payload.buildingDetailId,
         description: payload.description.trim(),
-        isPrivatesAsset: payload.isPrivatesAsset !== undefined ? payload.isPrivatesAsset : true,
+        isPrivatesAsset: payload.isPrivatesAsset,
         position: payload.position || '',
         positionType: typeof payload.position,
         positionIsEmpty: !payload.position,
@@ -91,10 +91,9 @@ export const CrackService = {
       console.log('Position before appending to FormData:', requestBody.position);
       formData.append('position', requestBody.position);
       
-      // Explicitly handle isPrivatesAsset as a string
-      const isPrivateAssetStr = requestBody.isPrivatesAsset === false ? 'false' : 'true';
-      formData.append('isPrivatesAsset', isPrivateAssetStr);
-      console.log('isPrivatesAsset added to formData as:', isPrivateAssetStr);
+      // Use the isPrivatesAsset value from payload
+      formData.append('isPrivatesAsset', String(payload.isPrivatesAsset));
+      console.log('isPrivatesAsset added to formData as:', payload.isPrivatesAsset);
 
       // Add files with error handling
       payload.files.forEach((fileUri, index) => {
