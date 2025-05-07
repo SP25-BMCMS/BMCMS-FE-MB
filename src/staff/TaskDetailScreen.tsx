@@ -411,7 +411,10 @@ const TaskDetailScreen: React.FC<Props> = ({ route }) => {
               </TouchableOpacity>
             )}
 
-            {taskDetail.status === 'Confirmed' && (
+            {(taskDetail.status === 'Confirmed' || 
+              (taskDetail.crackInfo && 
+               taskDetail.crackInfo.data && 
+               taskDetail.crackInfo.data.some(crack => crack.status === 'WaitingConfirm'))) && (
               <TouchableOpacity 
                 style={[styles.actionButton, styles.residentInspectionButton]}
                 onPress={() => {
