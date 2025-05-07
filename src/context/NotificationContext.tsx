@@ -4,36 +4,13 @@ import { VITE_API_SECRET, VITE_REAL_TIME_NOTIFICATION } from '@env';
 import { Notification, NotificationService } from '../service/Notification';
 import { showMessage } from "react-native-flash-message";
 import EventSource from 'react-native-event-source';
-import { LogBox, YellowBox } from 'react-native';
+import { LogBox } from 'react-native';
 
-// Ignore all logs
-LogBox.ignoreAllLogs();
-// For older RN versions
-if (YellowBox) {
-  YellowBox.ignoreWarnings(['EventSource', 'Network request failed']);
-}
-
-// Suppress console errors globally for EventSource
-const originalConsoleError = console.error;
-console.error = (...args) => {
-  const errorMessage = args.join(' ');
-  if (!errorMessage.includes('EventSource') && 
-      !errorMessage.includes('timeout') && 
-      !errorMessage.includes('Network request failed')) {
-    originalConsoleError.apply(console, args);
-  }
-};
-
-// Suppress console warnings
-const originalConsoleWarn = console.warn;
-console.warn = (...args) => {
-  const warningMessage = args.join(' ');
-  if (!warningMessage.includes('EventSource') && 
-      !warningMessage.includes('timeout') && 
-      !warningMessage.includes('Network request failed')) {
-    originalConsoleWarn.apply(console, args);
-  }
-};
+// Ignore specific warnings instead of all logs
+LogBox.ignoreLogs([
+  'EventSource',
+  'Network request failed',
+]);
 
 interface NotificationContextType {
   notifications: Notification[];
@@ -59,69 +36,52 @@ export const useNotification = () => {
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [eventSource, setEventSource] = useState<EventSource | null>(null);
   const [loading, setLoading] = useState(false);
   const [userType, setUserType] = useState<string | null>(null);
-  const retryTimeoutRef = useRef<NodeJS.Timeout>();
-  const isConnecting = useRef(false);
-  const reconnectAttempts = useRef(0);
-  const maxReconnectAttempts = 5;
-  const baseReconnectDelay = 5000; // 5 seconds
-
-  // Calculate exponential backoff delay
-  const getReconnectDelay = () => {
-    const attempt = reconnectAttempts.current;
-    if (attempt >= maxReconnectAttempts) {
-      return baseReconnectDelay * Math.pow(2, maxReconnectAttempts);
-    }
-    return baseReconnectDelay * Math.pow(2, attempt);
-  };
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const isConnectingRef = useRef(false);
+  const lastConnectionAttemptRef = useRef(0);
+  const MIN_RECONNECT_DELAY = 5000; // 5 seconds
+  const MAX_RECONNECT_ATTEMPTS = 3;
+  const reconnectAttemptsRef = useRef(0);
 
   // Function to check if a notification should be shown to the current user
   const shouldShowNotification = (notification: Notification) => {
-    // If userType is staff, only show staff notifications
     if (userType === 'staff') {
       return notification.type.toLowerCase().includes('staff') || 
              notification.type === 'SYSTEM' ||
              notification.type === 'TASK_ASSIGNMENT';
     }
-    // If userType is resident, only show resident notifications
-    else if (userType === 'resident') {
+    if (userType === 'resident') {
       return notification.type.toLowerCase().includes('resident') || 
              notification.type === 'SYSTEM';
     }
     return false;
   };
 
-  // Fetch notifications from API
+  // Optimized fetch notifications function
   const fetchNotifications = async (userId: string) => {
     try {
       setLoading(true);
       const response = await NotificationService.getNotificationsByUserId(userId);
       
-      let notificationData: Notification[] = [];
-      
-      if (response.success && Array.isArray(response.data)) {
-        notificationData = response.data;
-      } else if (Array.isArray(response)) {
-        notificationData = response;
-      } else if (response.data && Array.isArray(response.data)) {
-        notificationData = response.data;
+      if (!response || (!response.success && !Array.isArray(response))) {
+        setNotifications([]);
+        return;
       }
 
-      // Filter notifications based on userType
-      const filteredNotifications = notificationData.filter(shouldShowNotification);
+      const notificationData = Array.isArray(response) ? response : 
+                             (response.data && Array.isArray(response.data)) ? response.data : [];
 
-      // Merge with existing real-time notifications
-      setNotifications(prev => {
-        const existingIds = new Set(prev.map(n => n.id));
-        const newNotifications = filteredNotifications.filter(n => !existingIds.has(n.id));
-        return [...prev, ...newNotifications].sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-      });
+      const filteredNotifications = notificationData
+        .filter(shouldShowNotification)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      setNotifications(filteredNotifications);
     } catch (error) {
       console.error('Error fetching notifications:', error);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
@@ -136,49 +96,39 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
-  const silentReconnect = () => {
-    cleanupEventSource();
-    if (reconnectAttempts.current < maxReconnectAttempts) {
-      const delay = baseReconnectDelay * Math.pow(2, reconnectAttempts.current);
-      retryTimeoutRef.current = setTimeout(() => {
-        reconnectAttempts.current += 1;
-        setupEventSource();
-      }, delay);
-    } else {
-      retryTimeoutRef.current = setTimeout(() => {
-        reconnectAttempts.current = 0;
-        setupEventSource();
-      }, 60000);
-    }
-  };
-
   const cleanupEventSource = () => {
-    try {
-      if (eventSource) {
-        eventSource.close();
-        setEventSource(null);
-      }
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
-      }
-    } catch {
-      // Ignore any cleanup errors
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
     }
   };
 
   const setupEventSource = async () => {
-    if (isConnecting.current) return;
+    if (isConnectingRef.current || reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastConnectionAttemptRef.current < MIN_RECONNECT_DELAY) {
+      return;
+    }
 
     try {
-      isConnecting.current = true;
+      isConnectingRef.current = true;
+      lastConnectionAttemptRef.current = now;
+
       const userId = await AsyncStorage.getItem('userId');
       const token = await AsyncStorage.getItem('accessToken');
       const type = await AsyncStorage.getItem('userType');
       
-      if (!userId || !token) return;
+      if (!userId || !token) {
+        return;
+      }
       
       setUserType(type);
-      await fetchNotifications(userId);
       cleanupEventSource();
 
       const endpoint = VITE_REAL_TIME_NOTIFICATION.replace('{userId}', userId);
@@ -189,13 +139,16 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           'Authorization': `Bearer ${token}`,
           'Accept': 'text/event-stream',
           'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
         }
       });
 
-      // Suppress all errors by adding empty error handler
       newEventSource.addEventListener('error', () => {
-        silentReconnect();
+        if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+          reconnectAttemptsRef.current++;
+          reconnectTimeoutRef.current = setTimeout(() => {
+            setupEventSource();
+          }, MIN_RECONNECT_DELAY * Math.pow(2, reconnectAttemptsRef.current));
+        }
       });
 
       newEventSource.addEventListener('message', (event: { data: string }) => {
@@ -207,43 +160,32 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
               message: notification.title,
               description: notification.content,
               type: "info",
-              icon: "info",
               duration: 3000,
-              backgroundColor: "#2196F3",
-              color: "#FFFFFF",
-              style: {
-                borderRadius: 8,
-                marginTop: 40,
-              },
+              style: { marginTop: 40 },
             });
           }
-        } catch {
-          // Ignore parse errors
+        } catch (error) {
+          // Ignore parse errors silently
         }
       });
 
       newEventSource.addEventListener('open', () => {
-        reconnectAttempts.current = 0;
+        reconnectAttemptsRef.current = 0;
       });
 
-      setEventSource(newEventSource);
-    } catch {
-      silentReconnect();
+      eventSourceRef.current = newEventSource;
+    } catch (error) {
+      console.error('EventSource setup error:', error);
     } finally {
-      isConnecting.current = false;
+      isConnectingRef.current = false;
     }
   };
 
   useEffect(() => {
     setupEventSource();
-    return () => {
-      cleanupEventSource();
-      isConnecting.current = false;
-      reconnectAttempts.current = 0;
-    };
+    return cleanupEventSource;
   }, []);
 
-  // Update unread count whenever notifications change
   useEffect(() => {
     const unreadNotifications = notifications.filter(n => !n.isRead).length;
     setUnreadCount(unreadNotifications);
@@ -251,15 +193,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const addNotification = (notification: Notification) => {
     setNotifications(prev => {
-      // Check if notification already exists
-      const exists = prev.some(n => n.id === notification.id);
-      if (exists) {
+      if (prev.some(n => n.id === notification.id)) {
         return prev;
       }
-      // Add new notification at the beginning of the array
-      return [notification, ...prev].sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+      return [notification, ...prev];
     });
   };
 
