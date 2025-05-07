@@ -261,12 +261,6 @@ const StaffInspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
       style={styles.inspectionCard}
       onPress={() => handleInspectionPress(item)}
     >
-      <View style={styles.inspectionHeader}>
-        <Text style={styles.totalCost}>
-          {parseInt(item.total_cost) > 0 ? `${item.total_cost} VND` : 'No cost'}
-        </Text>
-      </View>
-      
       <Text style={styles.inspectionDescription} numberOfLines={2}>
         {item.description}
       </Text>
@@ -575,22 +569,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
-  },
-  inspectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  inspectionId: {
-    fontSize: 14,
-    fontWeight: '600',
-    flex: 1,
-  },
-  totalCost: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4CD964',
   },
   inspectionDescription: {
     fontSize: 15,
