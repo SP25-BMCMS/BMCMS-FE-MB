@@ -161,75 +161,75 @@ const MyReportScreen = () => {
 
   return (
     <>
-      <ScrollView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>{t('myReport.title')} ({reports.length})</Text>
-          <View style={styles.headerActions}>
-            <TouchableOpacity 
-              style={styles.filterButton}
-              onPress={() => setShowFilterDropdown(true)}
-            >
-              <Icon name="filter-list" size={20} color="#B77F2E" />
-              <Text style={styles.filterText}>
-                {statusFilter ? getTranslatedStatus(statusFilter) : t('myReport.filter')}
-              </Text>
-            </TouchableOpacity>
-            
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>{t('myReport.title')} ({reports.length})</Text>
+        <View style={styles.headerActions}>
+          <TouchableOpacity 
+            style={styles.filterButton}
+            onPress={() => setShowFilterDropdown(true)}
+          >
+            <Icon name="filter-list" size={20} color="#B77F2E" />
+            <Text style={styles.filterText}>
+              {statusFilter ? getTranslatedStatus(statusFilter) : t('myReport.filter')}
+            </Text>
+          </TouchableOpacity>
+          
            
-          </View>
         </View>
+      </View>
 
-        {statusFilter && (
-          <View style={styles.activeFilterContainer}>
-            <Text style={styles.activeFilterText}>
-              {t('myReport.filteredBy')}: {getTranslatedStatus(statusFilter)}
-            </Text>
-            <TouchableOpacity onPress={() => setStatusFilter(null)}>
-              <Icon name="cancel" size={20} color="#B77F2E" />
+      {statusFilter && (
+        <View style={styles.activeFilterContainer}>
+          <Text style={styles.activeFilterText}>
+            {t('myReport.filteredBy')}: {getTranslatedStatus(statusFilter)}
+          </Text>
+          <TouchableOpacity onPress={() => setStatusFilter(null)}>
+            <Icon name="cancel" size={20} color="#B77F2E" />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {filteredReports.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Image
+            source={require("../../assets/sadBuilding.png")}
+            style={styles.emptyImage}
+          />
+          <Text style={styles.emptyText}>
+            {statusFilter 
+              ? `${t('myReport.noReportsFiltered')} '${getTranslatedStatus(statusFilter)}'` 
+              : t('myReport.noReports')}
+          </Text>
+          {statusFilter && (
+            <TouchableOpacity 
+              style={styles.clearFilterButton}
+              onPress={() => setStatusFilter(null)}
+            >
+              <Text style={styles.clearFilterText}>{t('myReport.clearFilter')}</Text>
             </TouchableOpacity>
-          </View>
-        )}
-
-        {filteredReports.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Image
-              source={require("../../assets/sadBuilding.png")}
-              style={styles.emptyImage}
-            />
-            <Text style={styles.emptyText}>
-              {statusFilter 
-                ? `${t('myReport.noReportsFiltered')} '${getTranslatedStatus(statusFilter)}'` 
-                : t('myReport.noReports')}
-            </Text>
-            {statusFilter && (
-              <TouchableOpacity 
-                style={styles.clearFilterButton}
-                onPress={() => setStatusFilter(null)}
-              >
-                <Text style={styles.clearFilterText}>{t('myReport.clearFilter')}</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        ) : (
-          filteredReports.map((item, index) => {
-            const statusStyle = getStatusStyle(item.status);
-            
-            return (
-              <TouchableOpacity
-                key={index}
-                style={styles.card}
-                onPress={() => handleViewProgress(item.crackReportId)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.cardHeader}>
-                  <View>
-                    <Text style={styles.unitText}>
-                      {item.position.split('/').join(' - ')}
-                    </Text>
-                    <Text style={styles.dateText}>
-                      {new Date(item.createdAt).toLocaleString()}
-                    </Text>
-                  </View>
+          )}
+        </View>
+      ) : (
+        filteredReports.map((item, index) => {
+          const statusStyle = getStatusStyle(item.status);
+          
+          return (
+            <TouchableOpacity
+              key={index}
+              style={styles.card}
+              onPress={() => handleViewProgress(item.crackReportId)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.cardHeader}>
+                <View>
+                  <Text style={styles.unitText}>
+                    {item.position.split('/').join(' - ')}
+                  </Text>
+                  <Text style={styles.dateText}>
+                    {new Date(item.createdAt).toLocaleString()}
+                  </Text>
+                </View>
                   <View style={styles.headerActions}>
                     {item.status === 'Pending' && (
                       <TouchableOpacity
@@ -242,34 +242,34 @@ const MyReportScreen = () => {
                         <Icon name="delete" size={20} color="#D32F2F" />
                       </TouchableOpacity>
                     )}
-                    <View style={[styles.statusTag, { backgroundColor: statusStyle.backgroundColor }]}>
-                      <Text style={[styles.statusText, { color: statusStyle.textColor }]}>
-                        {getTranslatedStatus(item.status)}
-                      </Text>
+                <View style={[styles.statusTag, { backgroundColor: statusStyle.backgroundColor }]}>
+                  <Text style={[styles.statusText, { color: statusStyle.textColor }]}>
+                    {getTranslatedStatus(item.status)}
+                  </Text>
                     </View>
-                  </View>
                 </View>
-                <Text style={styles.descriptionText}>{item.description}</Text>
-                {item.crackDetails && item.crackDetails.length > 0 && (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    {item.crackDetails.map((detail: any, idx: number) => (
-                      <Image
-                        key={idx}
-                        source={{ uri: detail.photoUrl }}
-                        style={styles.reportImage}
-                      />
-                    ))}
-                  </ScrollView>
-                )}
-                
-                <View style={styles.cardFooter}>
-                  <Icon name="visibility" size={16} color="#666" />
-                  <Text style={styles.viewDetailsText}>Tap to view progress details</Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })
-        )}
+              </View>
+              <Text style={styles.descriptionText}>{item.description}</Text>
+              {item.crackDetails && item.crackDetails.length > 0 && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {item.crackDetails.map((detail: any, idx: number) => (
+                    <Image
+                      key={idx}
+                      source={{ uri: detail.photoUrl }}
+                      style={styles.reportImage}
+                    />
+                  ))}
+                </ScrollView>
+              )}
+              
+              <View style={styles.cardFooter}>
+                <Icon name="visibility" size={16} color="#666" />
+                <Text style={styles.viewDetailsText}>Tap to view progress details</Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })
+      )}
       </ScrollView>
 
       <Modal

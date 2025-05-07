@@ -61,6 +61,11 @@ export type RootStackParamList = {
   CreateStaffInspection: { 
     taskDetail: TaskAssignmentDetail;
   };
+  CreateActualCost: { 
+    taskId: string;
+    verifiedAssignmentId: string;
+    onComplete?: () => void;
+  };
   CreateLocation: {
     onGoBack?: () => void;
     initialData: {

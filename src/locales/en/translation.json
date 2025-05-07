@@ -578,6 +578,22 @@
       "clearChat": "Clear Chat",
       "confirmClear": "Are you sure you want to clear this chat?",
       "chatCleared": "Chat cleared successfully"
+    },
+    "createActualCost": {
+      "title": "Create Actual Cost",
+      "originalInspection": "Original Inspection",
+      "description": "Description",
+      "totalCost": "Total Cost",
+      "actualCost": "Actual Cost",
+      "enterDescription": "Enter description...",
+      "materials": "Materials",
+      "noMaterials": "No materials found",
+      "addMaterial": "Add Material",
+      "submit": "Create Actual Cost",
+      "descriptionRequired": "Please enter a description",
+      "materialsRequired": "Please add at least one material",
+      "noTaskAssignment": "No valid task assignment found",
+      "successMessage": "Actual cost created successfully"
     }
   },
   "inspection": {

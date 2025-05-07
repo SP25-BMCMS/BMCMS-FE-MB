@@ -19,12 +19,19 @@ import {
   useNavigation,
   useRoute,
   NavigationProp,
+  RouteProp
 } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { Property } from "../../types";
-import { CRACK_POSITIONS } from "../../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from 'react-i18next';
+
+// Define room and position types
+type Room = 'KITCHEN' | 'LIVING_ROOM' | 'BEDROOM' | 'BATHROOM' | 'OTHER';
+type Position = 'WALL' | 'FLOOR' | 'CEILING' | 'OTHER';
+
+const ROOMS: Room[] = ['KITCHEN', 'LIVING_ROOM', 'BEDROOM', 'BATHROOM', 'OTHER'];
+const POSITIONS: Position[] = ['WALL', 'FLOOR', 'CEILING', 'OTHER'];
 
 // Define route params type
 type RootStackParamList = {
@@ -34,7 +41,7 @@ type RootStackParamList = {
     description: string;
     images: string[];
     buildingDetailId?: string;
-    selectedRoom?: keyof typeof CRACK_POSITIONS | 'OTHER';
+    selectedRoom?: Room | 'OTHER';
     selectedPosition?: string;
     isPrivatesAsset: boolean;
   };
@@ -43,8 +50,46 @@ type RootStackParamList = {
 const RepairInsideScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const route = useRoute();
-  const { property } = route.params as { property: Property };
+  const route = useRoute<RouteProp<RootStackParamList, 'RepairInside'>>();
+  
+  // Ensure property exists and has required fields
+  React.useEffect(() => {
+    const property = route.params?.property;
+    if (!property) {
+      console.error('Property is undefined in route params');
+      Alert.alert(
+        t('common.error'),
+        t('repair.inside.propertyNotFound'),
+        [{ text: t('common.ok'), onPress: () => navigation.goBack() }]
+      );
+      return;
+    }
+
+    // Check required fields
+    if (!property.building || !property.unit || !property.description) {
+      console.error('Missing required property fields');
+      Alert.alert(
+        t('common.error'),
+        t('repair.inside.invalidPropertyData'),
+        [{ text: t('common.ok'), onPress: () => navigation.goBack() }]
+      );
+      return;
+    }
+
+    // Set buildingDetailId if available
+    if (property.buildingDetailId) {
+      setBuildingDetailId(property.buildingDetailId);
+    } else if (property.buildingDetails && property.buildingDetails.length > 0) {
+      setBuildingDetailId(property.buildingDetails[0].buildingDetailId);
+    }
+  }, [route.params]);
+
+  const { property } = route.params || { property: null };
+  
+  // Return early if no property
+  if (!property) {
+    return null;
+  }
 
   const [currentStep, setCurrentStep] = useState(1);
   const [description, setDescription] = useState("");
@@ -52,9 +97,8 @@ const RepairInsideScreen = () => {
   const [isImageSourceModalVisible, setImageSourceModalVisible] = useState(false);
   
   // New state for crack reporting
-  const [selectedRoom, setSelectedRoom] = useState<keyof typeof CRACK_POSITIONS | 'OTHER' | ''>('');
+  const [selectedRoom, setSelectedRoom] = useState<Room | ''>('');
   const [selectedPosition, setSelectedPosition] = useState('');
-  const [customPosition, setCustomPosition] = useState('');
   const [buildingDetailId, setBuildingDetailId] = useState<string | undefined>(undefined);
   
   // Dropdown states
@@ -65,23 +109,6 @@ const RepairInsideScreen = () => {
 
   // Thêm state để theo dõi trạng thái loading
   const [isLoading, setIsLoading] = useState(false);
-
-  // Fetch building detail ID when screen loads
-  React.useEffect(() => {
-    // Lấy buildingDetailId từ property
-    if (property && property.buildingDetailId) {
-      setBuildingDetailId(property.buildingDetailId);
-      console.log('🔍 BuildingDetailId từ Property:', property.buildingDetailId);
-    } else {
-      console.log('❌ Không tìm thấy buildingDetailId trong property');
-      // Lấy buildingDetailId từ buildingDetails array nếu có
-      if (property && property.buildingDetails && property.buildingDetails.length > 0) {
-        const firstBuildingDetail = property.buildingDetails[0];
-        setBuildingDetailId(firstBuildingDetail.buildingDetailId);
-        console.log('🔍 Sử dụng buildingDetailId đầu tiên:', firstBuildingDetail.buildingDetailId);
-      }
-    }
-  }, [property]);
 
   // Thêm useEffect để kiểm tra quyền khi màn hình được tải
   React.useEffect(() => {
@@ -213,15 +240,13 @@ const RepairInsideScreen = () => {
   const isImagesValid = images.length > 0;
   const isPositionValid = selectedRoom && (selectedRoom === 'OTHER' || selectedPosition);
 
-  const handleRoomSelect = (room: keyof typeof CRACK_POSITIONS | 'OTHER') => {
-    // Get building name from buildingDetails
+  const handleRoomSelect = (room: Room) => {
     const buildingName = property.buildingDetails?.[0]?.name || property.building;
 
     setSelectedRoom(room);
     setRoomDisplayText(room === 'OTHER' ? t('repair.inside.other') : t(`repair.inside.${room.toLowerCase()}`));
     setIsRoomDropdownOpen(false);
     
-    // Reset position when room changes
     if (room === 'OTHER') {
       const formattedPosition = `other/${buildingName}/${property.unit}/other`;
       setSelectedPosition(formattedPosition);
@@ -232,20 +257,17 @@ const RepairInsideScreen = () => {
     }
   };
 
-  const handlePositionSelect = (key: string, value: string) => {
-    // Get building name from buildingDetails
+  const handlePositionSelect = (position: Position) => {
     const buildingName = property.buildingDetails?.[0]?.name || property.building;
 
-    if (key === 'OTHER') {
-      // Format for OTHER: other/building/unit/other
+    if (position === 'OTHER' || selectedRoom === 'OTHER') {
       const formattedPosition = `other/${buildingName}/${property.unit}/other`;
       setSelectedPosition(formattedPosition);
       setPositionDisplayText(t('repair.inside.other'));
-    } else if (selectedRoom !== 'OTHER') {
-      // Format: room/building/unit/position
-      const formattedPosition = `${selectedRoom.toLowerCase()}/${buildingName}/${property.unit}/${key.toLowerCase()}`;
+    } else if (selectedRoom) {
+      const formattedPosition = `${selectedRoom.toLowerCase()}/${position.toLowerCase()}/${buildingName}/${property.unit}`;
       setSelectedPosition(formattedPosition);
-      setPositionDisplayText(t(`repair.inside.${key.toLowerCase()}`));
+      setPositionDisplayText(t(`repair.inside.${position.toLowerCase()}`));
     }
     setIsPositionDropdownOpen(false);
   };
@@ -279,14 +301,6 @@ const RepairInsideScreen = () => {
   };
 
   const renderRoomDropdown = () => {
-    const roomOptions = [
-      { key: 'KITCHEN', translation: t('repair.inside.kitchen') },
-      { key: 'LIVING_ROOM', translation: t('repair.inside.living_room') },
-      { key: 'BEDROOM', translation: t('repair.inside.bedroom') },
-      { key: 'BATHROOM', translation: t('repair.inside.bathroom') },
-      { key: 'OTHER', translation: t('repair.inside.other') }
-    ];
-
     return (
       <>
         <Text style={styles.label}>{t('repair.inside.selectRoom')}</Text>
@@ -311,21 +325,21 @@ const RepairInsideScreen = () => {
         {isRoomDropdownOpen && (
           <View style={styles.dropdownMenu}>
             <ScrollView nestedScrollEnabled={true} style={styles.scrollList}>
-              {roomOptions.map(({ key, translation }) => (
+              {ROOMS.map((room) => (
                 <TouchableOpacity 
-                  key={key}
+                  key={room}
                   style={styles.dropdownItem}
-                  onPress={() => handleRoomSelect(key as keyof typeof CRACK_POSITIONS | 'OTHER')}
+                  onPress={() => handleRoomSelect(room)}
                 >
                   <Text 
                     style={[
                       styles.dropdownItemText,
-                      selectedRoom === key ? styles.selectedDropdownItem : {}
+                      selectedRoom === room ? styles.selectedDropdownItem : {}
                     ]}
                   >
-                    {translation}
+                    {room === 'OTHER' ? t('repair.inside.other') : t(`repair.inside.${room.toLowerCase()}`)}
                   </Text>
-                  {selectedRoom === key && (
+                  {selectedRoom === room && (
                     <Icon name="check" size={18} color="#B77F2E" />
                   )}
                 </TouchableOpacity>
@@ -338,11 +352,7 @@ const RepairInsideScreen = () => {
   };
 
   const renderPositionDropdown = () => {
-    if (!selectedRoom) return null;
-    
-    if (selectedRoom === 'OTHER') {
-      return null; // Don't show position dropdown for OTHER
-    }
+    if (!selectedRoom || selectedRoom === 'OTHER') return null;
     
     return (
       <>
@@ -363,35 +373,31 @@ const RepairInsideScreen = () => {
           />
         </TouchableOpacity>
 
-        {isPositionDropdownOpen && selectedRoom && (
+        {isPositionDropdownOpen && (
           <View style={styles.dropdownMenu}>
             <ScrollView nestedScrollEnabled={true} style={styles.scrollList}>
-              {[
-                ...Object.entries(CRACK_POSITIONS[selectedRoom as keyof typeof CRACK_POSITIONS]).map(([key, value]) => ({
-                  key,
-                  value,
-                  translation: t(`repair.inside.${key.toLowerCase()}`)
-                })),
-                { key: 'OTHER', value: 'other', translation: t('repair.inside.other') }
-              ].map(({ key, value, translation }) => (
+              {POSITIONS.map((position) => {
+                const positionKey = position.toLowerCase();
+                return (
                 <TouchableOpacity 
-                  key={key}
+                    key={position}
                   style={styles.dropdownItem}
-                  onPress={() => handlePositionSelect(key, value)}
+                    onPress={() => handlePositionSelect(position)}
                 >
                   <Text 
                     style={[
                       styles.dropdownItemText,
-                      selectedPosition === value ? styles.selectedDropdownItem : {}
+                        selectedPosition.includes(positionKey) ? styles.selectedDropdownItem : {}
                     ]}
                   >
-                    {translation}
+                      {position === 'OTHER' ? t('repair.inside.other') : t(`repair.inside.${positionKey}`)}
                   </Text>
-                  {selectedPosition === value && (
+                    {selectedPosition.includes(positionKey) && (
                     <Icon name="check" size={18} color="#B77F2E" />
                   )}
                 </TouchableOpacity>
-              ))}
+                );
+              })}
             </ScrollView>
           </View>
         )}
@@ -851,3 +857,4 @@ const styles = StyleSheet.create({
 });
 
 export default RepairInsideScreen;
+

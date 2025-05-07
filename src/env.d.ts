@@ -66,4 +66,8 @@ declare module '@env'{
   export const VITE_PUT_REJECT_BY_TASK_ASSGINMENT_ID: string;
   export const VITE_REAL_TIME_NOTIFICATION: string;
   export const VITE_DELETE_CRACK_REPORT: string;
+  export const VITE_CHANGE_STATUS_TASK_BY_TASK_ID: string;
+  export const VITE_CREATE_INSPECTION_ACTUAL_COST: string;
+  export const VITE_GET_TASK_ASSIGNMENT_AND_INSPECTION_BY_TASK_ID: string;
+  export const VITE_GET_MATERIAL_BY_ID: string;
 }

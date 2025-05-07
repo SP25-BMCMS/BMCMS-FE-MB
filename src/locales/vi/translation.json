@@ -593,6 +593,22 @@
       "clearChat": "Xóa trò chuyện",
       "confirmClear": "Bạn có chắc chắn muốn xóa trò chuyện này không?",
       "chatCleared": "Đã xóa trò chuyện thành công"
+    },
+    "createActualCost": {
+      "title": "Tạo Chi Phí Thực Tế",
+      "originalInspection": "Kiểm Tra Ban Đầu",
+      "description": "Mô Tả",
+      "totalCost": "Tổng Chi Phí",
+      "actualCost": "Chi Phí Thực Tế",
+      "enterDescription": "Nhập mô tả...",
+      "materials": "Vật Liệu",
+      "noMaterials": "Chưa có vật liệu nào",
+      "addMaterial": "Thêm Vật Liệu",
+      "submit": "Tạo Chi Phí Thực Tế",
+      "descriptionRequired": "Vui lòng nhập mô tả",
+      "materialsRequired": "Vui lòng thêm ít nhất một vật liệu",
+      "noTaskAssignment": "Không tìm thấy phân công công việc hợp lệ",
+      "successMessage": "Đã tạo chi phí thực tế thành công"
     }
   },
   "inspection": {

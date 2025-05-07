@@ -36,6 +36,10 @@ import {
   VITE_GET_DEVICE_LIST,
   VITE_GET_SELECT_DEVICE_BY_BUILDING_DETAIL_ID,
   VITE_GET_TECHNICAL_RECORD_BY_BUILDING_ID,
+  VITE_CREATE_INSPECTION_ACTUAL_COST,
+  VITE_GET_TASK_ASSIGNMENT_AND_INSPECTION_BY_TASK_ID,
+  VITE_GET_MATERIAL_BY_ID,
+  VITE_CHANGE_STATUS_TASK_BY_TASK_ID
 } from '@env';
 
 export const TaskService = {
@@ -277,6 +281,18 @@ export const TaskService = {
     }
   },
 
+  // Add function to get material by ID
+  async getMaterialById(materialId: string): Promise<any> {
+    try {
+      const url = VITE_GET_MATERIAL_BY_ID.replace('{material_id}', materialId);
+      const response = await instance.get(url);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching material with ID ${materialId}:`, error);
+      throw error;
+    }
+  },
+
   async getTaskAssignmentsByEmployeeId(employeeId: string): Promise<any> {
     try {
       const url = VITE_GET_TASK_ASSIGNMENT_BY_EMPLOYEE_ID.replace('{employeeId}', employeeId);
@@ -461,4 +477,107 @@ export const TaskService = {
       throw error;
     }
   },
+
+  // Create inspection actual cost
+  async createInspectionActualCost(
+    taskAssignmentId: string, 
+    data: { 
+      description: string;
+      repairMaterials: Array<{
+        materialId: string;
+        quantity: number;
+      }>;
+      pdfFile?: {
+        uri: string;
+        name: string;
+        type: string;
+      };
+    }
+  ): Promise<any> {
+    try {
+      // Create FormData instance
+      const formData = new FormData();
+      
+      // Add fields to FormData
+      formData.append('task_assignment_id', taskAssignmentId);
+      formData.append('description', data.description || '');
+      
+      // Convert repairMaterials array to a single JSON string
+      const repairMaterialsJson = JSON.stringify(data.repairMaterials[0]);
+      formData.append('repairMaterials', repairMaterialsJson);
+      
+      // Add empty additionalLocationDetails
+      formData.append('additionalLocationDetails', '');
+
+      // Add PDF file if provided
+      if (data.pdfFile) {
+        formData.append('pdfFile', {
+          uri: data.pdfFile.uri,
+          name: data.pdfFile.name,
+          type: data.pdfFile.type
+        } as any);
+      }
+
+      // Log request data for debugging
+      console.log('Creating actual cost with formData:', {
+        task_assignment_id: taskAssignmentId,
+        description: data.description,
+        repairMaterials: repairMaterialsJson,
+        additionalLocationDetails: '',
+        pdfFile: data.pdfFile ? data.pdfFile.name : 'none'
+      });
+      
+      const response = await instance.post(VITE_CREATE_INSPECTION_ACTUAL_COST, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error(`Error creating actual cost:`, error);
+      
+      // Log more detailed error information
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+        console.error('Response headers:', error.response.headers);
+        console.error('Request payload:', error.config.data);
+      } else if (error.request) {
+        console.error('No response received:', error.request);
+      } else {
+        console.error('Error setting up request:', error.message);
+      }
+      
+      throw error;
+    }
+  },
+
+  // Add function to get task assignment and inspection by task ID
+  async getTaskAssignmentAndInspectionByTaskId(taskId: string): Promise<any> {
+    try {
+      const url = VITE_GET_TASK_ASSIGNMENT_AND_INSPECTION_BY_TASK_ID.replace('{task_id}', taskId);
+      const response = await instance.get(url);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching task assignment and inspection for task ID ${taskId}:`, error);
+      throw error;
+    }
+  },
+
+  // Add new function to change task status to complete and review
+  async changeTaskStatusToCompleteAndReview(taskId: string): Promise<any> {
+    try {
+      console.log('Calling complete-and-review API with taskId:', taskId);
+      
+      // Construct URL properly and use POST method
+      const url = `/tasks/task/${taskId}/complete-and-review`;
+      console.log('Final API URL:', url);
+      
+      const response = await instance.post(url); // Changed from PUT to POST
+      return response.data;
+    } catch (error) {
+      console.error(`Error changing task status for task ID ${taskId}:`, error);
+      throw error;
+    }
+  }
 }; 

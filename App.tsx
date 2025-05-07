@@ -38,6 +38,7 @@ import StaffMaintenanceHistoryScreen from './src/staff/ui/StaffMaintenanceHistor
 import TechnicalRecordScreen from './src/staff/ui/TechnicalRecordScreen';
 import './src/i18n';
 import { NotificationProvider } from './src/context/NotificationContext';
+import CreateActualCostScreen from './src/staff/CreateActualCostScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 const queryClient = new QueryClient();
@@ -79,6 +80,7 @@ const App = () => {
             <Stack.Screen name='ChatHistory' component={ChatHistoryScreen} />
             <Stack.Screen name='LocationDetail' component={LocationDetailScreen} />
             <Stack.Screen name='MaintenanceHistory' component={MaintenanceHistoryScreen} />
+            <Stack.Screen name='CreateActualCost' component={CreateActualCostScreen} />
             {/* @ts-ignore */}
             <Stack.Screen name='StaffMaintenanceHistory' component={StaffMaintenanceHistoryScreen} />
             <Stack.Screen name='TechnicalRecord' component={TechnicalRecordScreen} />

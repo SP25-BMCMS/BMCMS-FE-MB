@@ -23,14 +23,53 @@ import {
   RouteProp,
 } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
-import { Property, OUTDOOR_CRACK_POSITIONS } from "../../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from 'react-i18next';
 import { CrackService } from "../../service/crackService";
 
-// Update type definitions at the top of the file
-type OutdoorArea = keyof typeof OUTDOOR_CRACK_POSITIONS;
+// Define types for outdoor areas and positions
+type OutdoorArea = 'BUILDING_EXTERIOR' | 'COMMON_AREA' | 'PARKING' | 'LANDSCAPE';
+type Position = 'WALL' | 'FOUNDATION' | 'ROOF' | 'STAIRS' | 'CORRIDOR' | 'LOBBY' | 'SURFACE' | 'PILLAR' | 'CEILING' | 'PAVEMENT' | 'FENCE' | 'POOL' | 'OTHER';
 type AreaType = OutdoorArea | 'OTHER';
+
+// Define the outdoor crack positions mapping
+const OUTDOOR_CRACK_POSITIONS: Record<OutdoorArea, Record<string, string>> = {
+  BUILDING_EXTERIOR: {
+    WALL: 'exterior/building/1/wall',
+    FOUNDATION: 'exterior/building/ground/foundation',
+    ROOF: 'exterior/building/top/roof',
+  },
+  COMMON_AREA: {
+    STAIRS: 'common/building/1/stairs',
+    CORRIDOR: 'common/building/1/corridor',
+    LOBBY: 'common/building/ground/lobby',
+  },
+  PARKING: {
+    SURFACE: 'parking/area/ground/surface',
+    PILLAR: 'parking/area/1/pillar',
+    CEILING: 'parking/area/1/ceiling',
+  },
+  LANDSCAPE: {
+    PAVEMENT: 'landscape/garden/ground/pavement',
+    FENCE: 'landscape/perimeter/ground/fence',
+    POOL: 'landscape/amenity/ground/pool',
+  }
+};
+
+// Define Property type
+interface Property {
+  building: string;
+  numberFloor: number;
+  description: string;
+  unit: string;
+  status: string;
+  area: string;
+  buildingDetailId?: string;
+  buildingDetails?: Array<{
+    buildingDetailId: string;
+    name: string;
+  }>;
+}
 
 interface BuildingDetail {
   buildingDetailId: string;
@@ -215,7 +254,7 @@ const RepairOutsideScreen = () => {
       ? t('repair.outside.other')
       : t(`repair.outside.${area === 'BUILDING_EXTERIOR' ? 'buildingExterior' : 
           area === 'COMMON_AREA' ? 'commonArea' : 
-          area.toLowerCase()}`);
+          area.toString().toLowerCase()}`);
     setAreaDisplayText(translation);
     setIsAreaDropdownOpen(false);
     
@@ -230,9 +269,9 @@ const RepairOutsideScreen = () => {
     setIsBuildingDropdownOpen(false);
   };
 
-  const formatAreaName = (area: string): string => {
+  const formatAreaName = (area: AreaType): string => {
     // Convert area names to lowercase without underscores
-    return area.toLowerCase().replace(/_/g, '');
+    return area.toString().toLowerCase().replace(/_/g, '');
   };
 
   const getSimplePosition = (value: string): string => {
@@ -453,8 +492,8 @@ const RepairOutsideScreen = () => {
   const renderPositionDropdown = () => {
     if (!selectedArea || selectedArea === 'OTHER' || !selectedBuilding) return null;
 
-    const positions = OUTDOOR_CRACK_POSITIONS[selectedArea] ? 
-      Object.entries(OUTDOOR_CRACK_POSITIONS[selectedArea]).map(([key, value]) => ({
+    const positions = OUTDOOR_CRACK_POSITIONS[selectedArea as OutdoorArea] ? 
+      Object.entries(OUTDOOR_CRACK_POSITIONS[selectedArea as OutdoorArea]).map(([key, value]) => ({
         key,
         value,
         translation: t(`repair.outside.${key.toLowerCase()}`)
@@ -508,19 +547,7 @@ const RepairOutsideScreen = () => {
           </View>
         )}
 
-        {selectedPosition && (
-          <View style={styles.selectedInfo}>
-            <Text style={styles.selectedInfoLabel}>{t('repair.outside.selectedPosition')}:</Text>
-            <Text style={styles.selectedInfoValue}>
-              {selectedPosition === 'other' 
-                ? t('repair.outside.other')
-                : selectedPosition
-                    .split('/')
-                    .map(part => t(`repair.outside.${part.toLowerCase()}`))
-                    .join(' > ')}
-            </Text>
-          </View>
-        )}
+      
       </>
     );
   };
