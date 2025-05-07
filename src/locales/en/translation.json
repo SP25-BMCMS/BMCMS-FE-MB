@@ -34,7 +34,7 @@
       "enterPhonePassword": "Please enter phone number and password.",
       "enterUsernamePassword": "Please enter username and password.",
       "accountNotActivated": "Account Not Activated",
-      "checkEmail": "Your account is not activated. Please check your email for activation link.",
+      "checkEmail": "Your account is not activated. Please call Manager to activate your account.",
       "loginFailed": "Login Failed",
       "invalidCredentials": "Invalid phone number or password.",
       "invalidStaffCredentials": "Invalid username or password.",

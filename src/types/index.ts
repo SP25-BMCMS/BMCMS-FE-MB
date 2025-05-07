@@ -21,6 +21,7 @@ export type RootStackParamList = {
   OTPScreen: {
     userType: "resident" | "staff";
     identifier: string;
+    onVerificationSuccess?: () => void;
   };
   More: undefined;
   PropertyDetail: undefined;
@@ -118,6 +119,7 @@ export interface LoginResponse {
   username: string;
   statusCode: number;
   message: string;
+  accountStatus: string;
 }
 export interface LoginPayload {
   phone: string;

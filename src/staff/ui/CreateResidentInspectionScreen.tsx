@@ -96,6 +96,7 @@ const CreateResidentInspectionScreen: React.FC<Props> = ({ route }) => {
           duration: 3000,
           style: { marginTop: 40 }
         });
+        //@ts-ignore
         navigation.navigate('Login');
         return;
       }
@@ -155,6 +156,7 @@ const CreateResidentInspectionScreen: React.FC<Props> = ({ route }) => {
       }
     } catch (error) {
       console.error('Error creating inspection:', error);
+      //@ts-ignore
       console.error('Error details:', error.response?.data);
       
       let errorMessage = t('createResidentInspection.toast.error.description');

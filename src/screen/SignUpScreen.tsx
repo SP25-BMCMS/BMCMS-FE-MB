@@ -74,20 +74,31 @@ const SignUpScreen = () => {
       const response = await AuthService.registerResident(signupPayload);
 
       if (response?.isSuccess) {
+        // Lưu thông tin tạm thời để sử dụng trong quá trình xác thực OTP
         await AsyncStorage.setItem('tempUserData', JSON.stringify(signupPayload));
-
+        
         showMessage({
           message: t('screens.signUp.success.title'),
-          description: response.message,
+          description: t('screens.signUp.success.checkEmail'),
           type: "success",
           icon: "success",
           duration: 3000,
         });
 
+        // Chuyển đến màn hình OTP
         setTimeout(() => {
           navigation.navigate("OTPScreen", {
             userType: "resident",
             identifier: email,
+            onVerificationSuccess: () => {
+              // Xóa dữ liệu tạm thời sau khi xác thực thành công
+              AsyncStorage.clear();
+              // Chuyển về màn hình SignIn
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'SignIn' }],
+              });
+            }
           });
         }, 1500);
 
