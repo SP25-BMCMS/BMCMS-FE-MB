@@ -334,7 +334,7 @@ const RepairOutsideScreen = () => {
               buildingDetailId,
               selectedRoom: selectedArea === 'OTHER' ? undefined : selectedArea as OutdoorArea,
               selectedPosition: finalPosition,
-              isPrivatesAsset: false // Always false for outside repairs
+              isPrivatesAsset: false // LUÔN LUÔN false cho repair outside - đây là tài sản công cộng
             });
           } 
         }

@@ -275,18 +275,24 @@ const RepairInsideScreen = () => {
   const handleContinueToReview = () => {
     // Validate all required fields
     if (!isDescriptionValid) {
-      Alert.alert("Error", "Please enter a detailed description (minimum 5 characters)");
+      Alert.alert("Error", t('repair.inside.descriptionAlert'));
       return;
     }
 
     if (!isPositionValid) {
-      Alert.alert("Error", "Please select a room and crack position");
+      Alert.alert("Error", t('repair.inside.positionAlert'));
       return;
     }
 
     // Use the correct position value
     const finalPosition = selectedRoom === 'OTHER' ? 'other' : selectedPosition;
-    console.log('🔍 Position to send:', finalPosition);
+    
+    // Debug logs
+    console.group('🔍 RepairInside Navigation Debug');
+    console.log('Position:', finalPosition);
+    console.log('isPrivatesAsset:', true);
+    console.log('buildingDetailId:', buildingDetailId);
+    console.groupEnd();
 
     // Navigate to review screen with all necessary data
     navigation.navigate("RepairReview", {
@@ -296,7 +302,7 @@ const RepairInsideScreen = () => {
       buildingDetailId,
       selectedRoom,
       selectedPosition: finalPosition,
-      isPrivatesAsset: true  // Set to true for inside repairs
+      isPrivatesAsset: true // Repair inside luôn là true vì là tài sản riêng
     });
   };
 

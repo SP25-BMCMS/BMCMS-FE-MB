@@ -74,7 +74,7 @@ const RepairReviewScreen = () => {
         description,
         position: formattedPosition,
         images,
-        isPrivatesAsset: property.status === 'Tenant'
+        isPrivatesAsset
       });
 
       const response = await CrackService.reportCrack({
@@ -82,7 +82,7 @@ const RepairReviewScreen = () => {
         description,
         position: formattedPosition,
         files: images,
-        isPrivatesAsset: property.status === 'Tenant'
+        isPrivatesAsset
       });
 
       // Successful report
@@ -95,6 +95,7 @@ const RepairReviewScreen = () => {
     } catch (error) {
       console.error('Error submitting report:', error);
       Alert.alert('Error', error instanceof Error ? error.message : t('repair.error.generalError'));
+    } finally {
       setIsSubmitting(false);
     }
   };

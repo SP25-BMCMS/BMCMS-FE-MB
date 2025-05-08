@@ -306,7 +306,7 @@ export interface CrackReportPayload {
   description: string;
   position?: string;
   files: string[];
-  isPrivatesAsset?: boolean;
+  isPrivatesAsset: boolean;
 }
 
 export interface CrackDetails {
@@ -719,5 +719,13 @@ export interface FeedbackPayload {
   task_id: string;
   comments: string;
   rating: number;
+}
+
+export interface BuildingDetail {
+  buildingDetailId: string;
+  name: string;
+  building: {
+    numberFloor: number;
+  };
 }
 
