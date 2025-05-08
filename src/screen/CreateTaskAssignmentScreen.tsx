@@ -40,6 +40,10 @@ interface StaffMember {
 interface AvailableTask {
   task_id: string;
   description: string;
+  schedule_job_id?: string;
+  task?: {
+    schedule_job_id?: string;
+  };
 }
 
 const CreateTaskAssignmentScreen = () => {
@@ -67,6 +71,8 @@ const CreateTaskAssignmentScreen = () => {
     { label: t('createTaskAssignment.statusTypes.InFixing'), value: 'InFixing' as const },
     { label: t('createTaskAssignment.statusTypes.Reassigned'), value: 'Reassigned' as const }
   ];
+
+  const [taskDeviceType, setTaskDeviceType] = useState<string>('');
 
   // Sử dụng tanstack Query để lấy tất cả task và task assignments
   const { data: allTaskAssignments, isLoading: loadingAllAssignments } = useQuery({
@@ -147,15 +153,37 @@ const CreateTaskAssignmentScreen = () => {
           // Chuyển đổi sang định dạng AvailableTask
           .map((task: TaskAssignment) => ({
             task_id: task.task_id,
-            description: task.description
+            description: task.description,
+            task: task.task // Include the entire task object
           }));
         
         setAvailableTasks(availableTasksList);
         
         // Nếu có task khả dụng, set task mặc định đầu tiên
         if (availableTasksList.length > 0) {
-          setSelectedTaskId(availableTasksList[0].task_id);
-          setSelectedTaskLabel(availableTasksList[0].description || availableTasksList[0].task_id);
+          const firstTask = availableTasksList[0];
+          setSelectedTaskId(firstTask.task_id);
+          setSelectedTaskLabel(firstTask.description || firstTask.task_id);
+          
+          // Nếu task đầu tiên có schedule_job_id, lấy thông tin device type
+          if (firstTask.task?.schedule_job_id) {
+            // Tạo một IIFE async để xử lý việc gọi API
+            (async () => {
+              try {
+                // Kiểm tra lại để đảm bảo task vẫn tồn tại
+                if (firstTask.task?.schedule_job_id) {
+                  const scheduleJobResponse = await TaskService.getScheduleJobById(firstTask.task.schedule_job_id);
+                  if (scheduleJobResponse.isSuccess && scheduleJobResponse.data?.schedule?.cycle?.device_type) {
+                    const deviceType = scheduleJobResponse.data.schedule.cycle.device_type;
+                    setTaskDeviceType(deviceType);
+                    setSelectedTaskLabel(`${firstTask.description} - ${deviceType}`);
+                  }
+                }
+              } catch (error) {
+                console.error('Error fetching schedule job:', error);
+              }
+            })();
+          }
         }
       }
     }
@@ -255,10 +283,25 @@ const CreateTaskAssignmentScreen = () => {
   };
   
   // Handle task selection
-  const handleTaskSelect = (task: AvailableTask) => {
+  const handleTaskSelect = async (task: AvailableTask) => {
     setSelectedTaskId(task.task_id);
     setSelectedTaskLabel(task.description || task.task_id);
     setTaskDropdownVisible(false);
+    setTaskDeviceType(''); // Reset device type
+
+    // Check if task has schedule_job_id
+    if (task.task?.schedule_job_id) {
+      try {
+        const scheduleJobResponse = await TaskService.getScheduleJobById(task.task.schedule_job_id);
+        if (scheduleJobResponse.isSuccess && scheduleJobResponse.data?.schedule?.cycle?.device_type) {
+          const deviceType = scheduleJobResponse.data.schedule.cycle.device_type;
+          setTaskDeviceType(deviceType);
+          setSelectedTaskLabel(`${task.description} - ${deviceType}`);
+        }
+      } catch (error) {
+        console.error('Error fetching schedule job:', error);
+      }
+    }
   };
   
   // Handle employee selection
@@ -376,7 +419,9 @@ const CreateTaskAssignmentScreen = () => {
                               ]}
                               numberOfLines={2}
                             >
-                              {item.description}
+                              {selectedTaskId === item.task_id && taskDeviceType 
+                                ? `${item.description} - ${taskDeviceType}`
+                                : item.description}
                             </Text>
                             {selectedTaskId === item.task_id && (
                               <Icon name="check" size={20} color="#B77F2E" />
