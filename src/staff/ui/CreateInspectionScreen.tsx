@@ -378,7 +378,14 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
       if (isPrivateAsset) {
         return true;
       }
+
+      // For schedule tasks, automatically set status to Verified
+      if (taskDetail.task?.schedule_job_id) {
+        await TaskService.updateStatusAndCreateWorklog(taskDetail.assignment_id, 'Verified');
+        return true;
+      }
       
+      // For regular tasks, set status based on verification
       const status = isVerified ? 'Verified' : 'Unverified';
       await TaskService.updateStatusAndCreateWorklog(taskDetail.assignment_id, status);
       return true;
@@ -457,8 +464,8 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
         return;
       }
       
-      // Prepare repair materials data if verified and not a private asset
-      const repairMaterials = !isPrivateAsset && isVerified ? selectedMaterials.map(item => ({
+      // Prepare repair materials data if verified and not a private asset and not a schedule task
+      const repairMaterials = !isPrivateAsset && isVerified && !taskDetail.task?.schedule_job_id ? selectedMaterials.map(item => ({
         materialId: item.material.material_id,
         quantity: item.quantity
       })) : undefined;
@@ -466,7 +473,7 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
       const inspectionData = {
         task_assignment_id: taskDetail.assignment_id,
         description: notes,
-        files: images, // Truyền trực tiếp URI ảnh - API sẽ xử lý việc upload
+        files: images,
         repairMaterials,
         isPrivateAsset: isPrivateAsset
       };
@@ -673,29 +680,31 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
 
           {/* Inspection Type Selection */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{t('inspection.inspectionType')}</Text>
-            <View style={styles.divider} />
-            
-            <View style={styles.switchRow}>
-              <Text style={styles.switchLabel}>
-                {isPrivateAsset ? t('inspection.privateAsset') : t('inspection.regularInspection')}
+          {!taskDetail.task?.schedule_job_id && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>{t('inspection.inspectionType')}</Text>
+              <View style={styles.divider} />
+              
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>
+                  {isPrivateAsset ? t('inspection.privateAsset') : t('inspection.regularInspection')}
+                </Text>
+                <Switch
+                  trackColor={{ false: '#767577', true: '#B77F2E' }}
+                  thumbColor={isPrivateAsset ? '#f5dd4b' : '#f4f3f4'}
+                  ios_backgroundColor="#3e3e3e"
+                  onValueChange={togglePrivateAssetStatus}
+                  value={isPrivateAsset}
+                />
+              </View>
+              
+              <Text style={styles.infoText}>
+                {isPrivateAsset 
+                  ? t('inspection.privateAssetDescription')
+                  : t('inspection.regularInspectionDescription')}
               </Text>
-              <Switch
-                trackColor={{ false: '#767577', true: '#B77F2E' }}
-                thumbColor={isPrivateAsset ? '#f5dd4b' : '#f4f3f4'}
-                ios_backgroundColor="#3e3e3e"
-                onValueChange={togglePrivateAssetStatus}
-                value={isPrivateAsset}
-              />
             </View>
-            
-            <Text style={styles.infoText}>
-              {isPrivateAsset 
-                ? t('inspection.privateAssetDescription')
-                : t('inspection.regularInspectionDescription')}
-            </Text>
-          </View>
+          )}
 
           {/* Images Section */}
           <View style={styles.card}>
@@ -782,8 +791,8 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
             )}
           </View>
 
-          {/* Verification Status - Only shown for regular inspections */}
-          {!isPrivateAsset && (
+          {/* Verification Status - Only shown for regular inspections and non-schedule tasks */}
+          {!isPrivateAsset && !taskDetail.task?.schedule_job_id && (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>{t('inspection.verificationStatus')}</Text>
               <View style={styles.divider} />
@@ -809,8 +818,8 @@ const CreateInspectionScreen: React.FC<Props> = ({ route, navigation }) => {
             </View>
           )}
 
-          {/* Materials Section - Only shown when Verified and not a private asset */}
-          {!isPrivateAsset && isVerified && (
+          {/* Materials Section - Only shown when Verified and not a private asset and not a schedule task */}
+          {!isPrivateAsset && isVerified && !taskDetail.task?.schedule_job_id && (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>{t('inspection.materialsForRepair')}</Text>
               <View style={styles.divider} />

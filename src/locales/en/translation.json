@@ -15,7 +15,8 @@
     "submit": "Submit",
     "cancel": "Cancel",
     "success": "Success",
-    "delete": "Delete"
+    "delete": "Delete",
+    "loading": "Loading..."
   },
   "languages": {
     "english": "English",

@@ -15,7 +15,8 @@
     "submit": "Gửi",
     "cancel": "Hủy",
     "success": "Thành công",
-    "delete": "Xóa"
+    "delete": "Xóa",
+    "loading": "Đang tải..."
   },
   "languages": {
     "english": "Tiếng Anh",
