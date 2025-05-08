@@ -240,7 +240,7 @@
       "cameraError": "Cannot access camera. Please try again.",
       "photoLibraryError": "Cannot access photo library. Please try again.",
       "kitchen": "Kitchen",
-      "living_room": "Living Room",
+      "livingroom": "Living Room",
       "bedroom": "Bedroom",
       "bathroom": "Bathroom",
       "wall": "Wall",
@@ -601,7 +601,8 @@
       "successMessage": "Actual cost created successfully",
       "uploadPDF": "Upload PDF",
       "uploadPDFDescription": "Upload PDF file to create actual cost"
-    }
+    },
+    "attachPDF": "Upload file to create actual cost"
   },
   "inspection": {
     "title": "Create Inspection",

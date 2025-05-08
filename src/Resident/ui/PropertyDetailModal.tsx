@@ -75,7 +75,7 @@ const PropertyDetailScreen = () => {
 
   // Services with translations
   const services = [
-    { id: "1", name: t('propertyDetail.residentInformation'), icon: "people", color: "#4CAF50" },
+
     { id: "2", name: t('propertyDetail.repairInside'), icon: "build", color: "#FF5722" },
     { id: "3", name: t('propertyDetail.repairOutside'), icon: "apartment", color: "#2196F3" },
   ];

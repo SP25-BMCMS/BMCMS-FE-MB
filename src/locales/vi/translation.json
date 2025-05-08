@@ -250,7 +250,7 @@
       "cameraError": "Không thể truy cập máy ảnh. Vui lòng thử lại.",
       "photoLibraryError": "Không thể truy cập thư viện ảnh. Vui lòng thử lại.",
       "kitchen": "Nhà bếp",
-      "living_Room": "Phòng khách",
+      "livingroom": "Phòng khách",
       "bedroom": "Phòng ngủ",
       "bathroom": "Phòng tắm",
       "wall": "Tường",
@@ -615,7 +615,7 @@
       "noTaskAssignment": "Không tìm thấy phân công công việc hợp lệ",
       "successMessage": "Đã tạo chi phí thực tế thành công",
       "uploadPDF": "Tải lên PDF",
-      "uploadPDFDescription": "Tải lên tệp PDF để tạo chi phí thực tế"
+      "attachPDF": "Tải lên tệp để tạo chi phí thực tế"
     }
   },
   "inspection": {

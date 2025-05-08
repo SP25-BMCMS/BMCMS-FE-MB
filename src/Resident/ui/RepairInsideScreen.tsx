@@ -244,7 +244,7 @@ const RepairInsideScreen = () => {
     const buildingName = property.buildingDetails?.[0]?.name || property.building;
 
     setSelectedRoom(room);
-    setRoomDisplayText(room === 'OTHER' ? t('repair.inside.other') : t(`repair.inside.${room.toLowerCase()}`));
+    setRoomDisplayText(room === 'OTHER' ? t('repair.inside.other') : t(`repair.inside.${room.toLowerCase().replace('_', '')}`));
     setIsRoomDropdownOpen(false);
     
     if (room === 'OTHER') {
@@ -343,7 +343,7 @@ const RepairInsideScreen = () => {
                       selectedRoom === room ? styles.selectedDropdownItem : {}
                     ]}
                   >
-                    {room === 'OTHER' ? t('repair.inside.other') : t(`repair.inside.${room.toLowerCase()}`)}
+                    {room === 'OTHER' ? t('repair.inside.other') : t(`repair.inside.${room.toLowerCase().replace('_', '')}`)}
                   </Text>
                   {selectedRoom === room && (
                     <Icon name="check" size={18} color="#B77F2E" />
