@@ -38,6 +38,24 @@ interface EmployeeTaskAssignment {
   task: Task;
 }
 
+interface SectionData {
+    title: string;
+    taskId: string;
+    data: TaskAssignment[];
+    allAssignments: TaskAssignment[];
+    task?: {
+        task_id: string;
+        title: string;
+        description: string;
+        status: string;
+        statusLabel: string;
+        created_at: string;
+        updated_at: string;
+        crack_id?: string;
+        schedule_job_id?: string;
+    };
+}
+
 const StaffAssignScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
@@ -135,6 +153,13 @@ const StaffAssignScreen = () => {
           if (taskResponse.isSuccess && taskResponse.data) {
             // Create a TaskWithAssignments object from the new API response
             const task = taskResponse.data.task;
+
+            // Kiểm tra nếu task đã completed hoặc hoàn thành thì bỏ qua
+            if (task.status === 'Completed' || task.statusLabel === 'Hoàn thành') {
+              console.log(`Task ${taskId} is completed, skipping`);
+              continue;
+            }
+
             // Add the verified task assignment from API response and convert to expected format
             const taskAssignments: TaskAssignment[] = [];
             
@@ -184,17 +209,17 @@ const StaffAssignScreen = () => {
 
   // Function to check and update button display status
   const checkButtonVisibility = async (taskId: string, assignments: TaskAssignment[]) => {
-    // Log all assignments and their statuses
-    console.log(`Checking button visibility for task ${taskId}:`, {
-      assignmentsCount: assignments.length,
-      allAssignments: assignments.map(a => ({
-        id: a.assignment_id,
-        status: String(a.status),
-        employee_id: a.employee_id
-      }))
-    });
-
     try {
+      // Log all assignments and their statuses
+      console.log(`Checking button visibility for task ${taskId}:`, {
+        assignmentsCount: assignments.length,
+        allAssignments: assignments.map(a => ({
+          id: a.assignment_id,
+          status: String(a.status),
+          employee_id: a.employee_id
+        }))
+      });
+
       // Filter out assignments of the current user (leader)
       const staffAssignments = assignments.filter(
         assignment => assignment.employee_id !== userId
@@ -222,28 +247,46 @@ const StaffAssignScreen = () => {
         return;
       }
 
-      // 2. All staff assignments must be in Fixed status
-      const allFixed = staffAssignments.every(
-        assignment => String(assignment.status) === 'Fixed'
-      );
-
-      // 3. Leader's assignment must not be in Confirmed status
-      const leaderNotConfirmed = !leaderAssignment || String(leaderAssignment.status) !== 'Confirmed';
-
-      // 4. No assignments should be in InFixing status
-      const noInFixing = !assignments.some(
+      // 2. Check if any assignment is in InFixing status
+      const hasInFixingAssignment = assignments.some(
         assignment => String(assignment.status) === 'InFixing'
       );
 
+      if (hasInFixingAssignment) {
+        console.log('Found InFixing assignment, hiding button');
+        setButtonVisibility(prev => ({...prev, [taskId]: false}));
+        return;
+      }
+
+      // 3. Check if task is completed
+      const taskCompleted = staffAssignments.some(
+        assignment => assignment.task?.status === 'Completed'
+      );
+
+      if (taskCompleted) {
+        console.log('Task is completed, hiding button');
+        setButtonVisibility(prev => ({...prev, [taskId]: false}));
+        return;
+      }
+
+      // 4. All staff assignments must be in Fixed or Confirmed status
+      const allFixedOrConfirmed = staffAssignments.every(
+        assignment => ['Fixed', 'Confirmed'].includes(String(assignment.status))
+      );
+
+      // 5. Leader's assignment must not be in Confirmed status
+      const leaderNotConfirmed = !leaderAssignment || String(leaderAssignment.status) !== 'Confirmed';
+
       // Log conditions
       console.log('Button visibility conditions:', {
-        allFixed,
+        allFixedOrConfirmed,
         leaderNotConfirmed,
-        noInFixing
+        hasInFixingAssignment,
+        taskCompleted
       });
 
       // Set button visibility based on all conditions
-      const shouldShow = allFixed && leaderNotConfirmed && noInFixing;
+      const shouldShow = allFixedOrConfirmed && leaderNotConfirmed && !hasInFixingAssignment && !taskCompleted;
       setButtonVisibility(prev => ({...prev, [taskId]: shouldShow}));
 
     } catch (error) {
@@ -502,19 +545,42 @@ const StaffAssignScreen = () => {
     }).filter(section => section !== null); // Lọc bỏ các null
   };
 
-  interface SectionData {
-    title: string;
-    taskId: string;
-    data: TaskAssignment[];
-    allAssignments: TaskAssignment[];
-  }
+  const renderSectionHeader = ({ section }: { section: SectionData }) => {
+    // Lấy task từ section
+    const task = section.allAssignments[0]?.task;
+    const isTaskCompleted = task?.status === 'Completed' || (task as any)?.statusLabel === 'Hoàn thành';
+    const hasInFixingAssignment = section.allAssignments.some(
+      assignment => String(assignment.status) === 'InFixing'
+    );
 
-  const renderSectionHeader = ({ section }: { section: SectionData }) => (
-    <View style={styles.stickyHeader}>
-      <Icon name="assignment" size={20} color="#B77F2E" />
-      <Text style={styles.stickyHeaderTitle}>Task: {section.title}</Text>
-    </View>
-  );
+    // Kiểm tra xem tất cả assignments (trừ của leader) đều đã Confirmed chưa
+    const staffAssignments = section.allAssignments.filter(
+      assignment => assignment.employee_id !== userId
+    );
+    const allAssignmentsConfirmed = staffAssignments.length > 0 && 
+      staffAssignments.every(assignment => String(assignment.status) === 'Confirmed');
+
+    return (
+      <View style={styles.stickyHeader}>
+        <View style={styles.headerContent}>
+          <View style={styles.headerLeft}>
+            <Icon name="assignment" size={20} color="#B77F2E" />
+            <Text style={styles.stickyHeaderTitle}>Task: {section.title}</Text>
+          </View>
+        </View>
+        {isLeader && !isTaskCompleted && !hasInFixingAssignment && allAssignmentsConfirmed && (
+          <View style={styles.taskChangeStatusContainer}>
+            <TouchableOpacity 
+              style={styles.taskChangeStatusButton}
+              onPress={() => handleChangeStatusToConfirm(section.taskId, section.allAssignments)}
+            >
+              <Text style={styles.taskChangeStatusButtonText}>{t('screens.createActualCost.title')}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
 
   const handleChangeStatusToConfirm = async (taskId: string, assignments: TaskAssignment[]) => {
     try {
@@ -559,11 +625,12 @@ const StaffAssignScreen = () => {
               navigation.navigate('CreateActualCost', {
                 taskId: taskId,
                 verifiedAssignmentId: taskAssignment.assignment_id,
-                onComplete: () => {
-                  // Hide button after successful creation
-                  setButtonVisibility(prev => ({...prev, [taskId]: false}));
-                  // Refresh the task list
-                  fetchLeaderTaskAssignments();
+                onComplete: async () => {
+                  console.log('Actual cost created, reloading data...');
+                  // Thêm delay nhỏ để đảm bảo API đã cập nhật
+                  await new Promise(resolve => setTimeout(resolve, 500));
+                  // Reload data sau khi tạo actual cost
+                  await fetchLeaderTaskAssignments();
                 }
               });
               return;
@@ -579,11 +646,12 @@ const StaffAssignScreen = () => {
       navigation.navigate('CreateActualCost', {
         taskId: taskId,
         verifiedAssignmentId: confirmedAssignment.assignment_id,
-        onComplete: () => {
-          // Hide button after successful creation
-          setButtonVisibility(prev => ({...prev, [taskId]: false}));
-          // Refresh the task list
-          fetchLeaderTaskAssignments();
+        onComplete: async () => {
+          console.log('Actual cost created, reloading data...');
+          // Thêm delay nhỏ để đảm bảo API đã cập nhật
+          await new Promise(resolve => setTimeout(resolve, 500));
+          // Reload data sau khi tạo actual cost
+          await fetchLeaderTaskAssignments();
         }
       });
     } catch (error) {
@@ -596,22 +664,6 @@ const StaffAssignScreen = () => {
         duration: 3000
       });
     }
-  };
-
-  const renderSectionFooter = ({ section }: { section: SectionData }) => {
-    // Chỉ kiểm tra có phải leader không, bỏ qua các điều kiện status
-    if (!isLeader) return null;
-
-    return (
-      <View style={styles.taskChangeStatusContainer}>
-        <TouchableOpacity 
-          style={styles.taskChangeStatusButton}
-          onPress={() => handleChangeStatusToConfirm(section.taskId, section.allAssignments)}
-        >
-          <Text style={styles.taskChangeStatusButtonText}>Create Actual Cost</Text>
-        </TouchableOpacity>
-      </View>
-    );
   };
 
   // Function để lấy thông tin nhân viên bằng userId
@@ -764,7 +816,6 @@ const StaffAssignScreen = () => {
                 keyExtractor={(item) => item.assignment_id}
                 renderItem={({ item }) => renderTaskAssignmentItem(item)}
                 renderSectionHeader={renderSectionHeader}
-                renderSectionFooter={renderSectionFooter}
                 stickySectionHeadersEnabled={true}
                 refreshControl={
                   <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -896,11 +947,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   taskChangeStatusContainer: {
-    padding: 12,
+    marginTop: 12,
     backgroundColor: '#F8F8F8',
     borderRadius: 8,
-    marginTop: 8,
-    marginLeft: 12,
   },
   taskChangeStatusButton: {
     backgroundColor: '#B77F2E',
@@ -914,10 +963,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   stickyHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 12,
     backgroundColor: '#F8F8F8',
     borderRadius: 8,
     marginBottom: 12,
@@ -926,12 +971,39 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
+    padding: 12,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   stickyHeaderTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333333',
     marginLeft: 8,
+    flex: 1,
+  },
+  createActualCostButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#B77F2E',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginLeft: 8,
+  },
+  createActualCostText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
   },
   idReference: {
     fontSize: 12,

@@ -226,6 +226,10 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
     try {
       setIsSubmitting(true);
       
+      // First change status to Fixed
+      await TaskService.updateStatusAndCreateWorklog(taskDetail.assignment_id, 'Fixed');
+      
+      // Then create inspection
       const inspectionData = {
         task_assignment_id: taskDetail.assignment_id,
         description: description,
@@ -257,27 +261,6 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
     }
   };
 
-  const handleChangeStatus = async () => {
-    try {
-      setIsChangingStatus(true);
-      await TaskService.updateStatusAndCreateWorklog(taskDetail.assignment_id, 'Fixed');
-      showMessage({
-        message: t('createStaffInspection.statusChanged'),
-        description: t('createStaffInspection.statusChangedMessage'),
-        type: "success",
-      });
-    } catch (error) {
-      console.error('Error changing status:', error);
-      showMessage({
-        message: t('createStaffInspection.error'),
-        description: t('createStaffInspection.failedToChangeStatus'),
-        type: "danger",
-      });
-    } finally {
-      setIsChangingStatus(false);
-    }
-  };
-
   // Render review screen
   if (showReviewScreen) {
     return (
@@ -297,8 +280,6 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>{t('createStaffInspection.summary')}</Text>
             <View style={styles.divider} />
-            
-           
             
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>{t('createStaffInspection.status')}:</Text>
@@ -331,18 +312,6 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
           
           <View style={styles.buttonContainer}>
             <TouchableOpacity
-              style={[styles.actionButton, styles.changeStatusButton]}
-              onPress={handleChangeStatus}
-              disabled={isChangingStatus}
-            >
-              {isChangingStatus ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text style={styles.buttonText}>{t('createStaffInspection.changeStatus')}</Text>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
               style={[styles.actionButton, styles.confirmButton]}
               onPress={handleSubmitInspection}
               disabled={isSubmitting}
@@ -350,7 +319,7 @@ const CreateStaffInspectionScreen: React.FC<Props> = ({ route }) => {
               {isSubmitting ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.buttonText}>{t('createStaffInspection.confirmSubmit')}</Text>
+                <Text style={styles.buttonText}>{t('createStaffInspection.submitAndFixed')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -734,9 +703,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  changeStatusButton: {
-    backgroundColor: '#B77F2E',
   },
   confirmButton: {
     backgroundColor: '#4CD964',  // Green color for confirmation

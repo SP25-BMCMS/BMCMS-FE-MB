@@ -613,7 +613,9 @@
       "descriptionRequired": "Vui lòng nhập mô tả",
       "materialsRequired": "Vui lòng thêm ít nhất một vật liệu",
       "noTaskAssignment": "Không tìm thấy phân công công việc hợp lệ",
-      "successMessage": "Đã tạo chi phí thực tế thành công"
+      "successMessage": "Đã tạo chi phí thực tế thành công",
+      "uploadPDF": "Tải lên PDF",
+      "uploadPDFDescription": "Tải lên tệp PDF để tạo chi phí thực tế"
     }
   },
   "inspection": {
@@ -921,7 +923,8 @@
     "createFailed": "Không thể tạo kiểm tra. Vui lòng thử lại.",
     "statusChanged": "Đã Thay Đổi Trạng Thái",
     "statusChangedMessage": "Trạng thái công việc đã được chuyển thành Đã Sửa",
-    "statusChangeFailed": "Không thể thay đổi trạng thái công việc"
+    "statusChangeFailed": "Không thể thay đổi trạng thái công việc",
+    "submitAndFixed": "Gửi báo cáo & đánh dấu hoàn thành"
   },
   "editLocation": {
     "title": "Chỉnh Sửa Vị Trí",
@@ -1097,7 +1100,8 @@
     "severityTypes": {
       "Low": "Thấp",
       "Medium": "Trung Bình",
-      "High": "Cao"
+      "High": "Cao",
+      "Unknown": "Không Xác Định"
     }
   },
   "createResidentInspection": {

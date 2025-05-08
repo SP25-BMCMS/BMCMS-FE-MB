@@ -598,7 +598,9 @@
       "descriptionRequired": "Please enter a description",
       "materialsRequired": "Please add at least one material",
       "noTaskAssignment": "No valid task assignment found",
-      "successMessage": "Actual cost created successfully"
+      "successMessage": "Actual cost created successfully",
+      "uploadPDF": "Upload PDF",
+      "uploadPDFDescription": "Upload PDF file to create actual cost"
     }
   },
   "inspection": {
@@ -907,7 +909,8 @@
     "createFailed": "Failed to create inspection. Please try again.",
     "statusChanged": "Status Changed",
     "statusChangedMessage": "Task status has been changed to Fixed",
-    "statusChangeFailed": "Failed to change task status"
+    "statusChangeFailed": "Failed to change task status",
+    "submitAndFixed": "Submit & Mark as Fixed"
   },
   "editLocation": {
     "title": "Edit Location",
@@ -1083,7 +1086,8 @@
     "severityTypes": {
       "Low": "Low",
       "Medium": "Medium",
-      "High": "High"
+      "High": "High",
+      "Unknown": "Unknown"
     }
   },
   "createResidentInspection": {
