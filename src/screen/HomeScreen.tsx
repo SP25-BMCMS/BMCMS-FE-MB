@@ -85,6 +85,7 @@ const HomeScreen = () => {
 
   // Navigate to Technical Records screen
   const navigateToTechnicalRecords = (buildingId: string, buildingName: string) => {
+    //@ts-ignore
     navigation.navigate('TechnicalRecord', { 
       buildingId,
       buildingName

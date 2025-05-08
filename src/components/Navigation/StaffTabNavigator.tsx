@@ -4,7 +4,7 @@ import TaskScreen from '../../screen/TaskScreen';
 import NotificationScreen from '../../screen/NotificationScreen';
 import AccountScreen from '../../screen/AccountScreen';
 import StaffAssignScreen from '../../screen/StaffAssignScreen';
-import { StaffBottomTabParamList } from '../../types';
+import { StaffBottomTabParamList } from '../../types/index';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';

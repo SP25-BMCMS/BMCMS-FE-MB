@@ -61,11 +61,6 @@ export type RootStackParamList = {
   CreateStaffInspection: { 
     taskDetail: TaskAssignmentDetail;
   };
-  CreateActualCost: { 
-    taskId: string;
-    verifiedAssignmentId: string;
-    onComplete?: () => void;
-  };
   CreateLocation: {
     onGoBack?: () => void;
     initialData: {
@@ -100,13 +95,15 @@ export type RootStackParamList = {
     scheduleJobId: string;
     buildingName?: string;
   };
-  StaffMaintenanceHistory: {
-    scheduleJobId: string;
-    buildingName?: string;
-  };
+  StaffMaintenanceHistory: undefined;
   TechnicalRecord: {
     buildingId: string;
     buildingName?: string;
+  };
+  CreateActualCost: { 
+    taskId: string;
+    verifiedAssignmentId: string;
+    onComplete?: () => void;
   };
 };
 //residents
@@ -125,6 +122,7 @@ export interface LoginResponse {
   statusCode: number;
   message: string;
   accountStatus: string;
+  role: 'resident' | 'staff';
 }
 export interface LoginPayload {
   phone: string;

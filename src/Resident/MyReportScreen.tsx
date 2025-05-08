@@ -127,7 +127,7 @@ const MyReportScreen = () => {
       case 'InProgress':
         return { backgroundColor: '#E3F2FD', textColor: '#1976D2' }; // Blue
       case 'Reviewing':
-        return { backgroundColor: '#FFF9C4', textColor: '#F57F17' }; // Yellow
+        return { backgroundColor: '#5856D6', textColor: '#FFFFFF' }; // Purple with white text
       case 'Completed':
         return { backgroundColor: '#E8F5E9', textColor: '#388E3C' }; // Green
       case 'Pending':

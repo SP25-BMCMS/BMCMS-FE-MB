@@ -7,7 +7,7 @@ import SignInScreen from './src/screen/SignInScreen';
 import OTPScreen from './src/screen/OTPScreen';
 import MoreScreen from './src/screen/More';
 import PropertyDetailScreen from './src/Resident/ui/PropertyDetailModal';
-import { RootStackParamList } from './src/types';
+import { RootStackParamList } from './src/types/index';
 import RepairInsideScreen from './src/Resident/ui/RepairInsideScreen';
 import RepairReviewScreen from './src/Resident/ui/RepairReviewScreen';
 import RepairSuccessScreen from './src/Resident/ui/RepairSuccessScreen';

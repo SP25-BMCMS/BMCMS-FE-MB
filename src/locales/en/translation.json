@@ -39,7 +39,10 @@
       "loginFailed": "Login Failed",
       "invalidCredentials": "Invalid phone number or password.",
       "invalidStaffCredentials": "Invalid username or password.",
-      "unexpectedError": "An unexpected error occurred. Please try again."
+      "unexpectedError": "An unexpected error occurred. Please try again.",
+      "wrongRole": "Wrong Account Type",
+      "staffCannotLoginAsResident": "Staff account cannot login as resident. Please use the staff login tab.",
+      "residentCannotLoginAsStaff": "Resident account cannot login as staff. Please use the resident login tab."
     }
   },
   "property": {
@@ -157,7 +160,8 @@
       "Pending": "Pending",
       "WaitingConfirm": "Waiting Confirm",
       "Rejected": "Rejected",
-      "InFixing": "In Fixing"
+      "InFixing": "In Fixing",
+      "Reviewing": "Reviewing"
     }
   },
   "repair": {

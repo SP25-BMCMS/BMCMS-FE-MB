@@ -4,7 +4,7 @@ import HomeScreen from '../../screen/HomeScreen';
 import PropertyScreen from '../../screen/PropertyScreen';
 import NotificationScreen from '../../screen/NotificationScreen';
 import AccountScreen from '../../screen/AccountScreen';
-import { ResidentBottomTabParamList } from '../../types';
+import { ResidentBottomTabParamList } from '../../types/index';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';

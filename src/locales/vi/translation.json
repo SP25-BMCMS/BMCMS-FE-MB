@@ -39,7 +39,10 @@
       "loginFailed": "Đăng nhập thất bại",
       "invalidCredentials": "Số điện thoại hoặc mật khẩu không đúng.",
       "invalidStaffCredentials": "Tên đăng nhập hoặc mật khẩu không đúng.",
-      "unexpectedError": "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại."
+      "unexpectedError": "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.",
+      "wrongRole": "Sai Loại Tài Khoản",
+      "staffCannotLoginAsResident": "Tài khoản nhân viên không thể đăng nhập với tư cách cư dân. Vui lòng sử dụng tab đăng nhập nhân viên.",
+      "residentCannotLoginAsStaff": "Tài khoản cư dân không thể đăng nhập với tư cách nhân viên. Vui lòng sử dụng tab đăng nhập cư dân."
     }
   },
   "property": {
@@ -161,7 +164,8 @@
       "Pending": "Chờ xử lý",
       "WaitingConfirm": "Chờ xác nhận",
       "Rejected": "Từ chối",
-      "InFixing": "Đang sửa chữa"
+      "InFixing": "Đang sửa chữa",
+      "Reviewing": "Đang xem xét"
     },
     "date": "Ngày",
     "technician": "Kỹ thuật viên",

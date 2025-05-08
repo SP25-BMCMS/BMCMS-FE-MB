@@ -337,7 +337,9 @@ const StaffMaintenanceHistoryScreen: React.FC<Props> = ({ route }) => {
             
             <TouchableOpacity 
               style={styles.viewTechnicalRecordsButton}
+              //@ts-ignore
               onPress={() => navigation.navigate('TechnicalRecord', {
+                
                 buildingId: scheduleJobData.data.buildingDetail?.building?.buildingId || '',
                 buildingName: scheduleJobData.data.buildingDetail?.building?.name || buildingName
               })}

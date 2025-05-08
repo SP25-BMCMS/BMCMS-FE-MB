@@ -130,7 +130,7 @@ const StaffAssignScreen = () => {
       for (const taskId of uniqueTaskIds) {
         try {
           // Use the new API to get task assignment and inspection
-          const taskResponse = await TaskService.getTaskAssignmentAndInspectionByTaskId(taskId);
+          const taskResponse = await TaskService.getTaskAssignmentAndInspectionByTaskId(taskId as string);
           
           if (taskResponse.isSuccess && taskResponse.data) {
             // Create a TaskWithAssignments object from the new API response
