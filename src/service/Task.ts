@@ -17,6 +17,7 @@ import {
   VITE_GET_TASK_ASSIGNMENT,
   VITE_CREATE_TASK_ASSIGNMENT,
   VITE_GET_STAFF_BY_LEADER,
+  VITE_GET_STAFF_BY_DEVICE_TYPE,
   VITE_GET_TASK_ASSIGNMENT_BY_USERID,
   VITE_GET_DETAIL_TASK_ASSIGNMENT,
   VITE_CHANGE_STATUS_TASK_ASSIGMENT,
@@ -577,6 +578,18 @@ export const TaskService = {
       return response.data;
     } catch (error) {
       console.error(`Error changing task status for task ID ${taskId}:`, error);
+      throw error;
+    }
+  },
+
+  // Lấy danh sách nhân viên theo device type
+  async getStaffByDeviceType(deviceType: string): Promise<any> {
+    try {
+      const url = VITE_GET_STAFF_BY_DEVICE_TYPE.replace('{deviceType}', deviceType);
+      const response = await instance.get(url);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching staff by device type:', error);
       throw error;
     }
   }
