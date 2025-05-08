@@ -71,4 +71,5 @@ declare module '@env'{
   export const VITE_GET_TASK_ASSIGNMENT_AND_INSPECTION_BY_TASK_ID: string;
   export const VITE_GET_MATERIAL_BY_ID: string;
   export const VITE_GET_STAFF_BY_DEVICE_TYPE: string;
+  export const VITE_GET_TASK_BY_TYPE: string;
 }

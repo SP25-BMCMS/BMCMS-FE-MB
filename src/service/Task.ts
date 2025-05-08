@@ -40,7 +40,8 @@ import {
   VITE_CREATE_INSPECTION_ACTUAL_COST,
   VITE_GET_TASK_ASSIGNMENT_AND_INSPECTION_BY_TASK_ID,
   VITE_GET_MATERIAL_BY_ID,
-  VITE_CHANGE_STATUS_TASK_BY_TASK_ID
+  VITE_CHANGE_STATUS_TASK_BY_TASK_ID,
+  VITE_GET_TASK_BY_TYPE
 } from '@env';
 
 export const TaskService = {
@@ -591,6 +592,50 @@ export const TaskService = {
     } catch (error) {
       console.error('Error fetching staff by device type:', error);
       throw error;
+    }
+  },
+
+  // Add new function to get tasks by type
+  async getTasksByType(taskType: 'schedule' | 'crack', page: number = 1, limit: number = 10): Promise<any> {
+    try {
+      console.log('Calling getTasksByType API with:', { taskType, page, limit });
+      const url = `${VITE_GET_TASK_BY_TYPE}?taskType=${taskType}&page=${page}&limit=${limit}`;
+      console.log('API URL:', url);
+      
+      const response = await instance.get(url);
+      
+      // Log chi tiết response cho schedule tasks
+      if (taskType === 'schedule') {
+        console.log('Schedule tasks response:', {
+          hasData: !!response.data,
+          isDataArray: Array.isArray(response.data),
+          dataLength: Array.isArray(response.data) ? response.data.length : 'not an array',
+          firstItem: Array.isArray(response.data) && response.data.length > 0 ? response.data[0] : null,
+          scheduleJobIds: Array.isArray(response.data) 
+            ? response.data.map((task: any) => task.schedule_job_id || task.task?.schedule_job_id).filter(Boolean)
+            : [],
+          rawResponse: response.data
+        });
+      }
+
+      // Đảm bảo response luôn có cấu trúc { data: [] }
+      const formattedResponse = Array.isArray(response.data) 
+        ? { data: response.data } 
+        : response.data && typeof response.data === 'object' 
+          ? response.data 
+          : { data: [] };
+
+      console.log('Formatted response:', formattedResponse);
+      return formattedResponse;
+    } catch (error: any) {
+      console.error('Error in getTasksByType:', {
+        taskType,
+        errorMessage: error.message,
+        errorResponse: error.response?.data,
+        errorStatus: error.response?.status,
+        config: error.config
+      });
+      return { data: [] };
     }
   }
 }; 

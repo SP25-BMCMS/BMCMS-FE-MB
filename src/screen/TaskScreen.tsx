@@ -259,7 +259,9 @@ const TaskScreen = () => {
       Alert.alert(t('screens.task.sessionExpired'), t('screens.task.loginAgain'));
       return;
     }
-    navigation.navigate('CreateTaskAssignment');
+    navigation.navigate('CreateTaskAssignment', {
+      taskType: viewMode === ViewMode.MAINTENANCE_TASKS ? 'schedule' : 'crack'
+    });
   };
 
   const shouldShowReviewingButton = async (assignment: TaskAssignment): Promise<boolean> => {
