@@ -14,7 +14,9 @@
     "retry": "Retry",
     "submit": "Submit",
     "cancel": "Cancel",
-    "success": "Success"
+    "success": "Success",
+    "delete": "Delete",
+    "loading": "Loading..."
   },
   "languages": {
     "english": "English",
@@ -38,7 +40,10 @@
       "loginFailed": "Login Failed",
       "invalidCredentials": "Invalid phone number or password.",
       "invalidStaffCredentials": "Invalid username or password.",
-      "unexpectedError": "An unexpected error occurred. Please try again."
+      "unexpectedError": "An unexpected error occurred. Please try again.",
+      "wrongRole": "Wrong Account Type",
+      "staffCannotLoginAsResident": "Staff account cannot login as resident. Please use the staff login tab.",
+      "residentCannotLoginAsStaff": "Resident account cannot login as staff. Please use the resident login tab."
     }
   },
   "property": {
@@ -72,6 +77,10 @@
     "noReportsFiltered": "No reports with status",
     "noReports": "No reports yet.",
     "clearFilter": "Clear Filter",
+    "deleteConfirmTitle": "Delete Report",
+    "deleteConfirmMessage": "Are you sure you want to delete this report?",
+    "deleteSuccess": "Report deleted successfully",
+    "deleteError": "Failed to delete report",
     "status": {
       "InProgress": "In Progress",
       "Reviewing": "Reviewing",
@@ -152,7 +161,8 @@
       "Pending": "Pending",
       "WaitingConfirm": "Waiting Confirm",
       "Rejected": "Rejected",
-      "InFixing": "In Fixing"
+      "InFixing": "In Fixing",
+      "Reviewing": "Reviewing"
     }
   },
   "repair": {
@@ -230,7 +240,7 @@
       "cameraError": "Cannot access camera. Please try again.",
       "photoLibraryError": "Cannot access photo library. Please try again.",
       "kitchen": "Kitchen",
-      "living_room": "Living Room",
+      "livingroom": "Living Room",
       "bedroom": "Bedroom",
       "bathroom": "Bathroom",
       "wall": "Wall",
@@ -573,7 +583,26 @@
       "clearChat": "Clear Chat",
       "confirmClear": "Are you sure you want to clear this chat?",
       "chatCleared": "Chat cleared successfully"
-    }
+    },
+    "createActualCost": {
+      "title": "Create Actual Cost",
+      "originalInspection": "Original Inspection",
+      "description": "Description",
+      "totalCost": "Total Cost",
+      "actualCost": "Actual Cost",
+      "enterDescription": "Enter description...",
+      "materials": "Materials",
+      "noMaterials": "No materials found",
+      "addMaterial": "Add Material",
+      "submit": "Create Actual Cost",
+      "descriptionRequired": "Please enter a description",
+      "materialsRequired": "Please add at least one material",
+      "noTaskAssignment": "No valid task assignment found",
+      "successMessage": "Actual cost created successfully",
+      "uploadPDF": "Upload PDF",
+      "uploadPDFDescription": "Upload PDF file to create actual cost"
+    },
+    "attachPDF": "Upload file to create actual cost"
   },
   "inspection": {
     "title": "Create Inspection",
@@ -881,7 +910,8 @@
     "createFailed": "Failed to create inspection. Please try again.",
     "statusChanged": "Status Changed",
     "statusChangedMessage": "Task status has been changed to Fixed",
-    "statusChangeFailed": "Failed to change task status"
+    "statusChangeFailed": "Failed to change task status",
+    "submitAndFixed": "Submit & Mark as Fixed"
   },
   "editLocation": {
     "title": "Edit Location",
@@ -1051,12 +1081,14 @@
       "Verified": "Verified",
       "Confirmed": "Confirmed",
       "Unverified": "Unverified",
-      "Reviewing": "Reviewing"
+      "Reviewing": "Reviewing",
+      "Completed": "Completed"
     },
     "severityTypes": {
       "Low": "Low",
       "Medium": "Medium",
-      "High": "High"
+      "High": "High",
+      "Unknown": "Unknown"
     }
   },
   "createResidentInspection": {
@@ -1116,7 +1148,7 @@
     "status": "Status",
     "description": "Description",
     "descriptionPlaceholder": "Enter task description",
-    "createButton": "Create Assignment",
+    "createButton": "Create Task",
     "creating": "Creating...",
     "missingFields": "Missing Fields",
     "fillFields": "Please fill in all required fields",

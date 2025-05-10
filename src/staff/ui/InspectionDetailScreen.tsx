@@ -540,6 +540,9 @@ const InspectionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       case t('inspectionDetail.statusTypes.Reviewing'):
       case 'Reviewing':
         return '#5856D6';
+      case t('inspectionDetail.statusTypes.WaitingConfirm'):
+      case 'WaitingConfirm':
+        return '#E91E63';
       default:
         return '#5AC8FA';
     }

@@ -342,6 +342,8 @@ const WorkProgressScreen = () => {
         return "#E91E63";
       case "Rejected":
         return "#FF3B30";
+      case "Reviewing":
+        return "#5856D6";
       default:
         return "#757575";
     }

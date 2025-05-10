@@ -38,6 +38,24 @@ interface EmployeeTaskAssignment {
   task: Task;
 }
 
+interface SectionData {
+    title: string;
+    taskId: string;
+    data: TaskAssignment[];
+    allAssignments: TaskAssignment[];
+    task?: {
+        task_id: string;
+        title: string;
+        description: string;
+        status: string;
+        statusLabel: string;
+        created_at: string;
+        updated_at: string;
+        crack_id?: string;
+        schedule_job_id?: string;
+    };
+}
+
 const StaffAssignScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
@@ -66,6 +84,12 @@ const StaffAssignScreen = () => {
         const userData = JSON.parse(userString);
         const positionName = userData?.userDetails?.position?.positionName || '';
         const isUserLeader = positionName.toLowerCase().includes('leader');
+        
+        console.log('User Position Check:', {
+          positionName,
+          isUserLeader,
+          currentUserId
+        });
         
         setIsLeader(isUserLeader);
       } catch (error) {
@@ -120,14 +144,53 @@ const StaffAssignScreen = () => {
       // Create array containing tasks and task assignments
       const tasksWithAssignments: TaskWithAssignments[] = [];
       
-      // Get task assignments for each task_id
+      // Get task assignments for each task_id using the new API
       for (const taskId of uniqueTaskIds) {
         try {
-          const taskResponse = await TaskService.getTaskAssignmentsByTaskId(taskId);
+          // Use the new API to get task assignment and inspection
+          const taskResponse = await TaskService.getTaskAssignmentAndInspectionByTaskId(taskId as string);
           
-          if (taskResponse.data) {
-            // Add to the list of tasks to display
-            tasksWithAssignments.push(taskResponse.data);
+          if (taskResponse.isSuccess && taskResponse.data) {
+            // Create a TaskWithAssignments object from the new API response
+            const task = taskResponse.data.task;
+
+            // Kiểm tra nếu task đã completed hoặc hoàn thành thì bỏ qua
+            if (task.status === 'Completed' || task.statusLabel === 'Hoàn thành') {
+              console.log(`Task ${taskId} is completed, skipping`);
+              continue;
+            }
+
+            // Add the verified task assignment from API response and convert to expected format
+            const taskAssignments: TaskAssignment[] = [];
+            
+            // Add the verified task assignment
+            if (taskResponse.data.taskAssignment) {
+              taskAssignments.push(taskResponse.data.taskAssignment);
+            }
+            
+            // Add any other task assignments for this task (from the old API)
+            try {
+              const oldTaskResponse = await TaskService.getTaskAssignmentsByTaskId(taskId);
+              if (oldTaskResponse.data && oldTaskResponse.data.taskAssignments) {
+                // Add additional assignments that aren't in the new API response
+                oldTaskResponse.data.taskAssignments.forEach((assignment: TaskAssignment) => {
+                  // Check if this assignment ID is not already included
+                  if (!taskAssignments.some(a => a.assignment_id === assignment.assignment_id)) {
+                    taskAssignments.push(assignment);
+                  }
+                });
+              }
+            } catch (innerError) {
+              console.error(`Error fetching additional assignments for task ${taskId}:`, innerError);
+            }
+            
+            // Add to tasksWithAssignments if there are assignments
+            if (taskAssignments.length > 0) {
+              tasksWithAssignments.push({
+                ...task,
+                taskAssignments: taskAssignments
+              });
+            }
           }
         } catch (err) {
           console.error(`Error fetching assignments for task ${taskId}:`, err);
@@ -144,49 +207,92 @@ const StaffAssignScreen = () => {
     }
   };
 
-  // Function to check whether button should be displayed
-  const shouldShowConfirmButton = async (taskId: string): Promise<boolean> => {
-    try {
-      // Get task assignments of current user (leader)
-      const response = await TaskService.getTaskAssignmentsByUserId();
-      
-      // Find main task assignment related to taskId
-      const mainTaskAssignment = response.data.find(
-        assignment => assignment.task_id === taskId && assignment.employee_id === userId
-      );
-      
-      // If main task assignment not found
-      if (!mainTaskAssignment) {
-        return false;
-      }
-      
-      // If main task assignment already has Confirmed status, don't display button
-      if (String(mainTaskAssignment.status) === 'Confirmed') {
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Error checking task status:', error);
-      return false; // Default to not displaying if there's an error
-    }
-  };
-
   // Function to check and update button display status
   const checkButtonVisibility = async (taskId: string, assignments: TaskAssignment[]) => {
-    // Check if any task is in 'InFixing' or 'Fixed' status
-    const hasInFixingOrFixedTask = assignments.some(
-      assignment => String(assignment.status) === 'InFixing' || String(assignment.status) === 'Fixed'
-    );
-    
-    if (hasInFixingOrFixedTask) {
+    try {
+      // Log all assignments and their statuses
+      console.log(`Checking button visibility for task ${taskId}:`, {
+        assignmentsCount: assignments.length,
+        allAssignments: assignments.map(a => ({
+          id: a.assignment_id,
+          status: String(a.status),
+          employee_id: a.employee_id
+        }))
+      });
+
+      // Filter out assignments of the current user (leader)
+      const staffAssignments = assignments.filter(
+        assignment => assignment.employee_id !== userId
+      );
+
+      // Get leader's assignment for this task
+      const leaderAssignment = assignments.find(
+        assignment => assignment.employee_id === userId
+      );
+
+      // Log filtered assignments
+      console.log('Filtered assignments:', {
+        staffAssignmentsCount: staffAssignments.length,
+        leaderAssignment: leaderAssignment ? {
+          id: leaderAssignment.assignment_id,
+          status: String(leaderAssignment.status)
+        } : null
+      });
+
+      // Check conditions:
+      // 1. Must have staff assignments
+      if (staffAssignments.length === 0) {
+        console.log('No staff assignments found');
+        setButtonVisibility(prev => ({...prev, [taskId]: false}));
+        return;
+      }
+
+      // 2. Check if any assignment is in InFixing status
+      const hasInFixingAssignment = assignments.some(
+        assignment => String(assignment.status) === 'InFixing'
+      );
+
+      if (hasInFixingAssignment) {
+        console.log('Found InFixing assignment, hiding button');
+        setButtonVisibility(prev => ({...prev, [taskId]: false}));
+        return;
+      }
+
+      // 3. Check if task is completed
+      const taskCompleted = staffAssignments.some(
+        assignment => assignment.task?.status === 'Completed'
+      );
+
+      if (taskCompleted) {
+        console.log('Task is completed, hiding button');
+        setButtonVisibility(prev => ({...prev, [taskId]: false}));
+        return;
+      }
+
+      // 4. All staff assignments must be in Fixed or Confirmed status
+      const allFixedOrConfirmed = staffAssignments.every(
+        assignment => ['Fixed', 'Confirmed'].includes(String(assignment.status))
+      );
+
+      // 5. Leader's assignment must not be in Confirmed status
+      const leaderNotConfirmed = !leaderAssignment || String(leaderAssignment.status) !== 'Confirmed';
+
+      // Log conditions
+      console.log('Button visibility conditions:', {
+        allFixedOrConfirmed,
+        leaderNotConfirmed,
+        hasInFixingAssignment,
+        taskCompleted
+      });
+
+      // Set button visibility based on all conditions
+      const shouldShow = allFixedOrConfirmed && leaderNotConfirmed && !hasInFixingAssignment && !taskCompleted;
+      setButtonVisibility(prev => ({...prev, [taskId]: shouldShow}));
+
+    } catch (error) {
+      console.error('Error checking button visibility:', error);
       setButtonVisibility(prev => ({...prev, [taskId]: false}));
-      return;
     }
-    
-    // Check actual status from API
-    const shouldShow = await shouldShowConfirmButton(taskId);
-    setButtonVisibility(prev => ({...prev, [taskId]: shouldShow}));
   };
 
   // Update useEffect to check button status when tasks change
@@ -420,98 +526,136 @@ const StaffAssignScreen = () => {
     if (!isLeader || tasks.length === 0) return [];
 
     return tasks.map(task => {
-      // Lọc chỉ hiển thị task assignments được giao cho nhân viên (không hiển thị của leader)
-      const staffAssignments = task.taskAssignments.filter(
+      // Lọc cho việc hiển thị UI, chỉ hiển thị assignment của nhân viên
+      const displayAssignments = task.taskAssignments.filter(
         assignment => assignment.employee_id !== userId
       );
       
-      if (!staffAssignments || staffAssignments.length === 0) return null;
+      // Nếu không có assignment của nhân viên để hiển thị, skip
+      if (!displayAssignments || displayAssignments.length === 0) return null;
       
       return {
         title: task.description,
         taskId: task.task_id,
-        data: staffAssignments
+        // Truyền toàn bộ assignments (bao gồm của leader) để sử dụng trong logic xác thực
+        data: displayAssignments,
+        // Thêm trường mới để lưu toàn bộ assignments (bao gồm của leader) cho logic xác thực
+        allAssignments: task.taskAssignments
       };
     }).filter(section => section !== null); // Lọc bỏ các null
   };
 
-  interface SectionData {
-    title: string;
-    taskId: string;
-    data: TaskAssignment[];
-  }
+  const renderSectionHeader = ({ section }: { section: SectionData }) => {
+    // Lấy task từ section
+    const task = section.allAssignments[0]?.task;
+    const isTaskCompleted = task?.status === 'Completed' || (task as any)?.statusLabel === 'Hoàn thành';
+    const hasInFixingAssignment = section.allAssignments.some(
+      assignment => String(assignment.status) === 'InFixing'
+    );
 
-  const renderSectionHeader = ({ section }: { section: SectionData }) => (
-    <View style={styles.stickyHeader}>
-      <Icon name="assignment" size={20} color="#B77F2E" />
-      <Text style={styles.stickyHeaderTitle}>Task: {section.title}</Text>
-    </View>
-  );
+    // Kiểm tra xem tất cả assignments (trừ của leader) đều đã Confirmed chưa
+    const staffAssignments = section.allAssignments.filter(
+      assignment => assignment.employee_id !== userId
+    );
+    const allAssignmentsConfirmed = staffAssignments.length > 0 && 
+      staffAssignments.every(assignment => String(assignment.status) === 'Confirmed');
+
+    return (
+      <View style={styles.stickyHeader}>
+        <View style={styles.headerContent}>
+          <View style={styles.headerLeft}>
+            <Icon name="assignment" size={20} color="#B77F2E" />
+            <Text style={styles.stickyHeaderTitle}>Task: {section.title}</Text>
+          </View>
+        </View>
+        {isLeader && !isTaskCompleted && !hasInFixingAssignment && allAssignmentsConfirmed && (
+          <View style={styles.taskChangeStatusContainer}>
+            <TouchableOpacity 
+              style={styles.taskChangeStatusButton}
+              onPress={() => handleChangeStatusToConfirm(section.taskId, section.allAssignments)}
+            >
+              <Text style={styles.taskChangeStatusButtonText}>{t('screens.createActualCost.title')}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
 
   const handleChangeStatusToConfirm = async (taskId: string, assignments: TaskAssignment[]) => {
     try {
-      setLoading(true);
+      console.log(`handleChangeStatusToConfirm for task ${taskId} with ${assignments.length} assignments`);
+
+      // Find assignment with Confirmed status only
+      const confirmedAssignment = assignments.find(assignment => {
+        const statusStr = String(assignment.status);
+        return statusStr === 'Confirmed';
+      });
       
-      Alert.alert(
-        t('screens.staffAssign.changeStatusToConfirm'),
-        t('screens.staffAssign.confirmStatusChange'),
-        [
-          {
-            text: t('common.cancel'),
-            style: "cancel",
-            onPress: () => setLoading(false)
-          },
-          {
-            text: t('common.submit'),
-            onPress: async () => {
-              try {
-                const response = await TaskService.getTaskAssignmentsByUserId();
-                
-                const mainTaskAssignment = response.data.find(
-                  assignment => assignment.task_id === taskId && assignment.employee_id === userId
-                );
-                
-                if (mainTaskAssignment) {
-                  await TaskService.updateStatusAndCreateWorklog(mainTaskAssignment.assignment_id, 'Confirmed');
-                  
-                  setButtonVisibility(prev => ({...prev, [taskId]: false}));
-                  
-                  showMessage({
-                    message: t('common.success'),
-                    description: t('screens.staffAssign.mainTaskConfirmed'),
-                    type: "success",
-                    duration: 3000
-                  });
-                  
-                  fetchLeaderTaskAssignments();
-                  
-                  setLoading(false);
-                } else {
-                  showMessage({
-                    message: t('common.error'),
-                    description: t('screens.staffAssign.mainTaskAssignmentNotFound'),
-                    type: "danger",
-                    duration: 3000
-                  });
-                  setLoading(false);
+      if (!confirmedAssignment) {
+        console.log('No Confirmed assignment found');
+        showMessage({
+          message: t('common.error'),
+          description: t('screens.staffAssign.noConfirmedAssignment') || 'No confirmed assignment found',
+          type: "danger",
+          duration: 3000
+        });
+        return;
+      }
+
+      // Make API call to get latest task detail with inspection information
+      try {
+        const taskDetailResponse = await TaskService.getTaskAssignmentAndInspectionByTaskId(taskId);
+        
+        if (taskDetailResponse.isSuccess && taskDetailResponse.data) {
+          console.log('Successfully fetched task details with inspections');
+          
+          // Check if there are inspections with costs
+          const taskAssignment = taskDetailResponse.data.taskAssignment;
+          if (taskAssignment && taskAssignment.inspections && taskAssignment.inspections.length > 0) {
+            // Find any inspection with costs
+            const inspectionWithCost = taskAssignment.inspections.find(
+              (inspection: any) => inspection.total_cost && parseFloat(inspection.total_cost) > 0
+            );
+            
+            if (inspectionWithCost) {
+              console.log(`Found inspection with cost: ${inspectionWithCost.inspection_id}`);
+              
+              // Navigate to CreateActualCost screen with callback
+              navigation.navigate('CreateActualCost', {
+                taskId: taskId,
+                verifiedAssignmentId: taskAssignment.assignment_id,
+                onComplete: async () => {
+                  console.log('Actual cost created, reloading data...');
+                  // Thêm delay nhỏ để đảm bảo API đã cập nhật
+                  await new Promise(resolve => setTimeout(resolve, 500));
+                  // Reload data sau khi tạo actual cost
+                  await fetchLeaderTaskAssignments();
                 }
-              } catch (error) {
-                console.error('Error changing task status:', error);
-                showMessage({
-                  message: t('common.error'),
-                  description: t('screens.staffAssign.failedToUpdateTaskStatus'),
-                  type: "danger",
-                  duration: 3000
-                });
-                setLoading(false);
-              }
+              });
+              return;
             }
           }
-        ]
-      );
+        }
+      } catch (detailError) {
+        console.error('Error fetching task details:', detailError);
+      }
+
+      // If we couldn't get detailed inspection data or no cost found, fall back to original behavior
+      console.log('Falling back to original navigation with assignment ID');
+      navigation.navigate('CreateActualCost', {
+        taskId: taskId,
+        verifiedAssignmentId: confirmedAssignment.assignment_id,
+        onComplete: async () => {
+          console.log('Actual cost created, reloading data...');
+          // Thêm delay nhỏ để đảm bảo API đã cập nhật
+          await new Promise(resolve => setTimeout(resolve, 500));
+          // Reload data sau khi tạo actual cost
+          await fetchLeaderTaskAssignments();
+        }
+      });
     } catch (error) {
       console.error('Error in handleChangeStatusToConfirm:', error);
-      setLoading(false);
       
       showMessage({
         message: t('common.error'),
@@ -520,23 +664,6 @@ const StaffAssignScreen = () => {
         duration: 3000
       });
     }
-  };
-
-  const renderSectionFooter = ({ section }: { section: SectionData }) => {
-    // Kiểm tra xem button có nên hiển thị hay không dựa vào kết quả đã kiểm tra trước đó
-    const shouldShowButton = buttonVisibility[section.taskId];
-    
-    // Chỉ hiển thị button nếu là leader và kết quả kiểm tra cho phép
-    return isLeader && shouldShowButton ? (
-      <View style={styles.taskChangeStatusContainer}>
-        <TouchableOpacity 
-          style={styles.taskChangeStatusButton}
-          onPress={() => handleChangeStatusToConfirm(section.taskId, section.data)}
-        >
-          <Text style={styles.taskChangeStatusButtonText}>Change Status to Confirm</Text>
-        </TouchableOpacity>
-      </View>
-    ) : null;
   };
 
   // Function để lấy thông tin nhân viên bằng userId
@@ -689,7 +816,6 @@ const StaffAssignScreen = () => {
                 keyExtractor={(item) => item.assignment_id}
                 renderItem={({ item }) => renderTaskAssignmentItem(item)}
                 renderSectionHeader={renderSectionHeader}
-                renderSectionFooter={renderSectionFooter}
                 stickySectionHeadersEnabled={true}
                 refreshControl={
                   <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -821,11 +947,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   taskChangeStatusContainer: {
-    padding: 12,
+    marginTop: 12,
     backgroundColor: '#F8F8F8',
     borderRadius: 8,
-    marginTop: 8,
-    marginLeft: 12,
   },
   taskChangeStatusButton: {
     backgroundColor: '#B77F2E',
@@ -839,10 +963,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   stickyHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 12,
     backgroundColor: '#F8F8F8',
     borderRadius: 8,
     marginBottom: 12,
@@ -851,12 +971,39 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
+    padding: 12,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   stickyHeaderTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333333',
     marginLeft: 8,
+    flex: 1,
+  },
+  createActualCostButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#B77F2E',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginLeft: 8,
+  },
+  createActualCostText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
   },
   idReference: {
     fontSize: 12,

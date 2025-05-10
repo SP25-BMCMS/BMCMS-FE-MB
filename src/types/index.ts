@@ -95,13 +95,15 @@ export type RootStackParamList = {
     scheduleJobId: string;
     buildingName?: string;
   };
-  StaffMaintenanceHistory: {
-    scheduleJobId: string;
-    buildingName?: string;
-  };
+  StaffMaintenanceHistory: undefined;
   TechnicalRecord: {
     buildingId: string;
     buildingName?: string;
+  };
+  CreateActualCost: { 
+    taskId: string;
+    verifiedAssignmentId: string;
+    onComplete?: () => void;
   };
 };
 //residents
@@ -120,6 +122,7 @@ export interface LoginResponse {
   statusCode: number;
   message: string;
   accountStatus: string;
+  role: 'resident' | 'staff';
 }
 export interface LoginPayload {
   phone: string;
@@ -303,7 +306,7 @@ export interface CrackReportPayload {
   description: string;
   position?: string;
   files: string[];
-  isPrivatesAsset?: boolean;
+  isPrivatesAsset: boolean;
 }
 
 export interface CrackDetails {
@@ -716,5 +719,13 @@ export interface FeedbackPayload {
   task_id: string;
   comments: string;
   rating: number;
+}
+
+export interface BuildingDetail {
+  buildingDetailId: string;
+  name: string;
+  building: {
+    numberFloor: number;
+  };
 }
 

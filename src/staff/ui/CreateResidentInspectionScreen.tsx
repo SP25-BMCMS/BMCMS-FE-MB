@@ -154,9 +154,8 @@ const CreateResidentInspectionScreen: React.FC<Props> = ({ route }) => {
           style: { marginTop: 40 }
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating inspection:', error);
-      //@ts-ignore
       console.error('Error details:', error.response?.data);
       
       let errorMessage = t('createResidentInspection.toast.error.description');

@@ -16,14 +16,14 @@ import {
   NavigationProp 
 } from "@react-navigation/native";
 import { PropertyService } from "../../service/propertyService";
-import { PropertyDetail } from "../../types";
+import { PropertyDetail, Property } from "../../types";
 import { useTranslation } from 'react-i18next';
 
 // Define route params type
 type RootStackParamList = {
   PropertyDetail: { apartmentId?: string };
-  RepairInside: { property: PropertyDetail };
-  RepairOutside: { property: PropertyDetail };
+  RepairInside: { property: Property };
+  RepairOutside: { property: Property };
   // ... other existing routes
 };
 
@@ -44,6 +44,7 @@ const PropertyDetailScreen = () => {
         
         if (apartmentId) {
           const propertyDetail = await PropertyService.getPropertyDetail(apartmentId);
+          console.log('Property Detail:', propertyDetail); // Debug log
           setProperty(propertyDetail);
         }
       } catch (error) {
@@ -74,20 +75,46 @@ const PropertyDetailScreen = () => {
 
   // Services with translations
   const services = [
-    { id: "1", name: t('propertyDetail.residentInformation'), icon: "people", color: "#4CAF50" },
+
     { id: "2", name: t('propertyDetail.repairInside'), icon: "build", color: "#FF5722" },
     { id: "3", name: t('propertyDetail.repairOutside'), icon: "apartment", color: "#2196F3" },
   ];
 
   const handleRepairInside = () => {
     if (property) {
-      navigation.navigate("RepairInside", { property });
+      // Convert PropertyDetail to Property format
+      const propertyData: Property = {
+        building: property.building || '',
+        numberFloor: property.numberFloor || 0,
+        description: property.description || '',
+        unit: property.unit || '',
+        status: property.status || '',
+        area: property.area || '',
+        buildingDetailId: property.buildingDetailId,
+        buildingDetails: property.buildingDetails || []
+      };
+      
+      console.log('Navigating to RepairInside with property:', propertyData); // Debug log
+      navigation.navigate("RepairInside", { property: propertyData });
     }
   };
 
   const handleRepairOutside = () => {
     if (property) {
-      navigation.navigate("RepairOutside", { property });
+      // Convert PropertyDetail to Property format
+      const propertyData: Property = {
+        building: property.building || '',
+        numberFloor: property.numberFloor || 0,
+        description: property.description || '',
+        unit: property.unit || '',
+        status: property.status || '',
+        area: property.area || '',
+        buildingDetailId: property.buildingDetailId,
+        buildingDetails: property.buildingDetails || []
+      };
+      
+      console.log('Navigating to RepairOutside with property:', propertyData); // Debug log
+      navigation.navigate("RepairOutside", { property: propertyData });
     }
   };
 

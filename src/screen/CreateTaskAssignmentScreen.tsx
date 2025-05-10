@@ -13,7 +13,7 @@ import {
   Modal,
   FlatList
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Task, TaskAssignment } from '../types';
 import { TaskService } from '../service/Task';
@@ -27,12 +27,17 @@ import { useTranslation } from 'react-i18next';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
+interface RouteParams {
+  taskType: 'schedule' | 'crack';
+}
+
 interface StaffMember {
   userId: string;
   username: string;
   userDetails: {
     position: {
       positionName: string;
+      positionNameLabel?: string;
     };
   };
 }
@@ -40,11 +45,19 @@ interface StaffMember {
 interface AvailableTask {
   task_id: string;
   description: string;
+  schedule_job_id?: string;
+  device_type?: string;
+  task?: {
+    schedule_job_id?: string;
+    crack_id?: string;
+  };
 }
 
 const CreateTaskAssignmentScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute();
+  const { taskType } = route.params as RouteParams;
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
@@ -67,6 +80,8 @@ const CreateTaskAssignmentScreen = () => {
     { label: t('createTaskAssignment.statusTypes.InFixing'), value: 'InFixing' as const },
     { label: t('createTaskAssignment.statusTypes.Reassigned'), value: 'Reassigned' as const }
   ];
+
+  const [taskDeviceType, setTaskDeviceType] = useState<string>('');
 
   // Sử dụng tanstack Query để lấy tất cả task và task assignments
   const { data: allTaskAssignments, isLoading: loadingAllAssignments } = useQuery({
@@ -98,7 +113,7 @@ const CreateTaskAssignmentScreen = () => {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // Sử dụng tanstack Query để lấy danh sách nhân viên
+  // Query gốc cho staff by leader
   const { data: staffData, isLoading: loadingStaff } = useQuery({
     queryKey: ['staffByLeader'],
     queryFn: async () => {
@@ -110,56 +125,206 @@ const CreateTaskAssignmentScreen = () => {
         return { data: [] };
       }
     },
+    enabled: !taskDeviceType, // Chỉ chạy khi không có device type
+  });
+
+  // Query cho staff theo device type hoặc structural cho crack
+  const { data: staffByDeviceType, isLoading: loadingStaffByDevice } = useQuery({
+    queryKey: ['staffByDeviceType', taskDeviceType],
+    queryFn: async () => {
+      if (!taskDeviceType && !selectedTaskId) return null;
+      try {
+        // Kiểm tra nếu task được chọn có crack_id
+        const selectedTask = userTasksData?.data?.find(task => task.task_id === selectedTaskId);
+        if (selectedTask?.task?.crack_id) {
+          // Nếu có crack_id, lấy staff structural
+          console.log('Fetching structural staff for crack task');
+          const response = await TaskService.getStaffByDeviceType('structural');
+          console.log('Structural staff response:', response);
+          return response;
+        } else if (taskDeviceType) {
+          // Nếu không có crack_id, lấy staff theo device type
+          console.log('Fetching staff for device type:', taskDeviceType);
+          const response = await TaskService.getStaffByDeviceType(taskDeviceType);
+          console.log('Staff by device type response:', response);
+          return response;
+        }
+        return null;
+      } catch (error) {
+        console.error('Error fetching staff:', error);
+        return null;
+      }
+    },
+    enabled: !!selectedTaskId || !!taskDeviceType,
+  });
+
+  // Sử dụng tanstack Query để lấy task theo type
+  const { data: tasksByTypeData, isLoading: loadingTasksByType } = useQuery({
+    queryKey: ['tasksByType', taskType],
+    queryFn: async () => {
+      try {
+        console.log('Fetching tasks for type:', taskType);
+        const response = await TaskService.getTasksByType(taskType);
+        console.log('Tasks by type response:', response);
+        return response;
+      } catch (error) {
+        console.error('Error fetching tasks by type:', error);
+        return { data: [] };
+      }
+    },
+    enabled: !!taskType,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
-  
+
+  // Effect để cập nhật danh sách staff khi có data mới
   useEffect(() => {
-    // Sử dụng cả 3 data khi đã sẵn sàng
-    if (!loadingAllAssignments && !loadingUserTasks && !loadingStaff && 
-        allTaskAssignments && userTasksData && staffData) {
-      
-      // Xử lý danh sách nhân viên
-      setStaffMembers(staffData.data || []);
-      if (staffData.data && staffData.data.length > 0) {
-        setSelectedEmployeeId(staffData.data[0]?.userId || '');
-        const staffLabel = `${staffData.data[0]?.username || 'Unknown'} (${staffData.data[0]?.userDetails?.position?.positionName || 'Staff'})`;
+    console.log('Staff data changed:', {
+      taskDeviceType,
+      hasDeviceTypeData: !!staffByDeviceType,
+      hasLeaderData: !!staffData
+    });
+
+    const selectedTask = userTasksData?.data?.find(task => task.task_id === selectedTaskId);
+    const hasCrackId = selectedTask?.task?.crack_id;
+
+    if (hasCrackId && staffByDeviceType?.isSuccess) {
+      console.log('Setting structural staff:', staffByDeviceType.data);
+      setStaffMembers(staffByDeviceType.data || []);
+      // Reset selected employee
+      setSelectedEmployeeId('');
+      setSelectedEmployeeLabel('');
+      // Set default selection if there are staff members
+      if (staffByDeviceType.data && staffByDeviceType.data.length > 0) {
+        const firstStaff = staffByDeviceType.data[0];
+        setSelectedEmployeeId(firstStaff.userId);
+        const staffLabel = `${firstStaff.username} (${firstStaff.userDetails?.position?.positionNameLabel || 'Structural Staff'})`;
         setSelectedEmployeeLabel(staffLabel);
       }
+    } else if (taskDeviceType && staffByDeviceType?.isSuccess) {
+      console.log('Setting staff from device type:', staffByDeviceType.data);
+      setStaffMembers(staffByDeviceType.data || []);
+      // Reset selected employee
+      setSelectedEmployeeId('');
+      setSelectedEmployeeLabel('');
+      // Set default selection if there are staff members
+      if (staffByDeviceType.data && staffByDeviceType.data.length > 0) {
+        const firstStaff = staffByDeviceType.data[0];
+        setSelectedEmployeeId(firstStaff.userId);
+        const staffLabel = `${firstStaff.username} (${firstStaff.userDetails?.position?.positionNameLabel || 'Staff'})`;
+        setSelectedEmployeeLabel(staffLabel);
+      }
+    } else if (!taskDeviceType && !hasCrackId && staffData?.data) {
+      console.log('Setting staff from leader:', staffData.data);
+      setStaffMembers(staffData.data || []);
+      // Reset selected employee
+      setSelectedEmployeeId('');
+      setSelectedEmployeeLabel('');
+      // Set default selection if there are staff members
+      if (staffData.data && staffData.data.length > 0) {
+        const firstStaff = staffData.data[0];
+        setSelectedEmployeeId(firstStaff.userId);
+        const staffLabel = `${firstStaff.username} (${firstStaff.userDetails?.position?.positionName || 'Staff'})`;
+        setSelectedEmployeeLabel(staffLabel);
+      }
+    }
+  }, [staffByDeviceType, staffData, taskDeviceType, selectedTaskId, userTasksData]);
+  
+  useEffect(() => {
+    // Sử dụng chỉ tasksByTypeData để lọc tasks
+    if (!loadingTasksByType && tasksByTypeData) {
+      console.log('Processing tasks data for type:', taskType);
+      console.log('Raw tasks data:', tasksByTypeData);
       
-      // Tạo tập hợp các task_id đã được confirmed hoặc completed
-      const confirmedTaskIds = new Set();
+      // Tạo tập hợp các task_id đã được completed
+      const excludedTaskIds = new Set();
       
-      // Lọc tất cả các task assignments để tìm những task_id đã confirmed
-      if (allTaskAssignments && allTaskAssignments.data) {
+      // Lọc tất cả các task assignments để tìm những task_id cần loại trừ
+      if (allTaskAssignments?.data) {
         allTaskAssignments.data.forEach((assignment: TaskAssignment) => {
-          const status = assignment.status as string;
-          if (status === 'Confirmed' || status === 'Completed' || status === 'Fixed') {
-            confirmedTaskIds.add(assignment.task_id);
+          const taskStatus = assignment.task?.status;
+          if (taskStatus === 'Completed') {
+            excludedTaskIds.add(assignment.task_id);
           }
         });
       }
-      
-      // Lọc các task từ user tasks để tìm những task chưa confirmed
-      if (userTasksData && userTasksData.data) {
-        const availableTasksList = userTasksData.data
-          // Lọc các task của leader không có trong danh sách đã confirmed
-          .filter((task: TaskAssignment) => !confirmedTaskIds.has(task.task_id))
-          // Chuyển đổi sang định dạng AvailableTask
-          .map((task: TaskAssignment) => ({
+
+      // Đảm bảo tasksByTypeData.data tồn tại và là một mảng
+      let tasksData = tasksByTypeData.data || [];
+      console.log('Tasks data to process:', tasksData);
+
+      // Xử lý và lọc tasks
+      const availableTasksList = tasksData
+        .filter((task: any) => {
+          if (!task) return false;
+          
+          // Log để debug
+          console.log('Processing task:', {
+            taskId: task.task_id,
+            description: task.description,
+            status: task.status,
+            scheduleJobId: task.schedule_job_id,
+            crackId: task.crack_id,
+            deviceType: task.schedulesjobInfo?.data?.schedule?.cycle?.device_type
+          });
+
+          // Kiểm tra xem task có trong danh sách loại trừ không
+          const isExcluded = excludedTaskIds.has(task.task_id);
+          const isCompleted = task.status === 'Completed';
+
+          if (taskType === 'schedule') {
+            // Đối với schedule tasks, chỉ lấy những task có schedule_job_id
+            return !isExcluded && !isCompleted && !!task.schedule_job_id;
+          } else {
+            // Đối với crack tasks, chỉ lấy những task có crack_id
+            return !isExcluded && !isCompleted && !!task.crack_id;
+          }
+        })
+        .map((task: any) => {
+          // Lấy device_type từ schedulesjobInfo nếu có
+          const deviceType = task.schedulesjobInfo?.data?.schedule?.cycle?.device_type || '';
+          
+          return {
             task_id: task.task_id,
-            description: task.description
-          }));
+            description: task.description || '',
+            schedule_job_id: task.schedule_job_id,
+            crack_id: task.crack_id,
+            device_type: deviceType,
+            status: task.status,
+            task: task
+          };
+        });
+
+      console.log('Available tasks after filtering:', availableTasksList);
+      setAvailableTasks(availableTasksList);
+
+      // Nếu có task khả dụng, set task mặc định đầu tiên
+      if (availableTasksList.length > 0) {
+        const firstTask = availableTasksList[0];
+        setSelectedTaskId(firstTask.task_id);
+        setSelectedTaskLabel(firstTask.description);
         
-        setAvailableTasks(availableTasksList);
-        
-        // Nếu có task khả dụng, set task mặc định đầu tiên
-        if (availableTasksList.length > 0) {
-          setSelectedTaskId(availableTasksList[0].task_id);
-          setSelectedTaskLabel(availableTasksList[0].description || availableTasksList[0].task_id);
+        // Set device type từ task nếu có
+        if (firstTask.device_type) {
+          setTaskDeviceType(firstTask.device_type);
+          console.log('Set device type from task:', firstTask.device_type);
+        }
+        // Nếu không có device_type trong task, thử lấy từ schedule job
+        else if (taskType === 'schedule' && firstTask.schedule_job_id) {
+          console.log('Fetching device type for schedule job:', firstTask.schedule_job_id);
+          TaskService.getScheduleJobById(firstTask.schedule_job_id)
+            .then(response => {
+              console.log('Schedule job response:', response);
+              if (response.data?.schedulesjobInfo?.data?.schedule?.cycle?.device_type) {
+                const deviceType = response.data.schedulesjobInfo.data.schedule.cycle.device_type;
+                setTaskDeviceType(deviceType);
+                console.log('Set device type from API:', deviceType);
+              }
+            })
+            .catch(error => console.error('Error fetching schedule job:', error));
         }
       }
     }
-  }, [allTaskAssignments, userTasksData, staffData, loadingAllAssignments, loadingUserTasks, loadingStaff]);
+  }, [tasksByTypeData, loadingTasksByType, allTaskAssignments, taskType]);
   
   const handleSubmit = async () => {
     if (!selectedTaskId || !selectedEmployeeId || !description) {
@@ -257,14 +422,27 @@ const CreateTaskAssignmentScreen = () => {
   // Handle task selection
   const handleTaskSelect = (task: AvailableTask) => {
     setSelectedTaskId(task.task_id);
-    setSelectedTaskLabel(task.description || task.task_id);
+    setSelectedTaskLabel(task.device_type 
+      ? `${task.description} - ${task.device_type}`
+      : task.description);
     setTaskDropdownVisible(false);
+    
+    // Kiểm tra nếu task có crack_id
+    if (task.task?.crack_id) {
+      setTaskDeviceType(''); // Reset device type vì sẽ dùng structural staff
+    } else if (task.device_type) {
+      setTaskDeviceType(task.device_type);
+    } else {
+      setTaskDeviceType('');
+    }
   };
   
   // Handle employee selection
   const handleEmployeeSelect = (employee: StaffMember) => {
     setSelectedEmployeeId(employee.userId);
-    const label = `${employee.username} (${employee.userDetails?.position?.positionName || 'Staff'})`;
+    const label = taskDeviceType 
+      ? `${employee.username} (${employee.userDetails?.position?.positionNameLabel || 'Staff'})`
+      : `${employee.username} (${employee.userDetails?.position?.positionName || 'Staff'})`;
     setSelectedEmployeeLabel(label);
     setEmployeeDropdownVisible(false);
   };
@@ -277,7 +455,7 @@ const CreateTaskAssignmentScreen = () => {
   };
   
   // Kiểm tra trạng thái loading
-  const isLoading = loadingAllAssignments || loadingUserTasks || loadingStaff || loading;
+  const isLoading = loadingAllAssignments || loadingUserTasks || loadingStaff || loadingTasksByType || loading;
   
   if (isLoading) {
     return (
@@ -376,7 +554,9 @@ const CreateTaskAssignmentScreen = () => {
                               ]}
                               numberOfLines={2}
                             >
-                              {item.description}
+                              {item.device_type 
+                                ? `${item.description} - ${item.device_type}`
+                                : item.description}
                             </Text>
                             {selectedTaskId === item.task_id && (
                               <Icon name="check" size={20} color="#B77F2E" />

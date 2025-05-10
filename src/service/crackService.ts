@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { VITE_SEND_DESPCRIPTION_CRACK, VITE_API_SECRET } from '@env';
+import { VITE_SEND_DESPCRIPTION_CRACK, VITE_API_SECRET, VITE_DELETE_CRACK_REPORT } from '@env';
 import instance from './Auth';
 import { 
   CrackReportPayload, 
@@ -40,10 +40,10 @@ export const CrackService = {
       const userId = await AsyncStorage.getItem('userId');
       
       console.group('🔍 Crack Report Debug');
-      console.log('Payload:', payload);
-      console.log('User ID:', userId);
-      console.log('isPrivatesAsset type:', typeof payload.isPrivatesAsset);
-      console.log('isPrivatesAsset value:', payload.isPrivatesAsset);
+      console.log('Original Payload:', {
+        ...payload,
+        isPrivatesAsset: payload.isPrivatesAsset
+      });
 
       if (!userId) {
         console.error('❌ User ID not found');
@@ -58,43 +58,24 @@ export const CrackService = {
         return null;
       }
 
-      // Log buildingDetailId for debugging
-      console.log('🔍 BuildingDetailId:', payload.buildingDetailId);
-
-      // Prepare the request body
-      const requestBody = {
-        buildingDetailId: payload.buildingDetailId,
-        description: payload.description.trim(),
-        isPrivatesAsset: payload.isPrivatesAsset !== undefined ? payload.isPrivatesAsset : true,
-        position: payload.position || '',
-      };
-
-      // Log chi tiết request body
-      console.log('🔍 Request Body Details:', {
-        buildingDetailId: payload.buildingDetailId,
-        description: payload.description.trim(),
-        isPrivatesAsset: payload.isPrivatesAsset !== undefined ? payload.isPrivatesAsset : true,
-        position: payload.position || '',
-        positionType: typeof payload.position,
-        positionIsEmpty: !payload.position,
-        isPrivatesAssetType: typeof requestBody.isPrivatesAsset
-      });
-
       // Prepare files for upload
       const formData = new FormData();
       
       // Add text fields to formData
-      formData.append('buildingDetailId', requestBody.buildingDetailId);
-      formData.append('description', requestBody.description);
+      formData.append('buildingDetailId', payload.buildingDetailId);
+      formData.append('description', payload.description.trim());
+      formData.append('position', payload.position || '');
       
-      // Log position trước khi append
-      console.log('Position before appending to FormData:', requestBody.position);
-      formData.append('position', requestBody.position);
-      
-      // Explicitly handle isPrivatesAsset as a string
-      const isPrivateAssetStr = requestBody.isPrivatesAsset === false ? 'false' : 'true';
-      formData.append('isPrivatesAsset', isPrivateAssetStr);
-      console.log('isPrivatesAsset added to formData as:', isPrivateAssetStr);
+      // Ensure isPrivatesAsset is sent as string 'true' or 'false'
+      const isPrivateAsset = payload.isPrivatesAsset === true ? 'true' : 'false';
+      formData.append('isPrivatesAsset', isPrivateAsset);
+
+      console.log('🔍 FormData values:', {
+        buildingDetailId: payload.buildingDetailId,
+        description: payload.description.trim(),
+        position: payload.position || '',
+        isPrivatesAsset: isPrivateAsset
+      });
 
       // Add files with error handling
       payload.files.forEach((fileUri, index) => {
@@ -102,12 +83,6 @@ export const CrackService = {
           const filename = fileUri.split('/').pop() || `image_${index}.jpg`;
           const match = /\.(\w+)$/.exec(filename);
           const type = match ? `image/${match[1]}` : 'image/jpeg';
-          
-          console.log(`File ${index}:`, {
-            uri: fileUri,
-            name: filename,
-            type
-          });
 
           formData.append('files', {
             uri: fileUri,
@@ -119,63 +94,49 @@ export const CrackService = {
         }
       });
 
-      console.log('Full FormData:', formData);
+      console.log('🔍 Sending request to:', VITE_SEND_DESPCRIPTION_CRACK);
       console.groupEnd();
 
       // Send the request
       try {
-        // Kiểm tra token trước khi gửi request
-        const accessToken = await AsyncStorage.getItem('accessToken');
-        console.log('🔐 Access Token:', accessToken ? 'EXISTS' : 'NOT FOUND');
-
         const response = await instance.post<CrackReportResponse>(
           VITE_SEND_DESPCRIPTION_CRACK, 
           formData,
           {
-            baseURL: VITE_API_SECRET,
             headers: {
               'Content-Type': 'multipart/form-data',
-              // Thêm Authorization header một cách rõ ràng
-              ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {})
             },
-            timeout: 30000 // 30 seconds timeout
+            timeout: 30000
           }
         );
         
-        console.group('🏠 Crack Report Response');
-        console.log('Data:', response.data);
+        console.group('✅ Crack Report Response');
         console.log('Status:', response.status);
+        console.log('Data:', response.data);
         console.groupEnd();
         
         return response.data;
       } catch (apiError: any) {
-        console.group('❌ API Error Details');
+        console.group('❌ API Error');
         console.error('Status:', apiError.response?.status);
         console.error('Data:', apiError.response?.data);
         console.error('Message:', apiError.message);
-        console.error('Config:', JSON.stringify(apiError.config, null, 2));
-        console.error('Full Error Object:', JSON.stringify(apiError, null, 2));
         console.groupEnd();
-
-        // Log chi tiết về hệ thống
-        console.error('🚨 System Error Details:', {
-          systemMessage: 'Unexpected system error occurred',
-          timestamp: new Date().toISOString(),
-          errorType: apiError.name,
-          errorCode: apiError.code,
-          networkError: apiError.isAxiosError ? 'Yes' : 'No'
-        });
-
-        // Throw a more specific error for better error handling
-        throw new Error(
-          apiError.response?.data?.message || 
-          apiError.message || 
-          'Failed to submit crack report'
-        );
+        throw apiError;
       }
     } catch (error) {
       console.error('❌ Total Error:', error);
       return null;
+    }
+  },
+
+  async deleteCrackReport(id: string): Promise<boolean> {
+    try {
+      const response = await instance.delete(VITE_DELETE_CRACK_REPORT.replace('{id}', id));
+      return response.status === 200;
+    } catch (error) {
+      console.error('Error deleting crack report:', error);
+      return false;
     }
   }
 }; 

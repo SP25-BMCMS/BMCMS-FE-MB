@@ -21,19 +21,28 @@ import { format, formatDistanceToNow } from "date-fns";
 import { showMessage } from "react-native-flash-message";
 import { Swipeable } from "react-native-gesture-handler";
 import { useTranslation } from 'react-i18next';
+import { useNotification } from '../context/NotificationContext';
 
 type NotificationScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
   const { t } = useTranslation();
   const navigation = useNavigation<NotificationScreenNavigationProp>();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userType, setUserType] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
+
+  const { 
+    notifications, 
+    unreadCount, 
+    markAsRead: contextMarkAsRead,
+    markAllAsRead: contextMarkAllAsRead,
+    clearNotifications,
+    refreshNotifications,
+    loading: notificationLoading
+  } = useNotification();
 
   const fetchUserStatus = async () => {
     const userDataString = await AsyncStorage.getItem("userData");
@@ -53,153 +62,9 @@ const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
     setUserId(id);
   };
 
-  const fetchNotifications = async () => {
-    console.log("DEBUG - fetchNotifications called, userId:", userId);
-    if (!userId) {
-      console.log("DEBUG - No userId, skipping notification fetch");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      console.log("DEBUG - Fetching notifications for userId:", userId);
-      const response = await NotificationService.getNotificationsByUserId(userId);
-      console.log("DEBUG - Notification response:", response);
-      
-      let notificationData: Notification[] = [];
-      
-      // Handle different possible API response structures
-      if (response.success && Array.isArray(response.data)) {
-        // Standard response structure
-        notificationData = response.data;
-        console.log("DEBUG - Notifications loaded:", response.data.length);
-      } else if (Array.isArray(response)) {
-        // If API directly returns array
-        notificationData = response;
-        console.log("DEBUG - Notifications loaded (direct array):", response.length);
-      } else if (response.data && Array.isArray(response.data)) {
-        // Axios style response
-        notificationData = response.data;
-        console.log("DEBUG - Notifications loaded (axios style):", response.data.length);
-      } else {
-        console.log("DEBUG - Unexpected response format:", response);
-        notificationData = [];
-      }
-      
-      setNotifications(notificationData);
-      
-      // Count unread notifications
-      const unread = notificationData.filter(item => !item.isRead).length;
-      setUnreadCount(unread);
-      console.log("DEBUG - Unread notification count:", unread);
-      
-    } catch (error) {
-      console.error("DEBUG - Error fetching notifications:", error);
-      setNotifications([]);
-      setUnreadCount(0);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const markAsRead = async (id: string) => {
-    try {
-      await NotificationService.markNotificationAsRead(id);
-      // Update local state to reflect the change
-      setNotifications(prevNotifications =>
-        prevNotifications.map(notification =>
-          notification.id === id ? { ...notification, isRead: true } : notification
-        )
-      );
-      // Decrease unread count
-      setUnreadCount(prev => Math.max(0, prev - 1));
-      
-      // Show success toast with custom style
-      showMessage({
-        message: "Notification marked as read",
-        type: "success",
-        icon: "success",
-        duration: 2000,
-        backgroundColor: "#4CAF50",
-        color: "#FFFFFF",
-        style: {
-          borderRadius: 8,
-          marginTop: 40,
-        },
-      });
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
-      
-      // Show error toast with custom style
-      showMessage({
-        message: "Failed to mark notification as read",
-        description: "Please try again later",
-        type: "danger",
-        icon: "danger",
-        duration: 3000,
-        backgroundColor: "#F44336",
-        color: "#FFFFFF",
-        style: {
-          borderRadius: 8,
-          marginTop: 40,
-        },
-      });
-    }
-  };
-
-  const deleteNotification = async (id: string) => {
-    try {
-      // Remove notification from local state
-      setNotifications(prevNotifications =>
-        prevNotifications.filter(notification => notification.id !== id)
-      );
-      
-      // If the deleted notification was unread, update the counter
-      const wasUnread = notifications.find(n => n.id === id)?.isRead === false;
-      if (wasUnread) {
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      }
-      
-      // Show success toast
-      showMessage({
-        message: "Notification deleted",
-        type: "success",
-        icon: "success",
-        duration: 2000,
-        backgroundColor: "#4CAF50",
-        color: "#FFFFFF",
-        style: {
-          borderRadius: 8,
-          marginTop: 40,
-        },
-      });
-      
-      // Here you would call an API endpoint to delete the notification on the server
-      // await NotificationService.deleteNotification(id);
-      
-    } catch (error) {
-      console.error("Error deleting notification:", error);
-      
-      // Show error toast
-      showMessage({
-        message: "Failed to delete notification",
-        description: "Please try again later",
-        type: "danger",
-        icon: "danger",
-        duration: 3000,
-        backgroundColor: "#F44336",
-        color: "#FFFFFF",
-        style: {
-          borderRadius: 8,
-          marginTop: 40,
-        },
-      });
-    }
-  };
-
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchNotifications();
+    await refreshNotifications();
     setRefreshing(false);
   };
 
@@ -209,14 +74,14 @@ const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
 
   useEffect(() => {
     if (userId) {
-      fetchNotifications();
+      refreshNotifications();
     }
   }, [userId]);
 
   useFocusEffect(
     React.useCallback(() => {
       if (userId) {
-        fetchNotifications();
+        refreshNotifications();
       }
       onReadAll();
     }, [userId])
@@ -337,7 +202,6 @@ const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
     if (unreadNotifications.length === 0) return;
     
     try {
-      // Show loading toast
       showMessage({
         message: "Marking all notifications as read...",
         type: "info",
@@ -351,18 +215,9 @@ const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
         },
       });
       
-      // Call the API to mark all notifications as read
       await NotificationService.markAllAsRead(userId);
+      contextMarkAllAsRead();
       
-      // Update local state
-      setNotifications(prevNotifications =>
-        prevNotifications.map(notification => ({ ...notification, isRead: true }))
-      );
-      
-      // Reset unread count
-      setUnreadCount(0);
-      
-      // Show success toast
       showMessage({
         message: `${unreadNotifications.length} notifications marked as read`,
         type: "success",
@@ -379,7 +234,6 @@ const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
       
-      // Show error toast
       showMessage({
         message: "Failed to mark all notifications as read",
         description: "Please try again later",
@@ -415,6 +269,79 @@ const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
         }
       ]
     );
+  };
+
+  const deleteNotification = async (id: string) => {
+    try {
+      // Remove notification from local state through context
+      clearNotifications();
+      
+      showMessage({
+        message: "Notification deleted",
+        type: "success",
+        icon: "success",
+        duration: 2000,
+        backgroundColor: "#4CAF50",
+        color: "#FFFFFF",
+        style: {
+          borderRadius: 8,
+          marginTop: 40,
+        },
+      });
+      
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      
+      showMessage({
+        message: "Failed to delete notification",
+        description: "Please try again later",
+        type: "danger",
+        icon: "danger",
+        duration: 3000,
+        backgroundColor: "#F44336",
+        color: "#FFFFFF",
+        style: {
+          borderRadius: 8,
+          marginTop: 40,
+        },
+      });
+    }
+  };
+
+  const markAsRead = async (id: string) => {
+    try {
+      await NotificationService.markNotificationAsRead(id);
+      contextMarkAsRead(id);
+      
+      showMessage({
+        message: "Notification marked as read",
+        type: "success",
+        icon: "success",
+        duration: 2000,
+        backgroundColor: "#4CAF50",
+        color: "#FFFFFF",
+        style: {
+          borderRadius: 8,
+          marginTop: 40,
+        },
+      });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      
+      showMessage({
+        message: "Failed to mark notification as read",
+        description: "Please try again later",
+        type: "danger",
+        icon: "danger",
+        duration: 3000,
+        backgroundColor: "#F44336",
+        color: "#FFFFFF",
+        style: {
+          borderRadius: 8,
+          marginTop: 40,
+        },
+      });
+    }
   };
 
   if (!isLoggedIn) {
@@ -471,7 +398,7 @@ const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
         </View>
       </View>
 
-      {loading && !refreshing ? (
+      {notificationLoading && !refreshing ? (
         <View style={styles.content}>
           <ActivityIndicator size="large" color="#B77F2E" />
           <Text style={styles.loadingText}>{t('screens.notification.loading')}</Text>
@@ -493,11 +420,11 @@ const NotificationScreen = ({ onReadAll }: { onReadAll: () => void }) => {
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={fetchNotifications}
-            disabled={loading}
+            onPress={onRefresh}
+            disabled={notificationLoading}
           >
             <Text style={styles.actionButtonText}>
-              {loading ? t('common.loading') : t('screens.notification.actions.refresh')}
+              {notificationLoading ? t('common.loading') : t('screens.notification.actions.refresh')}
             </Text>
           </TouchableOpacity>
         </View>

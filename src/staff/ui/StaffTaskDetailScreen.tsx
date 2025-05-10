@@ -360,7 +360,9 @@ const StaffTaskDetailScreen: React.FC<Props> = ({ route }) => {
               <TouchableOpacity 
                 style={[styles.actionButton, styles.maintenanceButton]}
                 onPress={() => {
+                  
                   console.log('Navigating to staff maintenance history with ID:', taskDetail.task.schedule_job_id);
+                  //@ts-ignore
                   navigation.navigate('StaffMaintenanceHistory', { 
                     scheduleJobId: taskDetail.task.schedule_job_id,
                     buildingName: taskDetail.description.split(' ').pop() // Extract building name from description

@@ -17,6 +17,7 @@ import {
   VITE_GET_TASK_ASSIGNMENT,
   VITE_CREATE_TASK_ASSIGNMENT,
   VITE_GET_STAFF_BY_LEADER,
+  VITE_GET_STAFF_BY_DEVICE_TYPE,
   VITE_GET_TASK_ASSIGNMENT_BY_USERID,
   VITE_GET_DETAIL_TASK_ASSIGNMENT,
   VITE_CHANGE_STATUS_TASK_ASSIGMENT,
@@ -36,6 +37,11 @@ import {
   VITE_GET_DEVICE_LIST,
   VITE_GET_SELECT_DEVICE_BY_BUILDING_DETAIL_ID,
   VITE_GET_TECHNICAL_RECORD_BY_BUILDING_ID,
+  VITE_CREATE_INSPECTION_ACTUAL_COST,
+  VITE_GET_TASK_ASSIGNMENT_AND_INSPECTION_BY_TASK_ID,
+  VITE_GET_MATERIAL_BY_ID,
+  VITE_CHANGE_STATUS_TASK_BY_TASK_ID,
+  VITE_GET_TASK_BY_TYPE
 } from '@env';
 
 export const TaskService = {
@@ -277,6 +283,18 @@ export const TaskService = {
     }
   },
 
+  // Add function to get material by ID
+  async getMaterialById(materialId: string): Promise<any> {
+    try {
+      const url = VITE_GET_MATERIAL_BY_ID.replace('{material_id}', materialId);
+      const response = await instance.get(url);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching material with ID ${materialId}:`, error);
+      throw error;
+    }
+  },
+
   async getTaskAssignmentsByEmployeeId(employeeId: string): Promise<any> {
     try {
       const url = VITE_GET_TASK_ASSIGNMENT_BY_EMPLOYEE_ID.replace('{employeeId}', employeeId);
@@ -461,4 +479,163 @@ export const TaskService = {
       throw error;
     }
   },
+
+  // Create inspection actual cost
+  async createInspectionActualCost(
+    taskAssignmentId: string, 
+    data: { 
+      description: string;
+      repairMaterials: Array<{
+        materialId: string;
+        quantity: number;
+      }>;
+      pdfFile?: {
+        uri: string;
+        name: string;
+        type: string;
+      };
+    }
+  ): Promise<any> {
+    try {
+      // Create FormData instance
+      const formData = new FormData();
+      
+      // Add fields to FormData
+      formData.append('task_assignment_id', taskAssignmentId);
+      formData.append('description', data.description || '');
+      
+      // Convert repairMaterials array to a single JSON string
+      const repairMaterialsJson = JSON.stringify(data.repairMaterials[0]);
+      formData.append('repairMaterials', repairMaterialsJson);
+      
+      // Add empty additionalLocationDetails
+      formData.append('additionalLocationDetails', '');
+
+      // Add PDF file if provided
+      if (data.pdfFile) {
+        formData.append('pdfFile', {
+          uri: data.pdfFile.uri,
+          name: data.pdfFile.name,
+          type: data.pdfFile.type
+        } as any);
+      }
+
+      // Log request data for debugging
+      console.log('Creating actual cost with formData:', {
+        task_assignment_id: taskAssignmentId,
+        description: data.description,
+        repairMaterials: repairMaterialsJson,
+        additionalLocationDetails: '',
+        pdfFile: data.pdfFile ? data.pdfFile.name : 'none'
+      });
+      
+      const response = await instance.post(VITE_CREATE_INSPECTION_ACTUAL_COST, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error(`Error creating actual cost:`, error);
+      
+      // Log more detailed error information
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+        console.error('Response headers:', error.response.headers);
+        console.error('Request payload:', error.config.data);
+      } else if (error.request) {
+        console.error('No response received:', error.request);
+      } else {
+        console.error('Error setting up request:', error.message);
+      }
+      
+      throw error;
+    }
+  },
+
+  // Add function to get task assignment and inspection by task ID
+  async getTaskAssignmentAndInspectionByTaskId(taskId: string): Promise<any> {
+    try {
+      const url = VITE_GET_TASK_ASSIGNMENT_AND_INSPECTION_BY_TASK_ID.replace('{task_id}', taskId);
+      const response = await instance.get(url);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching task assignment and inspection for task ID ${taskId}:`, error);
+      throw error;
+    }
+  },
+
+  // Add new function to change task status to complete and review
+  async changeTaskStatusToCompleteAndReview(taskId: string): Promise<any> {
+    try {
+      console.log('Calling complete-and-review API with taskId:', taskId);
+      
+      // Construct URL properly and use POST method
+      const url = `/tasks/task/${taskId}/complete-and-review`;
+      console.log('Final API URL:', url);
+      
+      const response = await instance.post(url); // Changed from PUT to POST
+      return response.data;
+    } catch (error) {
+      console.error(`Error changing task status for task ID ${taskId}:`, error);
+      throw error;
+    }
+  },
+
+  // Lấy danh sách nhân viên theo device type
+  async getStaffByDeviceType(deviceType: string): Promise<any> {
+    try {
+      const url = VITE_GET_STAFF_BY_DEVICE_TYPE.replace('{deviceType}', deviceType);
+      const response = await instance.get(url);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching staff by device type:', error);
+      throw error;
+    }
+  },
+
+  // Add new function to get tasks by type
+  async getTasksByType(taskType: 'schedule' | 'crack', page: number = 1, limit: number = 10): Promise<any> {
+    try {
+      console.log('Calling getTasksByType API with:', { taskType, page, limit });
+      const url = `${VITE_GET_TASK_BY_TYPE}?taskType=${taskType}&page=${page}&limit=${limit}`;
+      console.log('API URL:', url);
+      
+      const response = await instance.get(url);
+      
+      // Log chi tiết response cho schedule tasks
+      if (taskType === 'schedule') {
+        console.log('Schedule tasks response:', {
+          hasData: !!response.data,
+          isDataArray: Array.isArray(response.data),
+          dataLength: Array.isArray(response.data) ? response.data.length : 'not an array',
+          firstItem: Array.isArray(response.data) && response.data.length > 0 ? response.data[0] : null,
+          scheduleJobIds: Array.isArray(response.data) 
+            ? response.data.map((task: any) => task.schedule_job_id || task.task?.schedule_job_id).filter(Boolean)
+            : [],
+          rawResponse: response.data
+        });
+      }
+
+      // Đảm bảo response luôn có cấu trúc { data: [] }
+      const formattedResponse = Array.isArray(response.data) 
+        ? { data: response.data } 
+        : response.data && typeof response.data === 'object' 
+          ? response.data 
+          : { data: [] };
+
+      console.log('Formatted response:', formattedResponse);
+      return formattedResponse;
+    } catch (error: any) {
+      console.error('Error in getTasksByType:', {
+        taskType,
+        errorMessage: error.message,
+        errorResponse: error.response?.data,
+        errorStatus: error.response?.status,
+        config: error.config
+      });
+      return { data: [] };
+    }
+  }
 }; 

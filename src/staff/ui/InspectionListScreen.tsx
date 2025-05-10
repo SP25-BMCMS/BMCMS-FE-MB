@@ -36,6 +36,7 @@ interface EnhancedInspection extends Inspection {
   isprivateasset?: boolean;
   report_status?: string;
   confirmed_by?: string | null;
+  uploadFile?: string | null;
 }
 
 // Helper function to get color based on report status
@@ -164,9 +165,11 @@ const InspectionListScreen: React.FC<Props> = ({ route, navigation }) => {
     // 1. The inspection has no cost
     // 2. It's not already marked as a private asset
     // 3. It doesn't have a pending report status
+    // 4. It doesn't have an uploaded PDF file (uploadFile is null)
     return hasNoCost && 
            !inspection.isprivateasset && 
-           inspection.report_status !== 'Pending';
+           inspection.report_status !== 'Pending' &&
+           inspection.uploadFile === null;
   };
 
   const renderInspectionItem = ({ item }: { item: EnhancedInspection }) => {
